@@ -3,7 +3,7 @@ import json
 from deepgram import DeepgramClient, PrerecordedOptions, FileSource
 from dotenv import load_dotenv
 
-load_dotenv('../.env')
+load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
 
 def transcribe_audio(audio_path):

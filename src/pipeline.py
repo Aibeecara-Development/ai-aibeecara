@@ -3,6 +3,7 @@ from grammar_correction.gemini_corrector import correct_transcript
 import os
 from dotenv import load_dotenv
 from google import genai
+from jiwer import wer
 
 load_dotenv()
 gemini_key = os.getenv('GEMINI_KEY')
@@ -32,6 +33,9 @@ def process_audio_files(audio_directory, reference_directory):
                 with open(ref_path, "r", encoding="utf-8") as f:
                     reference = f.read().strip().lower()
 
+                error = wer(reference, hypothesis)
+                wer_scores.append(error)
+
                 # Correct grammar
                 corrected_transcript = correct_transcript(hypothesis, client)
 
@@ -40,6 +44,14 @@ def process_audio_files(audio_directory, reference_directory):
                 print(f"Corrected: {corrected_transcript}")
             else:
                 print("Transcript failed.")
+
+    if wer_scores:
+        avg_wer = sum(wer_scores) / len(wer_scores)
+        print(f"\n✅ Average WER across {len(wer_scores)} samples: {avg_wer:.3f}")
+    else:
+        print("\n❌ No transcriptions evaluated.")
+
+
 
 if __name__ == "__main__":
     audio_dir = os.path.join("data", "audio")
