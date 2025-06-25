@@ -1,0 +1,313 @@
+{
+    "metadata": {
+        "transaction_key": "deprecated",
+        "request_id": "610d7298-0bde-475d-b827-052f2ab206a6",
+        "sha256": "962b97c02dda21346652e53b01da228a7057d3287b7373948220c1bfaaa6b51f",
+        "created": "2025-06-25T03:16:02.671Z",
+        "duration": 20.349375,
+        "channels": 1,
+        "models": [
+            "3b3aabe4-608a-46ac-9585-7960a25daf1a"
+        ],
+        "model_info": {
+            "3b3aabe4-608a-46ac-9585-7960a25daf1a": {
+                "name": "general-nova-3",
+                "version": "2024-12-20.0",
+                "arch": "nova-3"
+            }
+        }
+    },
+    "results": {
+        "channels": [
+            {
+                "alternatives": [
+                    {
+                        "transcript": "Bellows' plan is certainly interesting, though. I don't Bellows' Belos's plan is certainly interesting though. I don't know what he's up to by possessing puppet rain, but him trying to manipulate the collector is pretty intriguing.",
+                        "confidence": 0.9978126,
+                        "words": [
+                            {
+                                "word": "bellows'",
+                                "start": 3.76,
+                                "end": 4.4,
+                                "confidence": 0.5519581,
+                                "punctuated_word": "Bellows'"
+                            },
+                            {
+                                "word": "plan",
+                                "start": 4.4,
+                                "end": 4.72,
+                                "confidence": 0.99440384,
+                                "punctuated_word": "plan"
+                            },
+                            {
+                                "word": "is",
+                                "start": 4.72,
+                                "end": 5.04,
+                                "confidence": 0.998353,
+                                "punctuated_word": "is"
+                            },
+                            {
+                                "word": "certainly",
+                                "start": 5.04,
+                                "end": 5.52,
+                                "confidence": 0.9967062,
+                                "punctuated_word": "certainly"
+                            },
+                            {
+                                "word": "interesting",
+                                "start": 5.52,
+                                "end": 6.16,
+                                "confidence": 0.8006561,
+                                "punctuated_word": "interesting,"
+                            },
+                            {
+                                "word": "though",
+                                "start": 6.16,
+                                "end": 6.48,
+                                "confidence": 0.984776,
+                                "punctuated_word": "though."
+                            },
+                            {
+                                "word": "i",
+                                "start": 6.48,
+                                "end": 6.64,
+                                "confidence": 0.9978126,
+                                "punctuated_word": "I"
+                            },
+                            {
+                                "word": "don't",
+                                "start": 6.64,
+                                "end": 6.96,
+                                "confidence": 0.9988061,
+                                "punctuated_word": "don't"
+                            },
+                            {
+                                "word": "bellows'",
+                                "start": 7.52,
+                                "end": 7.9199996,
+                                "confidence": 0.9551091,
+                                "punctuated_word": "Bellows'"
+                            },
+                            {
+                                "word": "belos's",
+                                "start": 8.484375,
+                                "end": 9.284375,
+                                "confidence": 0.80359584,
+                                "punctuated_word": "Belos's"
+                            },
+                            {
+                                "word": "plan",
+                                "start": 9.284375,
+                                "end": 9.604375,
+                                "confidence": 0.9974522,
+                                "punctuated_word": "plan"
+                            },
+                            {
+                                "word": "is",
+                                "start": 9.604375,
+                                "end": 9.844375,
+                                "confidence": 0.99947494,
+                                "punctuated_word": "is"
+                            },
+                            {
+                                "word": "certainly",
+                                "start": 9.844375,
+                                "end": 10.644375,
+                                "confidence": 0.99849224,
+                                "punctuated_word": "certainly"
+                            },
+                            {
+                                "word": "interesting",
+                                "start": 10.884375,
+                                "end": 11.444375,
+                                "confidence": 0.9876132,
+                                "punctuated_word": "interesting"
+                            },
+                            {
+                                "word": "though",
+                                "start": 11.444375,
+                                "end": 12.084375,
+                                "confidence": 0.97245497,
+                                "punctuated_word": "though."
+                            },
+                            {
+                                "word": "i",
+                                "start": 12.084375,
+                                "end": 12.324375,
+                                "confidence": 0.9998141,
+                                "punctuated_word": "I"
+                            },
+                            {
+                                "word": "don't",
+                                "start": 12.324375,
+                                "end": 12.564375,
+                                "confidence": 0.9998437,
+                                "punctuated_word": "don't"
+                            },
+                            {
+                                "word": "know",
+                                "start": 12.564375,
+                                "end": 12.724375,
+                                "confidence": 0.99816895,
+                                "punctuated_word": "know"
+                            },
+                            {
+                                "word": "what",
+                                "start": 12.724375,
+                                "end": 12.884375,
+                                "confidence": 0.99961996,
+                                "punctuated_word": "what"
+                            },
+                            {
+                                "word": "he's",
+                                "start": 12.884375,
+                                "end": 13.204374,
+                                "confidence": 0.9917208,
+                                "punctuated_word": "he's"
+                            },
+                            {
+                                "word": "up",
+                                "start": 13.204374,
+                                "end": 13.444375,
+                                "confidence": 0.9993044,
+                                "punctuated_word": "up"
+                            },
+                            {
+                                "word": "to",
+                                "start": 13.444375,
+                                "end": 13.604375,
+                                "confidence": 0.99793065,
+                                "punctuated_word": "to"
+                            },
+                            {
+                                "word": "by",
+                                "start": 13.604375,
+                                "end": 13.764375,
+                                "confidence": 0.9971208,
+                                "punctuated_word": "by"
+                            },
+                            {
+                                "word": "possessing",
+                                "start": 13.764375,
+                                "end": 14.244375,
+                                "confidence": 0.996721,
+                                "punctuated_word": "possessing"
+                            },
+                            {
+                                "word": "puppet",
+                                "start": 14.244375,
+                                "end": 14.724375,
+                                "confidence": 0.9604012,
+                                "punctuated_word": "puppet"
+                            },
+                            {
+                                "word": "rain",
+                                "start": 14.724375,
+                                "end": 15.284374,
+                                "confidence": 0.86873347,
+                                "punctuated_word": "rain,"
+                            },
+                            {
+                                "word": "but",
+                                "start": 15.284374,
+                                "end": 15.444375,
+                                "confidence": 0.99976903,
+                                "punctuated_word": "but"
+                            },
+                            {
+                                "word": "him",
+                                "start": 15.444375,
+                                "end": 15.764375,
+                                "confidence": 0.999295,
+                                "punctuated_word": "him"
+                            },
+                            {
+                                "word": "trying",
+                                "start": 15.764375,
+                                "end": 16.004375,
+                                "confidence": 0.99960035,
+                                "punctuated_word": "trying"
+                            },
+                            {
+                                "word": "to",
+                                "start": 16.004375,
+                                "end": 16.164375,
+                                "confidence": 0.99920493,
+                                "punctuated_word": "to"
+                            },
+                            {
+                                "word": "manipulate",
+                                "start": 16.164375,
+                                "end": 16.644375,
+                                "confidence": 0.9996761,
+                                "punctuated_word": "manipulate"
+                            },
+                            {
+                                "word": "the",
+                                "start": 16.644375,
+                                "end": 16.884375,
+                                "confidence": 0.9839512,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "collector",
+                                "start": 16.884375,
+                                "end": 17.284374,
+                                "confidence": 0.9605331,
+                                "punctuated_word": "collector"
+                            },
+                            {
+                                "word": "is",
+                                "start": 17.284374,
+                                "end": 17.604374,
+                                "confidence": 0.9993,
+                                "punctuated_word": "is"
+                            },
+                            {
+                                "word": "pretty",
+                                "start": 17.604374,
+                                "end": 18.004375,
+                                "confidence": 0.9996562,
+                                "punctuated_word": "pretty"
+                            },
+                            {
+                                "word": "intriguing",
+                                "start": 18.004375,
+                                "end": 18.484375,
+                                "confidence": 0.9984063,
+                                "punctuated_word": "intriguing."
+                            }
+                        ],
+                        "paragraphs": {
+                            "transcript": "\nBellows' plan is certainly interesting, though. I don't Bellows' Belos's plan is certainly interesting though. I don't know what he's up to by possessing puppet rain, but him trying to manipulate the collector is pretty intriguing.",
+                            "paragraphs": [
+                                {
+                                    "sentences": [
+                                        {
+                                            "text": "Bellows' plan is certainly interesting, though.",
+                                            "start": 3.76,
+                                            "end": 6.48
+                                        },
+                                        {
+                                            "text": "I don't Bellows' Belos's plan is certainly interesting though.",
+                                            "start": 6.48,
+                                            "end": 12.084375
+                                        },
+                                        {
+                                            "text": "I don't know what he's up to by possessing puppet rain, but him trying to manipulate the collector is pretty intriguing.",
+                                            "start": 12.084375,
+                                            "end": 18.484375
+                                        }
+                                    ],
+                                    "start": 3.76,
+                                    "end": 18.484375,
+                                    "num_words": 36
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

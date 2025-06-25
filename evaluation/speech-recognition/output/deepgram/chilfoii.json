@@ -1,0 +1,349 @@
+{
+    "metadata": {
+        "transaction_key": "deprecated",
+        "request_id": "c711245b-8654-4d8e-838d-8c5b3d44397e",
+        "sha256": "2bcf614f970299436ddecd2d82e577d9414f1e077c432fe8d228889c1e933ad4",
+        "created": "2025-06-25T03:15:28.697Z",
+        "duration": 19.2,
+        "channels": 1,
+        "models": [
+            "3b3aabe4-608a-46ac-9585-7960a25daf1a"
+        ],
+        "model_info": {
+            "3b3aabe4-608a-46ac-9585-7960a25daf1a": {
+                "name": "general-nova-3",
+                "version": "2024-12-20.0",
+                "arch": "nova-3"
+            }
+        }
+    },
+    "results": {
+        "channels": [
+            {
+                "alternatives": [
+                    {
+                        "transcript": "Because because let's face it. He's just a little because let's face it. He's just a little kid. He's looking because let's face it. He's just a little kid. He's looking at everything in such a childlike view.",
+                        "confidence": 0.9994017,
+                        "words": [
+                            {
+                                "word": "because",
+                                "start": 2.8,
+                                "end": 3.5199997,
+                                "confidence": 0.9486459,
+                                "punctuated_word": "Because"
+                            },
+                            {
+                                "word": "because",
+                                "start": 3.52,
+                                "end": 4.0,
+                                "confidence": 0.5508797,
+                                "punctuated_word": "because"
+                            },
+                            {
+                                "word": "let's",
+                                "start": 4.0,
+                                "end": 4.56,
+                                "confidence": 0.93548715,
+                                "punctuated_word": "let's"
+                            },
+                            {
+                                "word": "face",
+                                "start": 4.56,
+                                "end": 4.7999997,
+                                "confidence": 0.9994624,
+                                "punctuated_word": "face"
+                            },
+                            {
+                                "word": "it",
+                                "start": 4.7999997,
+                                "end": 5.2,
+                                "confidence": 0.7836287,
+                                "punctuated_word": "it."
+                            },
+                            {
+                                "word": "he's",
+                                "start": 5.2,
+                                "end": 5.52,
+                                "confidence": 0.9982212,
+                                "punctuated_word": "He's"
+                            },
+                            {
+                                "word": "just",
+                                "start": 5.52,
+                                "end": 5.7599998,
+                                "confidence": 0.9997515,
+                                "punctuated_word": "just"
+                            },
+                            {
+                                "word": "a",
+                                "start": 5.7599998,
+                                "end": 6.0,
+                                "confidence": 0.9988532,
+                                "punctuated_word": "a"
+                            },
+                            {
+                                "word": "little",
+                                "start": 6.0,
+                                "end": 6.56,
+                                "confidence": 0.99964416,
+                                "punctuated_word": "little"
+                            },
+                            {
+                                "word": "because",
+                                "start": 6.7999997,
+                                "end": 7.2799997,
+                                "confidence": 0.5360637,
+                                "punctuated_word": "because"
+                            },
+                            {
+                                "word": "let's",
+                                "start": 7.2799997,
+                                "end": 7.8399997,
+                                "confidence": 0.93746734,
+                                "punctuated_word": "let's"
+                            },
+                            {
+                                "word": "face",
+                                "start": 7.8399997,
+                                "end": 8.08,
+                                "confidence": 0.9994863,
+                                "punctuated_word": "face"
+                            },
+                            {
+                                "word": "it",
+                                "start": 8.08,
+                                "end": 8.48,
+                                "confidence": 0.9756268,
+                                "punctuated_word": "it."
+                            },
+                            {
+                                "word": "he's",
+                                "start": 8.48,
+                                "end": 8.96,
+                                "confidence": 0.9994017,
+                                "punctuated_word": "He's"
+                            },
+                            {
+                                "word": "just",
+                                "start": 8.96,
+                                "end": 9.2,
+                                "confidence": 0.99968004,
+                                "punctuated_word": "just"
+                            },
+                            {
+                                "word": "a",
+                                "start": 9.2,
+                                "end": 9.44,
+                                "confidence": 0.9995264,
+                                "punctuated_word": "a"
+                            },
+                            {
+                                "word": "little",
+                                "start": 9.44,
+                                "end": 9.679999,
+                                "confidence": 0.99981683,
+                                "punctuated_word": "little"
+                            },
+                            {
+                                "word": "kid",
+                                "start": 9.679999,
+                                "end": 10.32,
+                                "confidence": 0.9904707,
+                                "punctuated_word": "kid."
+                            },
+                            {
+                                "word": "he's",
+                                "start": 10.32,
+                                "end": 10.639999,
+                                "confidence": 0.99903536,
+                                "punctuated_word": "He's"
+                            },
+                            {
+                                "word": "looking",
+                                "start": 10.639999,
+                                "end": 11.12,
+                                "confidence": 0.9997223,
+                                "punctuated_word": "looking"
+                            },
+                            {
+                                "word": "because",
+                                "start": 11.655,
+                                "end": 11.975,
+                                "confidence": 0.9816803,
+                                "punctuated_word": "because"
+                            },
+                            {
+                                "word": "let's",
+                                "start": 11.975,
+                                "end": 12.375,
+                                "confidence": 0.96642697,
+                                "punctuated_word": "let's"
+                            },
+                            {
+                                "word": "face",
+                                "start": 12.375,
+                                "end": 12.615,
+                                "confidence": 0.9997354,
+                                "punctuated_word": "face"
+                            },
+                            {
+                                "word": "it",
+                                "start": 12.615,
+                                "end": 12.934999,
+                                "confidence": 0.90803844,
+                                "punctuated_word": "it."
+                            },
+                            {
+                                "word": "he's",
+                                "start": 12.934999,
+                                "end": 13.255,
+                                "confidence": 0.99941045,
+                                "punctuated_word": "He's"
+                            },
+                            {
+                                "word": "just",
+                                "start": 13.255,
+                                "end": 13.495,
+                                "confidence": 0.9996637,
+                                "punctuated_word": "just"
+                            },
+                            {
+                                "word": "a",
+                                "start": 13.495,
+                                "end": 13.735,
+                                "confidence": 0.99956113,
+                                "punctuated_word": "a"
+                            },
+                            {
+                                "word": "little",
+                                "start": 13.735,
+                                "end": 13.975,
+                                "confidence": 0.99990773,
+                                "punctuated_word": "little"
+                            },
+                            {
+                                "word": "kid",
+                                "start": 13.975,
+                                "end": 14.455,
+                                "confidence": 0.9985386,
+                                "punctuated_word": "kid."
+                            },
+                            {
+                                "word": "he's",
+                                "start": 14.455,
+                                "end": 14.775,
+                                "confidence": 0.9995301,
+                                "punctuated_word": "He's"
+                            },
+                            {
+                                "word": "looking",
+                                "start": 14.775,
+                                "end": 15.094999,
+                                "confidence": 0.9997037,
+                                "punctuated_word": "looking"
+                            },
+                            {
+                                "word": "at",
+                                "start": 15.094999,
+                                "end": 15.255,
+                                "confidence": 0.99962056,
+                                "punctuated_word": "at"
+                            },
+                            {
+                                "word": "everything",
+                                "start": 15.255,
+                                "end": 15.655,
+                                "confidence": 0.99953187,
+                                "punctuated_word": "everything"
+                            },
+                            {
+                                "word": "in",
+                                "start": 15.655,
+                                "end": 15.895,
+                                "confidence": 0.9687806,
+                                "punctuated_word": "in"
+                            },
+                            {
+                                "word": "such",
+                                "start": 15.895,
+                                "end": 16.215,
+                                "confidence": 0.99979585,
+                                "punctuated_word": "such"
+                            },
+                            {
+                                "word": "a",
+                                "start": 16.215,
+                                "end": 16.375,
+                                "confidence": 0.99838245,
+                                "punctuated_word": "a"
+                            },
+                            {
+                                "word": "childlike",
+                                "start": 16.375,
+                                "end": 17.015,
+                                "confidence": 0.9318823,
+                                "punctuated_word": "childlike"
+                            },
+                            {
+                                "word": "view",
+                                "start": 17.015,
+                                "end": 17.494999,
+                                "confidence": 0.9951608,
+                                "punctuated_word": "view."
+                            }
+                        ],
+                        "paragraphs": {
+                            "transcript": "\nBecause because let's face it. He's just a little because let's face it. He's just a little kid. He's looking because let's face it. He's just a little kid.\n\nHe's looking at everything in such a childlike view.",
+                            "paragraphs": [
+                                {
+                                    "sentences": [
+                                        {
+                                            "text": "Because because let's face it.",
+                                            "start": 2.8,
+                                            "end": 5.2
+                                        },
+                                        {
+                                            "text": "He's just a little because let's face it.",
+                                            "start": 5.2,
+                                            "end": 8.48
+                                        },
+                                        {
+                                            "text": "He's just a little kid.",
+                                            "start": 8.48,
+                                            "end": 10.32
+                                        },
+                                        {
+                                            "text": "He's looking because let's face it.",
+                                            "start": 10.32,
+                                            "end": 12.934999
+                                        },
+                                        {
+                                            "text": "He's just a little kid.",
+                                            "start": 12.934999,
+                                            "end": 14.455
+                                        }
+                                    ],
+                                    "start": 2.8,
+                                    "end": 14.455,
+                                    "num_words": 29
+                                },
+                                {
+                                    "sentences": [
+                                        {
+                                            "text": "He's looking at everything in such a childlike view.",
+                                            "start": 14.455,
+                                            "end": 17.494999
+                                        }
+                                    ],
+                                    "start": 14.455,
+                                    "end": 17.494999,
+                                    "num_words": 9
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

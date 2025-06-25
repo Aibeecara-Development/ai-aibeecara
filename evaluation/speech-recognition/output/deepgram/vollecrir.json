@@ -1,0 +1,558 @@
+{
+    "metadata": {
+        "transaction_key": "deprecated",
+        "request_id": "4d6fabd3-0347-4216-a36e-a46cbf276b3e",
+        "sha256": "42f33fd5829dd4cc928f1e3101186bbe474c0a1ccd4b5ebaad07e003c57e7501",
+        "created": "2025-06-25T03:16:58.772Z",
+        "duration": 28.760813,
+        "channels": 1,
+        "models": [
+            "3b3aabe4-608a-46ac-9585-7960a25daf1a"
+        ],
+        "model_info": {
+            "3b3aabe4-608a-46ac-9585-7960a25daf1a": {
+                "name": "general-nova-3",
+                "version": "2024-12-20.0",
+                "arch": "nova-3"
+            }
+        }
+    },
+    "results": {
+        "channels": [
+            {
+                "alternatives": [
+                    {
+                        "transcript": "Also, I hope that we get a bit more insight about who the collectors really are and what are the backgrounds for this current collector. Also, I hope that we get a bit more insight about who the collectors really are and what are the backgrounds. Also, I hope that we get a bit more insight about who the collectors really are and what are the backgrounds for this current collector.",
+                        "confidence": 0.99940574,
+                        "words": [
+                            {
+                                "word": "also",
+                                "start": 2.48,
+                                "end": 2.96,
+                                "confidence": 0.92706156,
+                                "punctuated_word": "Also,"
+                            },
+                            {
+                                "word": "i",
+                                "start": 2.96,
+                                "end": 3.04,
+                                "confidence": 0.99911755,
+                                "punctuated_word": "I"
+                            },
+                            {
+                                "word": "hope",
+                                "start": 3.04,
+                                "end": 3.28,
+                                "confidence": 0.9998055,
+                                "punctuated_word": "hope"
+                            },
+                            {
+                                "word": "that",
+                                "start": 3.28,
+                                "end": 3.52,
+                                "confidence": 0.99952245,
+                                "punctuated_word": "that"
+                            },
+                            {
+                                "word": "we",
+                                "start": 3.52,
+                                "end": 3.6799998,
+                                "confidence": 0.99981314,
+                                "punctuated_word": "we"
+                            },
+                            {
+                                "word": "get",
+                                "start": 3.6799998,
+                                "end": 3.9199998,
+                                "confidence": 0.9916543,
+                                "punctuated_word": "get"
+                            },
+                            {
+                                "word": "a",
+                                "start": 3.9199998,
+                                "end": 4.08,
+                                "confidence": 0.99919826,
+                                "punctuated_word": "a"
+                            },
+                            {
+                                "word": "bit",
+                                "start": 4.08,
+                                "end": 4.24,
+                                "confidence": 0.9998882,
+                                "punctuated_word": "bit"
+                            },
+                            {
+                                "word": "more",
+                                "start": 4.24,
+                                "end": 4.4,
+                                "confidence": 0.9999157,
+                                "punctuated_word": "more"
+                            },
+                            {
+                                "word": "insight",
+                                "start": 4.4,
+                                "end": 4.7999997,
+                                "confidence": 0.99689543,
+                                "punctuated_word": "insight"
+                            },
+                            {
+                                "word": "about",
+                                "start": 4.7999997,
+                                "end": 5.12,
+                                "confidence": 0.99968994,
+                                "punctuated_word": "about"
+                            },
+                            {
+                                "word": "who",
+                                "start": 5.12,
+                                "end": 5.3599997,
+                                "confidence": 0.9994351,
+                                "punctuated_word": "who"
+                            },
+                            {
+                                "word": "the",
+                                "start": 5.3599997,
+                                "end": 5.6,
+                                "confidence": 0.9976283,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "collectors",
+                                "start": 5.6,
+                                "end": 6.16,
+                                "confidence": 0.9772879,
+                                "punctuated_word": "collectors"
+                            },
+                            {
+                                "word": "really",
+                                "start": 6.16,
+                                "end": 6.48,
+                                "confidence": 0.9996519,
+                                "punctuated_word": "really"
+                            },
+                            {
+                                "word": "are",
+                                "start": 6.48,
+                                "end": 6.8799996,
+                                "confidence": 0.9997178,
+                                "punctuated_word": "are"
+                            },
+                            {
+                                "word": "and",
+                                "start": 6.8799996,
+                                "end": 7.12,
+                                "confidence": 0.77172315,
+                                "punctuated_word": "and"
+                            },
+                            {
+                                "word": "what",
+                                "start": 7.12,
+                                "end": 7.44,
+                                "confidence": 0.99979895,
+                                "punctuated_word": "what"
+                            },
+                            {
+                                "word": "are",
+                                "start": 7.44,
+                                "end": 7.6,
+                                "confidence": 0.99900526,
+                                "punctuated_word": "are"
+                            },
+                            {
+                                "word": "the",
+                                "start": 7.6,
+                                "end": 7.7599998,
+                                "confidence": 0.99907553,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "backgrounds",
+                                "start": 7.7599998,
+                                "end": 8.24,
+                                "confidence": 0.9772479,
+                                "punctuated_word": "backgrounds"
+                            },
+                            {
+                                "word": "for",
+                                "start": 8.24,
+                                "end": 8.48,
+                                "confidence": 0.99940884,
+                                "punctuated_word": "for"
+                            },
+                            {
+                                "word": "this",
+                                "start": 8.48,
+                                "end": 8.72,
+                                "confidence": 0.99889344,
+                                "punctuated_word": "this"
+                            },
+                            {
+                                "word": "current",
+                                "start": 8.72,
+                                "end": 9.04,
+                                "confidence": 0.9963936,
+                                "punctuated_word": "current"
+                            },
+                            {
+                                "word": "collector",
+                                "start": 9.04,
+                                "end": 9.599999,
+                                "confidence": 0.98344326,
+                                "punctuated_word": "collector."
+                            },
+                            {
+                                "word": "also",
+                                "start": 12.8550005,
+                                "end": 13.415,
+                                "confidence": 0.9365895,
+                                "punctuated_word": "Also,"
+                            },
+                            {
+                                "word": "i",
+                                "start": 13.415,
+                                "end": 13.495,
+                                "confidence": 0.9991196,
+                                "punctuated_word": "I"
+                            },
+                            {
+                                "word": "hope",
+                                "start": 13.495,
+                                "end": 13.735001,
+                                "confidence": 0.9997882,
+                                "punctuated_word": "hope"
+                            },
+                            {
+                                "word": "that",
+                                "start": 13.735001,
+                                "end": 13.895,
+                                "confidence": 0.9995442,
+                                "punctuated_word": "that"
+                            },
+                            {
+                                "word": "we",
+                                "start": 13.895,
+                                "end": 14.055,
+                                "confidence": 0.99979216,
+                                "punctuated_word": "we"
+                            },
+                            {
+                                "word": "get",
+                                "start": 14.055,
+                                "end": 14.295,
+                                "confidence": 0.98930335,
+                                "punctuated_word": "get"
+                            },
+                            {
+                                "word": "a",
+                                "start": 14.295,
+                                "end": 14.455,
+                                "confidence": 0.99926597,
+                                "punctuated_word": "a"
+                            },
+                            {
+                                "word": "bit",
+                                "start": 14.455,
+                                "end": 14.535,
+                                "confidence": 0.99985695,
+                                "punctuated_word": "bit"
+                            },
+                            {
+                                "word": "more",
+                                "start": 14.535,
+                                "end": 14.775,
+                                "confidence": 0.999897,
+                                "punctuated_word": "more"
+                            },
+                            {
+                                "word": "insight",
+                                "start": 14.775,
+                                "end": 15.095,
+                                "confidence": 0.99701726,
+                                "punctuated_word": "insight"
+                            },
+                            {
+                                "word": "about",
+                                "start": 15.095,
+                                "end": 15.415,
+                                "confidence": 0.9996195,
+                                "punctuated_word": "about"
+                            },
+                            {
+                                "word": "who",
+                                "start": 15.415,
+                                "end": 15.735001,
+                                "confidence": 0.9995751,
+                                "punctuated_word": "who"
+                            },
+                            {
+                                "word": "the",
+                                "start": 15.735001,
+                                "end": 15.975,
+                                "confidence": 0.99819994,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "collectors",
+                                "start": 15.975,
+                                "end": 16.535,
+                                "confidence": 0.9958209,
+                                "punctuated_word": "collectors"
+                            },
+                            {
+                                "word": "really",
+                                "start": 16.535,
+                                "end": 16.935,
+                                "confidence": 0.9985905,
+                                "punctuated_word": "really"
+                            },
+                            {
+                                "word": "are",
+                                "start": 16.935,
+                                "end": 17.255001,
+                                "confidence": 0.99957377,
+                                "punctuated_word": "are"
+                            },
+                            {
+                                "word": "and",
+                                "start": 17.255001,
+                                "end": 17.494999,
+                                "confidence": 0.8358897,
+                                "punctuated_word": "and"
+                            },
+                            {
+                                "word": "what",
+                                "start": 17.494999,
+                                "end": 17.735,
+                                "confidence": 0.9998541,
+                                "punctuated_word": "what"
+                            },
+                            {
+                                "word": "are",
+                                "start": 17.735,
+                                "end": 17.975,
+                                "confidence": 0.9996517,
+                                "punctuated_word": "are"
+                            },
+                            {
+                                "word": "the",
+                                "start": 17.975,
+                                "end": 18.135,
+                                "confidence": 0.99360013,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "backgrounds",
+                                "start": 18.135,
+                                "end": 19.015,
+                                "confidence": 0.9806061,
+                                "punctuated_word": "backgrounds."
+                            },
+                            {
+                                "word": "also",
+                                "start": 19.735,
+                                "end": 20.215,
+                                "confidence": 0.9765333,
+                                "punctuated_word": "Also,"
+                            },
+                            {
+                                "word": "i",
+                                "start": 20.215,
+                                "end": 20.375,
+                                "confidence": 0.9995358,
+                                "punctuated_word": "I"
+                            },
+                            {
+                                "word": "hope",
+                                "start": 20.375,
+                                "end": 20.615,
+                                "confidence": 0.9997758,
+                                "punctuated_word": "hope"
+                            },
+                            {
+                                "word": "that",
+                                "start": 20.615,
+                                "end": 20.775,
+                                "confidence": 0.999696,
+                                "punctuated_word": "that"
+                            },
+                            {
+                                "word": "we",
+                                "start": 20.775,
+                                "end": 20.935001,
+                                "confidence": 0.99978,
+                                "punctuated_word": "we"
+                            },
+                            {
+                                "word": "get",
+                                "start": 20.935001,
+                                "end": 21.175,
+                                "confidence": 0.9964837,
+                                "punctuated_word": "get"
+                            },
+                            {
+                                "word": "a",
+                                "start": 21.175,
+                                "end": 21.255001,
+                                "confidence": 0.9994043,
+                                "punctuated_word": "a"
+                            },
+                            {
+                                "word": "bit",
+                                "start": 21.255001,
+                                "end": 21.415,
+                                "confidence": 0.9998344,
+                                "punctuated_word": "bit"
+                            },
+                            {
+                                "word": "more",
+                                "start": 21.415,
+                                "end": 21.654999,
+                                "confidence": 0.9998803,
+                                "punctuated_word": "more"
+                            },
+                            {
+                                "word": "insight",
+                                "start": 21.654999,
+                                "end": 22.055,
+                                "confidence": 0.9983006,
+                                "punctuated_word": "insight"
+                            },
+                            {
+                                "word": "about",
+                                "start": 22.055,
+                                "end": 22.375,
+                                "confidence": 0.99971455,
+                                "punctuated_word": "about"
+                            },
+                            {
+                                "word": "who",
+                                "start": 22.375,
+                                "end": 22.615,
+                                "confidence": 0.9995987,
+                                "punctuated_word": "who"
+                            },
+                            {
+                                "word": "the",
+                                "start": 22.615,
+                                "end": 22.855,
+                                "confidence": 0.9980451,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "collectors",
+                                "start": 22.855,
+                                "end": 23.415,
+                                "confidence": 0.99934787,
+                                "punctuated_word": "collectors"
+                            },
+                            {
+                                "word": "really",
+                                "start": 23.415,
+                                "end": 23.735,
+                                "confidence": 0.9996675,
+                                "punctuated_word": "really"
+                            },
+                            {
+                                "word": "are",
+                                "start": 23.735,
+                                "end": 23.975,
+                                "confidence": 0.9995946,
+                                "punctuated_word": "are"
+                            },
+                            {
+                                "word": "and",
+                                "start": 23.975,
+                                "end": 24.295,
+                                "confidence": 0.93150824,
+                                "punctuated_word": "and"
+                            },
+                            {
+                                "word": "what",
+                                "start": 24.295,
+                                "end": 24.535,
+                                "confidence": 0.9998642,
+                                "punctuated_word": "what"
+                            },
+                            {
+                                "word": "are",
+                                "start": 24.535,
+                                "end": 24.695,
+                                "confidence": 0.999508,
+                                "punctuated_word": "are"
+                            },
+                            {
+                                "word": "the",
+                                "start": 24.695,
+                                "end": 24.855,
+                                "confidence": 0.99940574,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "backgrounds",
+                                "start": 24.855,
+                                "end": 25.575,
+                                "confidence": 0.9902006,
+                                "punctuated_word": "backgrounds"
+                            },
+                            {
+                                "word": "for",
+                                "start": 25.575,
+                                "end": 25.895,
+                                "confidence": 0.99939394,
+                                "punctuated_word": "for"
+                            },
+                            {
+                                "word": "this",
+                                "start": 25.895,
+                                "end": 26.295,
+                                "confidence": 0.9994748,
+                                "punctuated_word": "this"
+                            },
+                            {
+                                "word": "current",
+                                "start": 26.295,
+                                "end": 26.695,
+                                "confidence": 0.9999201,
+                                "punctuated_word": "current"
+                            },
+                            {
+                                "word": "collector",
+                                "start": 26.695,
+                                "end": 27.255001,
+                                "confidence": 0.9843651,
+                                "punctuated_word": "collector."
+                            }
+                        ],
+                        "paragraphs": {
+                            "transcript": "\nAlso, I hope that we get a bit more insight about who the collectors really are and what are the backgrounds for this current collector. Also, I hope that we get a bit more insight about who the collectors really are and what are the backgrounds. Also, I hope that we get a bit more insight about who the collectors really are and what are the backgrounds for this current collector.",
+                            "paragraphs": [
+                                {
+                                    "sentences": [
+                                        {
+                                            "text": "Also, I hope that we get a bit more insight about who the collectors really are and what are the backgrounds for this current collector.",
+                                            "start": 2.48,
+                                            "end": 9.599999
+                                        },
+                                        {
+                                            "text": "Also, I hope that we get a bit more insight about who the collectors really are and what are the backgrounds.",
+                                            "start": 12.8550005,
+                                            "end": 19.015
+                                        },
+                                        {
+                                            "text": "Also, I hope that we get a bit more insight about who the collectors really are and what are the backgrounds for this current collector.",
+                                            "start": 19.735,
+                                            "end": 27.255001
+                                        }
+                                    ],
+                                    "start": 2.48,
+                                    "end": 27.255001,
+                                    "num_words": 71
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

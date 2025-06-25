@@ -1,0 +1,758 @@
+{
+    "metadata": {
+        "transaction_key": "deprecated",
+        "request_id": "9b5fe6ee-03c2-4fc9-ac4c-0757e060f8a4",
+        "sha256": "c367cacbe6e37afa2f11c0e6da69a049c82ba8200c56d9fc52208680d6808271",
+        "created": "2025-06-25T03:18:02.647Z",
+        "duration": 42.945312,
+        "channels": 1,
+        "models": [
+            "3b3aabe4-608a-46ac-9585-7960a25daf1a"
+        ],
+        "model_info": {
+            "3b3aabe4-608a-46ac-9585-7960a25daf1a": {
+                "name": "general-nova-3",
+                "version": "2024-12-20.0",
+                "arch": "nova-3"
+            }
+        }
+    },
+    "results": {
+        "channels": [
+            {
+                "alternatives": [
+                    {
+                        "transcript": "Odelia is here, but not Ellador. We don't see him at Odelia is here, but not Ellador. We don't see him anywhere in this episode. It'll be so cool if he just shows up in the middle of a fight when the Hexade gang Odelia is here, but not Ellador. We don't see him. Odelia is here, but not Odelia is here, but not Eladore. We don't see him anywhere in this episode. It'll be so cool if he just shows up in the middle of a fight when the Hexside gang are in trouble.",
+                        "confidence": 0.99848133,
+                        "words": [
+                            {
+                                "word": "odelia",
+                                "start": 2.0,
+                                "end": 2.6399999,
+                                "confidence": 0.7779771,
+                                "punctuated_word": "Odelia"
+                            },
+                            {
+                                "word": "is",
+                                "start": 2.6399999,
+                                "end": 2.96,
+                                "confidence": 0.99884474,
+                                "punctuated_word": "is"
+                            },
+                            {
+                                "word": "here",
+                                "start": 2.96,
+                                "end": 3.4399998,
+                                "confidence": 0.8660788,
+                                "punctuated_word": "here,"
+                            },
+                            {
+                                "word": "but",
+                                "start": 3.4399998,
+                                "end": 3.6,
+                                "confidence": 0.99966574,
+                                "punctuated_word": "but"
+                            },
+                            {
+                                "word": "not",
+                                "start": 3.6,
+                                "end": 3.9199998,
+                                "confidence": 0.9995857,
+                                "punctuated_word": "not"
+                            },
+                            {
+                                "word": "ellador",
+                                "start": 3.9199998,
+                                "end": 4.72,
+                                "confidence": 0.78669244,
+                                "punctuated_word": "Ellador."
+                            },
+                            {
+                                "word": "we",
+                                "start": 4.72,
+                                "end": 4.88,
+                                "confidence": 0.998216,
+                                "punctuated_word": "We"
+                            },
+                            {
+                                "word": "don't",
+                                "start": 4.88,
+                                "end": 5.2,
+                                "confidence": 0.99986386,
+                                "punctuated_word": "don't"
+                            },
+                            {
+                                "word": "see",
+                                "start": 5.2,
+                                "end": 5.3599997,
+                                "confidence": 0.8333964,
+                                "punctuated_word": "see"
+                            },
+                            {
+                                "word": "him",
+                                "start": 5.3599997,
+                                "end": 5.6,
+                                "confidence": 0.91847473,
+                                "punctuated_word": "him"
+                            },
+                            {
+                                "word": "at",
+                                "start": 5.6,
+                                "end": 5.8399997,
+                                "confidence": 0.6638474,
+                                "punctuated_word": "at"
+                            },
+                            {
+                                "word": "odelia",
+                                "start": 6.8799996,
+                                "end": 7.52,
+                                "confidence": 0.995656,
+                                "punctuated_word": "Odelia"
+                            },
+                            {
+                                "word": "is",
+                                "start": 7.52,
+                                "end": 7.8399997,
+                                "confidence": 0.9993548,
+                                "punctuated_word": "is"
+                            },
+                            {
+                                "word": "here",
+                                "start": 7.8399997,
+                                "end": 8.24,
+                                "confidence": 0.9841022,
+                                "punctuated_word": "here,"
+                            },
+                            {
+                                "word": "but",
+                                "start": 8.24,
+                                "end": 8.4,
+                                "confidence": 0.9999094,
+                                "punctuated_word": "but"
+                            },
+                            {
+                                "word": "not",
+                                "start": 8.4,
+                                "end": 8.639999,
+                                "confidence": 0.9997986,
+                                "punctuated_word": "not"
+                            },
+                            {
+                                "word": "ellador",
+                                "start": 8.639999,
+                                "end": 9.5199995,
+                                "confidence": 0.9947056,
+                                "punctuated_word": "Ellador."
+                            },
+                            {
+                                "word": "we",
+                                "start": 9.5199995,
+                                "end": 9.76,
+                                "confidence": 0.9996531,
+                                "punctuated_word": "We"
+                            },
+                            {
+                                "word": "don't",
+                                "start": 9.76,
+                                "end": 10.08,
+                                "confidence": 0.9999626,
+                                "punctuated_word": "don't"
+                            },
+                            {
+                                "word": "see",
+                                "start": 10.08,
+                                "end": 10.4,
+                                "confidence": 0.99973017,
+                                "punctuated_word": "see"
+                            },
+                            {
+                                "word": "him",
+                                "start": 10.4,
+                                "end": 10.639999,
+                                "confidence": 0.99994016,
+                                "punctuated_word": "him"
+                            },
+                            {
+                                "word": "anywhere",
+                                "start": 10.639999,
+                                "end": 11.28,
+                                "confidence": 0.9994785,
+                                "punctuated_word": "anywhere"
+                            },
+                            {
+                                "word": "in",
+                                "start": 11.28,
+                                "end": 11.5199995,
+                                "confidence": 0.9996486,
+                                "punctuated_word": "in"
+                            },
+                            {
+                                "word": "this",
+                                "start": 11.5199995,
+                                "end": 11.759999,
+                                "confidence": 0.9998228,
+                                "punctuated_word": "this"
+                            },
+                            {
+                                "word": "episode",
+                                "start": 11.759999,
+                                "end": 12.32,
+                                "confidence": 0.99830747,
+                                "punctuated_word": "episode."
+                            },
+                            {
+                                "word": "it'll",
+                                "start": 12.32,
+                                "end": 12.639999,
+                                "confidence": 0.9970081,
+                                "punctuated_word": "It'll"
+                            },
+                            {
+                                "word": "be",
+                                "start": 12.639999,
+                                "end": 12.799999,
+                                "confidence": 0.9995435,
+                                "punctuated_word": "be"
+                            },
+                            {
+                                "word": "so",
+                                "start": 12.799999,
+                                "end": 13.04,
+                                "confidence": 0.9997744,
+                                "punctuated_word": "so"
+                            },
+                            {
+                                "word": "cool",
+                                "start": 13.04,
+                                "end": 13.36,
+                                "confidence": 0.9998925,
+                                "punctuated_word": "cool"
+                            },
+                            {
+                                "word": "if",
+                                "start": 13.36,
+                                "end": 13.599999,
+                                "confidence": 0.995382,
+                                "punctuated_word": "if"
+                            },
+                            {
+                                "word": "he",
+                                "start": 13.599999,
+                                "end": 13.759999,
+                                "confidence": 0.974113,
+                                "punctuated_word": "he"
+                            },
+                            {
+                                "word": "just",
+                                "start": 13.759999,
+                                "end": 14.639999,
+                                "confidence": 0.9998173,
+                                "punctuated_word": "just"
+                            },
+                            {
+                                "word": "shows",
+                                "start": 14.115,
+                                "end": 14.434999,
+                                "confidence": 0.9995628,
+                                "punctuated_word": "shows"
+                            },
+                            {
+                                "word": "up",
+                                "start": 14.434999,
+                                "end": 14.675,
+                                "confidence": 0.99988675,
+                                "punctuated_word": "up"
+                            },
+                            {
+                                "word": "in",
+                                "start": 14.675,
+                                "end": 14.835,
+                                "confidence": 0.99988556,
+                                "punctuated_word": "in"
+                            },
+                            {
+                                "word": "the",
+                                "start": 14.835,
+                                "end": 14.915,
+                                "confidence": 0.99848133,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "middle",
+                                "start": 14.915,
+                                "end": 15.155,
+                                "confidence": 0.99997306,
+                                "punctuated_word": "middle"
+                            },
+                            {
+                                "word": "of",
+                                "start": 15.155,
+                                "end": 15.315,
+                                "confidence": 0.9998728,
+                                "punctuated_word": "of"
+                            },
+                            {
+                                "word": "a",
+                                "start": 15.315,
+                                "end": 15.3949995,
+                                "confidence": 0.9952642,
+                                "punctuated_word": "a"
+                            },
+                            {
+                                "word": "fight",
+                                "start": 15.3949995,
+                                "end": 15.635,
+                                "confidence": 0.9966486,
+                                "punctuated_word": "fight"
+                            },
+                            {
+                                "word": "when",
+                                "start": 15.635,
+                                "end": 15.795,
+                                "confidence": 0.9794073,
+                                "punctuated_word": "when"
+                            },
+                            {
+                                "word": "the",
+                                "start": 15.795,
+                                "end": 15.955,
+                                "confidence": 0.9868133,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "hexade",
+                                "start": 15.955,
+                                "end": 16.355,
+                                "confidence": 0.30203855,
+                                "punctuated_word": "Hexade"
+                            },
+                            {
+                                "word": "gang",
+                                "start": 16.355,
+                                "end": 16.994999,
+                                "confidence": 0.9390028,
+                                "punctuated_word": "gang"
+                            },
+                            {
+                                "word": "odelia",
+                                "start": 19.715,
+                                "end": 20.355,
+                                "confidence": 0.71063566,
+                                "punctuated_word": "Odelia"
+                            },
+                            {
+                                "word": "is",
+                                "start": 20.355,
+                                "end": 20.675,
+                                "confidence": 0.9986131,
+                                "punctuated_word": "is"
+                            },
+                            {
+                                "word": "here",
+                                "start": 20.675,
+                                "end": 21.075,
+                                "confidence": 0.8861218,
+                                "punctuated_word": "here,"
+                            },
+                            {
+                                "word": "but",
+                                "start": 21.075,
+                                "end": 21.235,
+                                "confidence": 0.99922705,
+                                "punctuated_word": "but"
+                            },
+                            {
+                                "word": "not",
+                                "start": 21.235,
+                                "end": 21.474998,
+                                "confidence": 0.99874735,
+                                "punctuated_word": "not"
+                            },
+                            {
+                                "word": "ellador",
+                                "start": 21.474998,
+                                "end": 22.355,
+                                "confidence": 0.7879574,
+                                "punctuated_word": "Ellador."
+                            },
+                            {
+                                "word": "we",
+                                "start": 22.355,
+                                "end": 22.515,
+                                "confidence": 0.9977361,
+                                "punctuated_word": "We"
+                            },
+                            {
+                                "word": "don't",
+                                "start": 22.515,
+                                "end": 22.755,
+                                "confidence": 0.99607086,
+                                "punctuated_word": "don't"
+                            },
+                            {
+                                "word": "see",
+                                "start": 22.755,
+                                "end": 22.994999,
+                                "confidence": 0.9983102,
+                                "punctuated_word": "see"
+                            },
+                            {
+                                "word": "him",
+                                "start": 22.994999,
+                                "end": 23.555,
+                                "confidence": 0.8991774,
+                                "punctuated_word": "him."
+                            },
+                            {
+                                "word": "odelia",
+                                "start": 26.914999,
+                                "end": 27.634998,
+                                "confidence": 0.99477804,
+                                "punctuated_word": "Odelia"
+                            },
+                            {
+                                "word": "is",
+                                "start": 27.634998,
+                                "end": 27.955,
+                                "confidence": 0.99819773,
+                                "punctuated_word": "is"
+                            },
+                            {
+                                "word": "here",
+                                "start": 27.955,
+                                "end": 28.355,
+                                "confidence": 0.9771109,
+                                "punctuated_word": "here,"
+                            },
+                            {
+                                "word": "but",
+                                "start": 28.355,
+                                "end": 28.515,
+                                "confidence": 0.998909,
+                                "punctuated_word": "but"
+                            },
+                            {
+                                "word": "not",
+                                "start": 28.515,
+                                "end": 29.794998,
+                                "confidence": 0.99728954,
+                                "punctuated_word": "not"
+                            },
+                            {
+                                "word": "odelia",
+                                "start": 31.53,
+                                "end": 32.09,
+                                "confidence": 0.6744162,
+                                "punctuated_word": "Odelia"
+                            },
+                            {
+                                "word": "is",
+                                "start": 32.09,
+                                "end": 32.33,
+                                "confidence": 0.9928526,
+                                "punctuated_word": "is"
+                            },
+                            {
+                                "word": "here",
+                                "start": 32.33,
+                                "end": 32.73,
+                                "confidence": 0.9515929,
+                                "punctuated_word": "here,"
+                            },
+                            {
+                                "word": "but",
+                                "start": 32.73,
+                                "end": 32.89,
+                                "confidence": 0.9996613,
+                                "punctuated_word": "but"
+                            },
+                            {
+                                "word": "not",
+                                "start": 32.89,
+                                "end": 33.13,
+                                "confidence": 0.9991517,
+                                "punctuated_word": "not"
+                            },
+                            {
+                                "word": "eladore",
+                                "start": 33.13,
+                                "end": 33.85,
+                                "confidence": 0.7038721,
+                                "punctuated_word": "Eladore."
+                            },
+                            {
+                                "word": "we",
+                                "start": 33.85,
+                                "end": 34.01,
+                                "confidence": 0.9986572,
+                                "punctuated_word": "We"
+                            },
+                            {
+                                "word": "don't",
+                                "start": 34.01,
+                                "end": 34.25,
+                                "confidence": 0.9999153,
+                                "punctuated_word": "don't"
+                            },
+                            {
+                                "word": "see",
+                                "start": 34.25,
+                                "end": 34.41,
+                                "confidence": 0.9997795,
+                                "punctuated_word": "see"
+                            },
+                            {
+                                "word": "him",
+                                "start": 34.41,
+                                "end": 34.65,
+                                "confidence": 0.9999201,
+                                "punctuated_word": "him"
+                            },
+                            {
+                                "word": "anywhere",
+                                "start": 34.65,
+                                "end": 35.21,
+                                "confidence": 0.9996008,
+                                "punctuated_word": "anywhere"
+                            },
+                            {
+                                "word": "in",
+                                "start": 35.21,
+                                "end": 35.45,
+                                "confidence": 0.9993543,
+                                "punctuated_word": "in"
+                            },
+                            {
+                                "word": "this",
+                                "start": 35.45,
+                                "end": 35.69,
+                                "confidence": 0.9996124,
+                                "punctuated_word": "this"
+                            },
+                            {
+                                "word": "episode",
+                                "start": 35.69,
+                                "end": 36.25,
+                                "confidence": 0.9912904,
+                                "punctuated_word": "episode."
+                            },
+                            {
+                                "word": "it'll",
+                                "start": 36.25,
+                                "end": 36.57,
+                                "confidence": 0.99425423,
+                                "punctuated_word": "It'll"
+                            },
+                            {
+                                "word": "be",
+                                "start": 36.57,
+                                "end": 36.73,
+                                "confidence": 0.99936694,
+                                "punctuated_word": "be"
+                            },
+                            {
+                                "word": "so",
+                                "start": 36.73,
+                                "end": 36.97,
+                                "confidence": 0.9998122,
+                                "punctuated_word": "so"
+                            },
+                            {
+                                "word": "cool",
+                                "start": 36.97,
+                                "end": 37.21,
+                                "confidence": 0.9998982,
+                                "punctuated_word": "cool"
+                            },
+                            {
+                                "word": "if",
+                                "start": 37.21,
+                                "end": 37.45,
+                                "confidence": 0.9942076,
+                                "punctuated_word": "if"
+                            },
+                            {
+                                "word": "he",
+                                "start": 37.45,
+                                "end": 37.61,
+                                "confidence": 0.9608364,
+                                "punctuated_word": "he"
+                            },
+                            {
+                                "word": "just",
+                                "start": 37.61,
+                                "end": 38.01,
+                                "confidence": 0.9995315,
+                                "punctuated_word": "just"
+                            },
+                            {
+                                "word": "shows",
+                                "start": 38.01,
+                                "end": 38.33,
+                                "confidence": 0.99945,
+                                "punctuated_word": "shows"
+                            },
+                            {
+                                "word": "up",
+                                "start": 38.33,
+                                "end": 38.57,
+                                "confidence": 0.9998622,
+                                "punctuated_word": "up"
+                            },
+                            {
+                                "word": "in",
+                                "start": 38.57,
+                                "end": 38.73,
+                                "confidence": 0.99986255,
+                                "punctuated_word": "in"
+                            },
+                            {
+                                "word": "the",
+                                "start": 38.73,
+                                "end": 38.81,
+                                "confidence": 0.99624085,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "middle",
+                                "start": 38.81,
+                                "end": 39.05,
+                                "confidence": 0.99991214,
+                                "punctuated_word": "middle"
+                            },
+                            {
+                                "word": "of",
+                                "start": 39.05,
+                                "end": 39.21,
+                                "confidence": 0.9998877,
+                                "punctuated_word": "of"
+                            },
+                            {
+                                "word": "a",
+                                "start": 39.21,
+                                "end": 39.29,
+                                "confidence": 0.99737996,
+                                "punctuated_word": "a"
+                            },
+                            {
+                                "word": "fight",
+                                "start": 39.29,
+                                "end": 39.53,
+                                "confidence": 0.9999044,
+                                "punctuated_word": "fight"
+                            },
+                            {
+                                "word": "when",
+                                "start": 39.53,
+                                "end": 39.69,
+                                "confidence": 0.9946872,
+                                "punctuated_word": "when"
+                            },
+                            {
+                                "word": "the",
+                                "start": 39.69,
+                                "end": 39.85,
+                                "confidence": 0.99539065,
+                                "punctuated_word": "the"
+                            },
+                            {
+                                "word": "hexside",
+                                "start": 39.85,
+                                "end": 40.25,
+                                "confidence": 0.2726352,
+                                "punctuated_word": "Hexside"
+                            },
+                            {
+                                "word": "gang",
+                                "start": 40.25,
+                                "end": 40.57,
+                                "confidence": 0.97443944,
+                                "punctuated_word": "gang"
+                            },
+                            {
+                                "word": "are",
+                                "start": 40.57,
+                                "end": 40.809998,
+                                "confidence": 0.98698574,
+                                "punctuated_word": "are"
+                            },
+                            {
+                                "word": "in",
+                                "start": 40.809998,
+                                "end": 40.97,
+                                "confidence": 0.99912125,
+                                "punctuated_word": "in"
+                            },
+                            {
+                                "word": "trouble",
+                                "start": 40.97,
+                                "end": 41.29,
+                                "confidence": 0.98000395,
+                                "punctuated_word": "trouble."
+                            }
+                        ],
+                        "paragraphs": {
+                            "transcript": "\nOdelia is here, but not Ellador. We don't see him at Odelia is here, but not Ellador. We don't see him anywhere in this episode. It'll be so cool if he just shows up in the middle of a fight when the Hexade gang Odelia is here, but not Ellador. We don't see him.\n\nOdelia is here, but not Odelia is here, but not Eladore. We don't see him anywhere in this episode. It'll be so cool if he just shows up in the middle of a fight when the Hexside gang are in trouble.",
+                            "paragraphs": [
+                                {
+                                    "sentences": [
+                                        {
+                                            "text": "Odelia is here, but not Ellador.",
+                                            "start": 2.0,
+                                            "end": 4.72
+                                        },
+                                        {
+                                            "text": "We don't see him at Odelia is here, but not Ellador.",
+                                            "start": 4.72,
+                                            "end": 9.5199995
+                                        },
+                                        {
+                                            "text": "We don't see him anywhere in this episode.",
+                                            "start": 9.5199995,
+                                            "end": 12.32
+                                        },
+                                        {
+                                            "text": "It'll be so cool if he just shows up in the middle of a fight when the Hexade gang Odelia is here, but not Ellador.",
+                                            "start": 12.32,
+                                            "end": 22.355
+                                        },
+                                        {
+                                            "text": "We don't see him.",
+                                            "start": 22.355,
+                                            "end": 23.555
+                                        }
+                                    ],
+                                    "start": 2.0,
+                                    "end": 23.555,
+                                    "num_words": 54
+                                },
+                                {
+                                    "sentences": [
+                                        {
+                                            "text": "Odelia is here, but not Odelia is here, but not Eladore.",
+                                            "start": 26.914999,
+                                            "end": 33.85
+                                        },
+                                        {
+                                            "text": "We don't see him anywhere in this episode.",
+                                            "start": 33.85,
+                                            "end": 36.25
+                                        },
+                                        {
+                                            "text": "It'll be so cool if he just shows up in the middle of a fight when the Hexside gang are in trouble.",
+                                            "start": 36.25,
+                                            "end": 41.29
+                                        }
+                                    ],
+                                    "start": 26.914999,
+                                    "end": 41.29,
+                                    "num_words": 41
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
