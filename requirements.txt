@@ -1,0 +1,18 @@
+torch
+transformers
+datasets
+jiwer
+tqdm
+openai
+google
+google-genai
+python-dotenv
+deepgram-sdk
+openai-whisper
+zstandard
+git+https://github.com/gotutiyan/gector
+
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch
+torchvision
+torchaudio
