@@ -1,5 +1,5 @@
 from audio_processing.deepgram_transcriber import process_audio, transcribe_audio
-from grammar_correction.gemini_corrector import correct_transcript
+from chat_model.grammar_corrector import correct_transcript
 import os
 from dotenv import load_dotenv
 from google import genai
