@@ -20,3 +20,10 @@ To run the pipeline, execute the following command:
 ```
 python src/pipeline.py
 ```
+
+## Logs
+
+### 29 Jun 2025 
+- **Pipeline**: Pipeline execution (ASR + grammar correction) completed successfully
+- **Deepgram**: Uses Deepgram model for ASR.
+- **Gemini**: Uses Gemini model for grammar correction.
