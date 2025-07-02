@@ -1,4 +1,4 @@
-from audio_processing.deepgram_transcriber import process_audio, transcribe_audio
+from audio_processing.transcriber import process_audio, transcribe_deepgram, transcribe_whisper
 from chat_model.grammar_corrector import correct_transcript
 import os
 from dotenv import load_dotenv
@@ -27,11 +27,11 @@ def process_audio_files(audio_directory, reference_directory):
             print(f"\nProcessing: {input_audio}")
 
             # Transcribe audio
-            hypothesis = transcribe_audio(input_audio)
+            hypothesis = transcribe_whisper(input_audio)
 
             if hypothesis:
                 with open(ref_path, "r", encoding="utf-8") as f:
-                    reference = f.read().strip().lower()
+                    reference = f.read().strip()
 
                 error = wer(reference, hypothesis)
                 wer_scores.append(error)

@@ -8,31 +8,20 @@ from deepgram import (
 from jiwer import wer
 from dotenv import load_dotenv
 import json
+import whisper
+from whisper import transcribe
 from datasets import load_dataset
 
 load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
 
 def run_whisper(input_file):
-    command = [
-        "whisper",
-        input_file,
-        "--model", "tiny",
-        "--output_dir", os.path.abspath("output/whisper"),
-        "--output_format", "srt",
-        "--language", "en",
-        "--word_timestamps", "True",
-        "--max_line_width", "25",
-        "--max_line_count", "2"
-    ]
+    model = whisper.load_model("base")
+    result = transcribe(model=model, audio=input_file)
+    transcribed_text_whisper = result["text"]
+    return transcribed_text_whisper
 
-    try:
-        subprocess.run(command, check=True)
-        print(f"{input_file} completed successfully!")
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred: {e}")
-    except FileNotFoundError:
-        print("Whisper CLI not found")
+
 
 def run_deepgram(audio):
     try:
@@ -83,13 +72,14 @@ def run_deepgram_and_return_transcript(audio_path):
 
         # Parse and return transcript
         transcript = response.to_dict()["results"]["channels"][0]["alternatives"][0]["transcript"]
-        return transcript.lower()
+        return transcript
     except Exception as e:
         print(f"Exception while processing {audio_path}: {e}")
         return None
 
 # Track WERs
-wer_scores = []
+wer_scores_deepgram = []
+wer_scores_whisper = []
 
 # Loop through files
 for i, file_name in enumerate(os.listdir("data")):
@@ -106,27 +96,39 @@ for i, file_name in enumerate(os.listdir("data")):
         print(f"\n=== Sample {i + 1} ===")
         print(f"Processing: {input_audio}")
 
-        hypothesis = run_deepgram_and_return_transcript(input_audio)
+        hypothesis_deepgram = run_deepgram_and_return_transcript(input_audio)
+        print("Done transcribing with Deepgram.")
+        hypothesis_whisper = run_whisper(input_audio)
+        print("Done transcribing with Whisper.")
 
-        if hypothesis:
+        if hypothesis_deepgram is not None and hypothesis_whisper is not None:
             with open(ref_path, "r", encoding="utf-8") as f:
-                reference = f.read().strip().lower()
+                reference = f.read().strip()
 
-            error = wer(reference, hypothesis)
-            wer_scores.append(error)
+            error_deepgram = wer(reference, hypothesis_deepgram)
+            wer_scores_deepgram.append(error_deepgram)
+
+            print(f"\nSample {i + 1} - Deepgram:")
 
             print(f"Reference:  {reference}")
-            print(f"Hypothesis: {hypothesis}")
-            print(f"WER: {error:.3f}")
+            print(f"Hypothesis: {hypothesis_deepgram}")
+            print(f"WER: {error_deepgram:.3f}")
+
+            error_whisper = wer(reference, hypothesis_whisper)
+            wer_scores_whisper.append(error_whisper)
+            print(f"\nSample {i + 1} - Whisper:")
+            print(f"Reference:  {reference}")
+            print(f"Hypothesis: {hypothesis_whisper}")
+            print(f"WER: {error_whisper:.3f}")
         else:
             print("Transcript failed.")
 
 # Average WER
-if wer_scores:
-    avg_wer = sum(wer_scores) / len(wer_scores)
-    print(f"\n✅ Average WER across {len(wer_scores)} samples: {avg_wer:.3f}")
-else:
-    print("\n❌ No transcriptions evaluated.")
+# if wer_scores_deepgram and wer_scores_whisper:
+#     avg_wer = sum(wer_scores) / len(wer_scores)
+#     print(f"\n✅ Average WER across {len(wer_scores)} samples: {avg_wer:.3f}")
+# else:
+#     print("\n❌ No transcriptions evaluated.")
 
 
 

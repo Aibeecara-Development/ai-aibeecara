@@ -1,1 +1,1 @@
-from .deepgram_transcriber import transcribe_audio, process_audio
+from .transcriber import transcribe_deepgram, process_audio
