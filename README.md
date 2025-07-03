@@ -13,6 +13,7 @@
    DEEPGRAM_KEY=<your_deepgram_api_key>
    GEMINI_KEY=<your_gemini_api_key>
    ```
+   As well as `.env` files with `GEMINI_KEY` and `DEEPGRAM_KEY` in `evaluation/grammar-correction` and `evaluation/speech-recognition` respectively if needed.
 
 ## Usage
 
