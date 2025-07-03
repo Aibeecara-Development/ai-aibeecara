@@ -1,4 +1,5 @@
 from google.genai import types
+from data.dialogue_template import roleplay_topics
 
 # TODO: Update the topic_name variable to match the topic you want to discuss with the user.
 #  The prompt can change depending on the level of English proficiency you want to target (beginner, intermediate,
@@ -17,32 +18,40 @@ You are a friendly and engaging expert at teaching English language to all users
     Behave like a language tutor and discussion partner. Use natural, everyday English. Keep your tone positive, patient, and conversational. If the user seems unsure, help them express themselves more clearly. If they ask for corrections or tips, provide them with explanations and examples.
 """
 
-def generate_chatbot(client):
+# e.g. selected_topic_name = "Daily Routine", "Travel", "Work", "Hobbies and Interests"
+
+def generate_chatbot(client, selected_topic_name):
     model = "gemini-2.5-pro"
+
+    # Find the topic dict that matches the topic name
+    selected_topic = next(
+        (topic for topic in roleplay_topics if topic["topic_name"] == selected_topic_name),
+        None
+    )
+
+    if selected_topic is None:
+        raise ValueError(f"Topic '{selected_topic_name}' not found in roleplay_topics.")
+
     contents = [
         types.Content(
             role="user",
-            parts=[
-                types.Part.from_text(text="""INSERT_INPUT_HERE"""),
-            ],
+            parts=[types.Part.from_text(text=selected_topic["message"])]
         ),
     ]
+
     generate_content_config = types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(
-            thinking_budget=-1,
-        ),
+        thinking_config=types.ThinkingConfig(thinking_budget=-1),
         response_mime_type="text/plain",
-        system_instruction=[
-            types.Part.from_text(text=prompt),
-        ],
+        system_instruction=[types.Part.from_text(text=prompt)],
     )
 
     for chunk in client.models.generate_content_stream(
-            model=model,
-            contents=contents,
-            config=generate_content_config,
+        model=model,
+        contents=contents,
+        config=generate_content_config,
     ):
         print(chunk.text, end="")
+
 
 # if __name__ == "__main__":
 #     generate_chatbot(client)
