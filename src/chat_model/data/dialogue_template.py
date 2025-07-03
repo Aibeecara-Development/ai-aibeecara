@@ -1,10 +1,10 @@
 roleplay_topics = [
     {
         "topic_name": "Daily Routine",
-        "message": """Hi there! I’m your friendly English tutor, and today we’re going to talk about your morning routine. 🌅
+        "message": """Hi there! I’m your friendly English tutor, and today we’re going to talk about your morning routine. 
 
 Let’s start with a simple question:
-👉 What do you usually do after you wake up?
+What do you usually do after you wake up?
 
 Now let’s test your grammar a little:
 Can you write a sentence using the **present simple tense** to describe your morning?
@@ -15,10 +15,10 @@ I’ll review your sentences and help correct any grammar mistakes I see. Don’
     },
     {
         "topic_name": "Travel",
-        "message": """Hello! I'm excited to chat with you about **traveling** today! 🧳🌍
+        "message": """Hello! I'm excited to chat with you about **traveling** today! 
 
 Let’s begin:
-👉 Have you ever traveled to another country? If yes, where did you go?
+ Have you ever traveled to another country? If yes, where did you go?
 
 Here’s a grammar challenge:
 Can you describe your last trip using the **past simple tense**?
@@ -26,14 +26,14 @@ Can you describe your last trip using the **past simple tense**?
 Next, try this:
 Write a sentence using **past participle** (e.g., *I have eaten*, *I have been to*, etc.) to talk about a travel experience.
 
-I’ll check your sentences and let you know if there are any small grammar mistakes—and how to fix them. 😊"""
+I’ll check your sentences and let you know if there are any small grammar mistakes—and how to fix them. """
     },
     {
         "topic_name": "Work",
-        "message": """Hi! Let’s talk about your job or future career plans. 🧑‍💼
+        "message": """Hi! Let’s talk about your job or future career plans. 
 
 First question:
-👉 What do you do for work? Or what would you like to do in the future?
+ What do you do for work? Or what would you like to do in the future?
 
 Now let’s test your grammar:
 Can you write a sentence using **modal verbs** (e.g., *can*, *should*, *must*) to talk about responsibilities at work?
@@ -45,10 +45,10 @@ I'll review your answers and give you some feedback to help improve your grammar
     },
     {
         "topic_name": "Hobbies and Interests",
-        "message": """Hi again! Today’s topic is **hobbies and interests**. 🎨⚽🎸
+        "message": """Hi again! Today’s topic is **hobbies and interests**. 
 
 Let’s start:
-👉 What do you like to do in your free time?
+What do you like to do in your free time?
 
 Let’s add a grammar twist:
 Can you describe your hobby using a **gerund**? (For example: *I enjoy painting*, *I like playing football*)
@@ -60,10 +60,10 @@ I’ll help you correct any mistakes and explain why a correction is needed. Kee
     },
     {
         "topic_name": "Making Plans",
-        "message": """Hey there! Today, we’re going to talk about **making plans** with others. 🗓️
+        "message": """Hey there! Today, we’re going to talk about **making plans** with others. 
 
 To begin:
-👉 What are your plans for the weekend?
+What are your plans for the weekend?
 
 Now, let’s try something a little more advanced:
 Use the **present continuous tense** to talk about something you have already arranged. (e.g., *I’m meeting my friend tomorrow*)

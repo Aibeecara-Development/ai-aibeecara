@@ -1,5 +1,6 @@
 from audio_processing.transcriber import process_audio, transcribe_deepgram, transcribe_whisper
 from chat_model.grammar_corrector import correct_transcript
+from chat_model.chatbot import generate_chatbot
 import os
 from dotenv import load_dotenv
 from google import genai
@@ -54,6 +55,7 @@ def process_audio_files(audio_directory, reference_directory):
 
 
 if __name__ == "__main__":
-    audio_dir = os.path.join("data", "audio")
-    reference_dir = os.path.join("data", "transcript_ref")
-    process_audio_files(audio_dir, reference_dir)
+    # audio_dir = os.path.join("data", "audio")
+    # reference_dir = os.path.join("data", "transcript_ref")
+    # process_audio_files(audio_dir, reference_dir)
+    generate_chatbot(client, "Daily Routine")
