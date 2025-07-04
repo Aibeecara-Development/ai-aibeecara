@@ -18,6 +18,11 @@ You are a friendly and engaging expert at teaching English language to all users
     Behave like a language tutor and discussion partner. Use natural, everyday English. Keep your tone positive, 
     patient, and conversational. Instruct the users with clear instructions on what to do next. If the user seems 
     unsure, help them express themselves more clearly. If they ask for corrections or tips, provide them with explanations and examples.
+        
+    The response should not be longer than 150 words. If you're providing examples, please only provide a maximum of 
+    three examples at a time.
+    
+    If the user strays off-topic, gently guide them back to the main topic of conversation.
     
     For your next response, only use the most recent user message and your previous response as context. Do not use the entire or some of the conversation history to generate the next response.
     
@@ -42,7 +47,15 @@ def generate_chatbot(client, selected_topic_name):
 
     system_instruction = prompt.format(topic_name=selected_topic_name)
 
-    # Initialize contents with the first message to start the conversation
+    generate_content_config = types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=-1),
+        response_mime_type="text/plain",
+        system_instruction=[types.Part.from_text(text=system_instruction)],
+    )
+
+    print("🧑 You can start chatting now. Type 'exit' to quit.\n")
+
+    # Initial topic prompt from user
     contents = [
         types.Content(
             role="user",
@@ -50,53 +63,51 @@ def generate_chatbot(client, selected_topic_name):
         )
     ]
 
-    # Config
-    generate_content_config = types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(thinking_budget=-1),
-        response_mime_type="text/plain",
-        system_instruction=[types.Part.from_text(text=system_instruction)],
-    )
-
-    # Simulate conversation
-    print("🧑 You can start chatting now. Type 'exit' to quit.\n")
-
+    # First bot response (streamed)
     try:
-        response = client.models.generate_content(
+        print("🤖 Gemini: ", end="", flush=True)
+        last_bot_response = ""
+        for chunk in client.models.generate_content_stream(
             model=model_name,
             contents=contents,
             config=generate_content_config
-        )
+        ):
+            if chunk.text:
+                print(chunk.text, end="", flush=True)
+                last_bot_response += chunk.text
+        print()
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"\n❌ Error: {e}")
         return
 
-    last_bot_response = response.text.strip()
-    print(f"\n🤖 Gemini: {last_bot_response}")
-
+    # Start user loop
     while True:
         user_input = input("\n🧑 You: ")
         if user_input.strip().lower() == "exit":
             print("👋 Goodbye!")
             break
 
-        # Send only the last bot response and latest user message
+        # Only pass latest exchange
         contents = [
             types.Content(role="model", parts=[types.Part.from_text(text=last_bot_response)]),
             types.Content(role="user", parts=[types.Part.from_text(text=user_input)]),
         ]
 
         try:
-            response = client.models.generate_content(
+            print("\n🤖 Gemini: ", end="", flush=True)
+            last_bot_response = ""
+            for chunk in client.models.generate_content_stream(
                 model=model_name,
                 contents=contents,
                 config=generate_content_config
-            )
+            ):
+                if chunk.text:
+                    print(chunk.text, end="", flush=True)
+                    last_bot_response += chunk.text
+            print()
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"\n❌ Error: {e}")
             continue
-
-        last_bot_response = response.text.strip()
-        print(f"\n🤖 Gemini: {last_bot_response}")
 
 # if __name__ == "__main__":
 #     generate_chatbot(client)

@@ -20,9 +20,7 @@ def transcribe_deepgram(audio_path):
 
         response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
 
-        # Extract transcript from response
-        transcript = response.to_dict()["results"]["channels"][0]["alternatives"][0]["transcript"]
-        return transcript
+        return response
     except Exception as e:
         print(f"Error transcribing {audio_path}: {e}")
         return None
@@ -40,8 +38,8 @@ def process_audio(audio_directory):
         if file_name.endswith((".mp3", ".wav", ".m4a", ".flac")):
             audio_path = os.path.join(audio_directory, file_name)
             print(f"Transcribing: {audio_path}")
-            # transcription = transcribe_deepgram(audio_path)
-            transcription = transcribe_whisper(audio_path)
+            transcription = transcribe_deepgram(audio_path)
+            # transcription = transcribe_whisper(audio_path)
             if transcription:
                 transcriptions[file_name] = transcription
     return transcriptions

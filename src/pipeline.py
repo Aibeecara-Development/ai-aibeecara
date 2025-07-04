@@ -28,7 +28,10 @@ def process_audio_files(audio_directory, reference_directory):
             print(f"\nProcessing: {input_audio}")
 
             # Transcribe audio
-            hypothesis = transcribe_whisper(input_audio)
+            response = transcribe_deepgram(input_audio)
+
+            # Extract transcript from response
+            hypothesis = response.to_dict()["results"]["channels"][0]["alternatives"][0]["transcript"]
 
             if hypothesis:
                 with open(ref_path, "r", encoding="utf-8") as f:
@@ -58,4 +61,4 @@ if __name__ == "__main__":
     # audio_dir = os.path.join("data", "audio")
     # reference_dir = os.path.join("data", "transcript_ref")
     # process_audio_files(audio_dir, reference_dir)
-    generate_chatbot(client, "Daily Routine")
+    generate_chatbot(client, "Travel")
