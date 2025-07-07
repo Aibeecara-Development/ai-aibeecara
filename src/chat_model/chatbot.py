@@ -1,10 +1,9 @@
 from google.genai import types
 from .data.dialogue_template import roleplay_topics
 
-# TODO: Update the topic_name variable to match the topic you want to discuss with the user.
-#  The prompt can change depending on the level of English proficiency you want to target (beginner, intermediate,
-#  advanced, etc), as well as the purpose of why the user wants to use this app
-#  and the specific grammar components the app is currently focusing on.
+# TODO: Update how the chat is gonna end.
+#  The summarization and feedback should be provided after about 5-7 exchanges.
+#  The user should be able to ask questions and get clarifications.
 
 prompt = """
 You are a friendly and engaging expert at teaching English language to all users above 13 years old. Your task is to:
@@ -25,11 +24,7 @@ You are a friendly and engaging expert at teaching English language to all users
     If the user strays off-topic, gently guide them back to the main topic of conversation.
     
     For your next response, only use the most recent user message and your previous response as context. Do not use the entire or some of the conversation history to generate the next response.
-    
-    After 5-7 exchanges, summarize the conversation and provide feedback on the user's English skills, highlighting areas of strength and suggesting improvements.
-    
-    Don't forget to ask the user if they have any questions or need further clarification on any topic discussed.
-    
+        
     Afterwards, conclude the conversation with a friendly goodbye, encouraging the user to continue practicing their English skills.
 """
 
@@ -55,21 +50,21 @@ def generate_chatbot(client, selected_topic_name):
 
     print("🧑 You can start chatting now. Type 'exit' to quit.\n")
 
-    # Initial topic prompt from user
-    contents = [
+    # Initial user input (topic kickoff)
+    initial_contents = [
         types.Content(
             role="user",
             parts=[types.Part.from_text(text=selected_topic["message"])]
         )
     ]
 
-    # First bot response (streamed)
+    # First bot response
     try:
         print("🤖 Gemini: ", end="", flush=True)
         last_bot_response = ""
         for chunk in client.models.generate_content_stream(
             model=model_name,
-            contents=contents,
+            contents=initial_contents,
             config=generate_content_config
         ):
             if chunk.text:
@@ -80,14 +75,19 @@ def generate_chatbot(client, selected_topic_name):
         print(f"\n❌ Error: {e}")
         return
 
-    # Start user loop
+    # Conversation tracking
+    exchange_count = 1
+    history_log = [("user", selected_topic["message"]), ("bot", last_bot_response)]
+
     while True:
         user_input = input("\n🧑 You: ")
         if user_input.strip().lower() == "exit":
             print("👋 Goodbye!")
             break
 
-        # Only pass latest exchange
+        exchange_count += 1
+        history_log.append(("user", user_input))
+
         contents = [
             types.Content(role="model", parts=[types.Part.from_text(text=last_bot_response)]),
             types.Content(role="user", parts=[types.Part.from_text(text=user_input)]),
@@ -108,6 +108,50 @@ def generate_chatbot(client, selected_topic_name):
         except Exception as e:
             print(f"\n❌ Error: {e}")
             continue
+
+        history_log.append(("bot", last_bot_response))
+
+        # Summarize after 7 exchanges (user+bot = 14 lines)
+        if exchange_count >= 7:
+            print("\n📚 Gemini is summarizing your progress so far...\n")
+
+            # Build full conversation history as summary prompt
+            summary_input = ""
+            for role, message in history_log:
+                summary_input += f"{role.capitalize()}: {message}\n"
+
+            summary_prompt = f"""
+You are an English tutor. The following is a conversation between you and a student. Based on the full conversation history below, summarize the session and give feedback on the user's English language skills. 
+First, say thank you to the user for the conversation and summarize the main points discussed.
+Highlight their strengths, point out areas for improvement, and suggest what they can focus on next.
+
+Also ask if they have any questions about what was discussed, and end the session with a friendly goodbye encouraging them to keep practicing.
+
+Conversation history:
+{summary_input}
+            """
+
+            try:
+                summary_contents = [
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(text=summary_prompt.strip())]
+                    )
+                ]
+
+                print("🤖 Gemini: ", end="", flush=True)
+                for chunk in client.models.generate_content_stream(
+                    model=model_name,
+                    contents=summary_contents,
+                    config=generate_content_config
+                ):
+                    if chunk.text:
+                        print(chunk.text, end="", flush=True)
+                print("\n👋 Conversation ended.\n")
+            except Exception as e:
+                print(f"\n❌ Error during summary: {e}")
+
+            break
 
 # if __name__ == "__main__":
 #     generate_chatbot(client)
