@@ -2,23 +2,29 @@ import whisperx
 from g2p_en import G2p
 import subprocess
 import os
+import sys
+# from pydub import AudioSegment
+
+# def convert_mp3_to_wav(mp3_path):
+#     sound = AudioSegment.from_file(mp3_path, format="mp3")
+#     wav_path = mp3_path.replace(".mp3", ".wav")
+#     sound.export(wav_path, format="wav")
+#     return wav_path
 
 def evaluate_pronunciation(input_audio, reference_text):
-    repo_path = os.path.join(os.getcwd(), "Goodness-of-Pronounciation-main")
-
-    # Set paths to the main.py and the audio file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_path = os.path.join(current_dir, "Goodness-of-Pronounciation-main")
     main_py = os.path.join(repo_path, "main.py")
-    audio_path = os.path.join(repo_path, input_audio)
 
-    # Run the command
+    print("Using Python:", sys.executable)
+
     result = subprocess.run(
-        ["python", main_py, audio_path, reference_text],
+        [sys.executable, main_py, input_audio, reference_text],
         capture_output=True,
         text=True,
         cwd=repo_path
     )
 
-    # Output results
     print("STDOUT:\n", result.stdout)
     print("STDERR:\n", result.stderr)
 

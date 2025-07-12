@@ -1,5 +1,6 @@
 from google.genai import types
 from .data.dialogue_template import roleplay_topics
+from .text_to_speech import transform_speech
 # from ..pronunciation_model.pronunciation_model import g2p_from_user_history, transcribe_phonemes, score_pronunciation
 
 # TODO: Update how the chat is gonna end.
@@ -79,6 +80,7 @@ def generate_chatbot(client, selected_topic_name):
     # Conversation tracking
     exchange_count = 1
     history_log = [("user", selected_topic["message"]), ("bot", last_bot_response)]
+    transform_speech(f"data/audio/output_{exchange_count}.wav", last_bot_response)
 
     while True:
         user_input = input("\n🧑 You: ")
@@ -109,6 +111,8 @@ def generate_chatbot(client, selected_topic_name):
         except Exception as e:
             print(f"\n❌ Error: {e}")
             continue
+
+        transform_speech(f"data/audio/output_{exchange_count}.wav", last_bot_response)
 
         history_log.append(("bot", last_bot_response))
 

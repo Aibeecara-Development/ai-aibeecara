@@ -213,8 +213,9 @@ def get_formatted_score(utterance,transcript):
 def covert_to_wav(file_path):
     ext = os.path.splitext(file_path)[-1]
     d_file = file_path.replace(ext, '_converted.wav')
-    subprocess.call(["sox", file_path, "-r 16000", "-c 1", "-b 16", d_file])
-    #os.remove(file_path)
+
+    subprocess.call(["sox", file_path, "-r", "16000", "-c", "1", "-b", "16", d_file])
+
     return d_file
 
 
