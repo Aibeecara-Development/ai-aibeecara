@@ -3,6 +3,8 @@ from chat_model.grammar_corrector import correct_transcript
 from chat_model.chatbot import generate_chatbot
 import os
 from dotenv import load_dotenv
+from pronunciation_model.pronunciation_model import (regular_score_pronunciation, evaluate_pronunciation,
+                                                     transcribe_phonemes, generate_text_reference)
 from google import genai
 from jiwer import wer
 
@@ -58,7 +60,17 @@ def process_audio_files(audio_directory, reference_directory):
 
 
 if __name__ == "__main__":
-    # audio_dir = os.path.join("data", "audio")
+    audio_dir = os.path.join("data", "audio")
+    for file_name in os.listdir(audio_dir):
+        if file_name.endswith((".mp3", ".wav", ".m4a", ".flac")):
+            input_audio = os.path.abspath(os.path.join(audio_dir, file_name))
+            print(f"Transcribing: {input_audio}")
+            ground_text = generate_text_reference()
+            print(f"Ground truth text: {ground_text}")
+            phoneme = evaluate_pronunciation(input_audio, ground_text)
+            print(f"Scores for {file_name}: {phoneme}")
+            # score = regular_score_pronunciation(phoneme, ground_phoneme)
+            # print(f"Pronunciation score for {file_name}: {score}")
     # reference_dir = os.path.join("data", "transcript_ref")
     # process_audio_files(audio_dir, reference_dir)
-    generate_chatbot(client, "Travel")
+    # generate_chatbot(client, "Travel")

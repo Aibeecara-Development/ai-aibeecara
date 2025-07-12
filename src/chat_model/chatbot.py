@@ -1,5 +1,6 @@
 from google.genai import types
 from .data.dialogue_template import roleplay_topics
+# from ..pronunciation_model.pronunciation_model import g2p_from_user_history, transcribe_phonemes, score_pronunciation
 
 # TODO: Update how the chat is gonna end.
 #  The summarization and feedback should be provided after about 5-7 exchanges.
