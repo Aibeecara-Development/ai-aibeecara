@@ -15,7 +15,7 @@ deepgram_key = os.getenv('DEEPGRAM_KEY')
 # AUDIO_FILE = "output.wav"
 # TTS_TEXT = "Hello, this is a text to speech example using Deepgram. How are you doing today? I am fine thanks for asking."
 
-def transform_speech(file_path, spoken_text):
+def transform_speech(file_path, spoken_text, model="aura-2-thalia-en" ):
     try:
         # use default config
         deepgram: DeepgramClient = DeepgramClient(deepgram_key)
@@ -43,7 +43,7 @@ def transform_speech(file_path, spoken_text):
 
         # connect to websocket
         options = SpeakWSOptions(
-            model="aura-2-thalia-en",
+            model=model,
             encoding="linear16",
             sample_rate=16000,
         )

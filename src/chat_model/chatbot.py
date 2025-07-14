@@ -32,7 +32,7 @@ You are a friendly and engaging expert at teaching English language to all users
 
 # e.g. selected_topic_name = "Daily Routine", "Travel", "Work", "Hobbies and Interests"
 
-def generate_chatbot(client, selected_topic_name):
+def generate_chatbot(client, selected_topic_name, model):
     model_name = "gemini-2.5-pro"
 
     selected_topic = next(
@@ -80,7 +80,8 @@ def generate_chatbot(client, selected_topic_name):
     # Conversation tracking
     exchange_count = 1
     history_log = [("user", selected_topic["message"]), ("bot", last_bot_response)]
-    transform_speech(f"data/audio/output_{exchange_count}.wav", last_bot_response)
+    transform_speech(f"data/audio/output_{exchange_count}_{model}.wav", last_bot_response,
+                     model=model)
 
     while True:
         user_input = input("\n🧑 You: ")
@@ -112,7 +113,8 @@ def generate_chatbot(client, selected_topic_name):
             print(f"\n❌ Error: {e}")
             continue
 
-        transform_speech(f"data/audio/output_{exchange_count}.wav", last_bot_response)
+        transform_speech(f"data/audio/output_{exchange_count}_{model}.wav", last_bot_response,
+                         model=model)
 
         history_log.append(("bot", last_bot_response))
 

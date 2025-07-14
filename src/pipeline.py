@@ -73,4 +73,4 @@ if __name__ == "__main__":
             # print(f"Pronunciation score for {file_name}: {score}")
     # reference_dir = os.path.join("data", "transcript_ref")
     # process_audio_files(audio_dir, reference_dir)
-    generate_chatbot(client, "Travel")
+    generate_chatbot(client, "Making Plans", model="aura-2-apollo-en")
