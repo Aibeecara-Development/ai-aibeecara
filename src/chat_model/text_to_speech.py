@@ -2,7 +2,7 @@ import time
 from dotenv import load_dotenv
 import wave
 import os
-
+import tempfile
 from deepgram import (
     DeepgramClient,
     SpeakWebSocketEvents,
@@ -11,15 +11,44 @@ from deepgram import (
 
 load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
+deepgram: DeepgramClient = DeepgramClient(deepgram_key)
 
 # AUDIO_FILE = "output.wav"
 # TTS_TEXT = "Hello, this is a text to speech example using Deepgram. How are you doing today? I am fine thanks for asking."
+def generate_tts_wav_api(text: str, model: str = "aura-2-thalia-en") -> str:
+    output_path = tempfile.mktemp(suffix=".wav")
+
+    dg_connection = deepgram.speak.websocket.v("1")
+
+    wav_writer = wave.open(output_path, "wb")
+    wav_writer.setnchannels(1)
+    wav_writer.setsampwidth(2)
+    wav_writer.setframerate(16000)
+
+    def on_binary_data(self, data, **kwargs):
+        wav_writer.writeframesraw(data)
+
+    dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
+
+    options = SpeakWSOptions(
+        model=model,
+        encoding="linear16",
+        sample_rate=16000,
+    )
+
+    if not dg_connection.start(options):
+        raise RuntimeError("Failed to start Deepgram connection")
+
+    dg_connection.send_text(text)
+    dg_connection.flush()
+    time.sleep(7)
+    dg_connection.finish()
+    wav_writer.close()
+
+    return output_path
 
 def transform_speech(file_path, spoken_text, model="aura-2-thalia-en" ):
     try:
-        # use default config
-        deepgram: DeepgramClient = DeepgramClient(deepgram_key)
-
         # Create a websocket connection to Deepgram
         dg_connection = deepgram.speak.websocket.v("1")
 

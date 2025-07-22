@@ -1,6 +1,9 @@
 from google.genai import types
 from .data.dialogue_template import roleplay_topics
 from .text_to_speech import transform_speech
+from pydantic import BaseModel
+from google import genai
+from typing import Generator
 # from ..pronunciation_model.pronunciation_model import g2p_from_user_history, transcribe_phonemes, score_pronunciation
 
 # TODO: Update how the chat is gonna end.
@@ -19,16 +22,109 @@ You are a friendly and engaging expert at teaching English language to all users
     Behave like a language tutor and discussion partner. Use natural, everyday English. Keep your tone positive, 
     patient, and conversational. Instruct the users with clear instructions on what to do next. If the user seems 
     unsure, help them express themselves more clearly. If they ask for corrections or tips, provide them with explanations and examples.
-        
+
     The response should not be longer than 200 words. If you're providing examples, please only provide a maximum of 
     three examples at a time.
-    
+
     If the user strays off-topic, gently guide them back to the main topic of conversation.
-    
+
     For your next response, only use the most recent user message and your previous response as context. Do not use the entire or some of the conversation history to generate the next response.
-        
+
     Afterwards, conclude the conversation with a friendly goodbye, encouraging the user to continue practicing their English skills.
 """
+
+class ChatInput(BaseModel):
+    selected_topic_name: str
+    user_input: str
+    history_log: list[tuple[str, str]]
+    exchange_count: int
+    tts_model: str = "aura-2-thalia-en"
+
+def chat_stream(client: genai.Client, input_data: dict) -> Generator[str, None, None]:
+    selected_topic = next(
+        (topic for topic in roleplay_topics if topic["topic_name"] == input_data["selected_topic_name"]),
+        None
+    )
+    if not selected_topic:
+        yield f"❌ Topic '{input_data['selected_topic_name']}' not found."
+        return
+
+    system_instruction = prompt.format(topic_name=input_data["selected_topic_name"])
+    config = types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=-1),
+        response_mime_type="text/plain",
+        system_instruction=[types.Part.from_text(text=system_instruction)],
+    )
+
+    exchange_count = input_data.get("exchange_count", 0)
+    history_log = input_data.get("history_log", [])
+    user_input = input_data.get("user_input", "")
+    model = input_data.get("tts_model", "aura-2-thalia-en")
+
+    if exchange_count == 0:
+        contents = [
+            types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=selected_topic["message"])]
+            )
+        ]
+    else:
+        contents = []
+        for role, msg in history_log[-2:]:
+            role_ = "user" if role == "user" else "model"
+            contents.append(types.Content(role=role_, parts=[types.Part.from_text(text=msg)]))
+        contents.append(types.Content(role="user", parts=[types.Part.from_text(text=user_input)]))
+
+    last_bot_response = ""
+
+    try:
+        for chunk in client.models.generate_content_stream(
+            model="gemini-2.5-pro", contents=contents, config=config
+        ):
+            if chunk.text:
+                last_bot_response += chunk.text
+                yield chunk.text
+    except Exception as e:
+        yield f"\n❌ Error: {e}"
+        return
+
+    # TTS output
+    transform_speech(
+        f"data/audio/output_{exchange_count+1}_{model}.wav",
+        last_bot_response,
+        model=model
+    )
+
+    # Summarize after 7 turns
+    if exchange_count + 1 >= 7:
+        yield "\n\n📚 Gemini summary:\n"
+        summary_input = "\n".join(f"{r.capitalize()}: {msg}" for r, msg in history_log + [("user", user_input), ("bot", last_bot_response)])
+        summary_prompt = f"""
+You are an English tutor. The following is a conversation between you and a student. Based on the full conversation history below, summarize the session and give feedback on the user's English language skills. 
+First, say thank you to the user for the conversation and summarize the main points discussed.
+Highlight their strengths, point out areas for improvement, and suggest what they can focus on next.
+
+Also ask if they have any questions about what was discussed, and end the session with a friendly goodbye encouraging them to keep practicing.
+
+Conversation history:
+{summary_input}
+        """.strip()
+
+        try:
+            summary_contents = [
+                types.Content(role="user", parts=[types.Part.from_text(text=summary_prompt)])
+            ]
+            for chunk in client.models.generate_content_stream(
+                model="gemini-2.5-pro",
+                contents=summary_contents,
+                config=config
+            ):
+                if chunk.text:
+                    yield chunk.text
+        except Exception as e:
+            yield f"\n❌ Error during summary: {e}"
+
+
 
 # e.g. selected_topic_name = "Daily Routine", "Travel", "Work", "Hobbies and Interests"
 
@@ -65,9 +161,9 @@ def generate_chatbot(client, selected_topic_name, model):
         print("🤖 Gemini: ", end="", flush=True)
         last_bot_response = ""
         for chunk in client.models.generate_content_stream(
-            model=model_name,
-            contents=initial_contents,
-            config=generate_content_config
+                model=model_name,
+                contents=initial_contents,
+                config=generate_content_config
         ):
             if chunk.text:
                 print(chunk.text, end="", flush=True)
@@ -101,9 +197,9 @@ def generate_chatbot(client, selected_topic_name, model):
             print("\n🤖 Gemini: ", end="", flush=True)
             last_bot_response = ""
             for chunk in client.models.generate_content_stream(
-                model=model_name,
-                contents=contents,
-                config=generate_content_config
+                    model=model_name,
+                    contents=contents,
+                    config=generate_content_config
             ):
                 if chunk.text:
                     print(chunk.text, end="", flush=True)
@@ -148,9 +244,9 @@ Conversation history:
 
                 print("🤖 Gemini: ", end="", flush=True)
                 for chunk in client.models.generate_content_stream(
-                    model=model_name,
-                    contents=summary_contents,
-                    config=generate_content_config
+                        model=model_name,
+                        contents=summary_contents,
+                        config=generate_content_config
                 ):
                     if chunk.text:
                         print(chunk.text, end="", flush=True)
