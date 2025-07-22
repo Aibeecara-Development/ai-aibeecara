@@ -28,3 +28,24 @@ python src/pipeline.py
 - **Pipeline**: Pipeline execution (ASR + grammar correction) completed successfully
 - **Deepgram**: Uses Deepgram model for ASR.
 - **Gemini**: Uses Gemini model for grammar correction.
+
+### 2 Jul 2025
+- **Add whisper model to timeline**: Added Whisper model to the pipeline for ASR.
+
+### 3 Jul 2025
+- **Add chatbot simulation**: Added Gemini chatbot simulation.
+- **Dialogue template**: Created a dialogue template for the chatbot simulation.
+
+### 4 Jul 2025
+- **Add streaming chatbot**: Implemented a streaming chatbot using Gemini.
+
+### 7 Jul 2025
+- **Add summarization**: Added summarization of the conversation to the pipeline.
+
+### 12 Jul 2025
+- **Add text-to-speech**: Implemented text-to-speech functionality using Deepgram.
+
+### 22 Jul 2025
+- **Add FastAPI**: Integrated FastAPI for serving the pipeline as a web service.
+- **Add pause scoring in voice activity detection**: Implemented pause scoring in voice activity detection to improve accuracy.
+- **Add grammar correction**: Added grammar correction functionality to the pipeline using Huggingface model.
