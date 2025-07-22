@@ -4,7 +4,31 @@ import librosa
 from librosa.feature import rms, mfcc
 from librosa.sequence import dtw
 import itertools
+from jiwer import wer
 import numpy as np
+from happytransformer import HappyTextToText, TTSettings
+
+happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
+
+def evaluate_transcription(transcription):
+    """Evaluate the transcription for grammar issues."""
+    args = TTSettings(num_beams=5, min_length=1)
+
+    # Add the prefix "grammar: " before each input
+    result = happy_tt.generate_text(f"grammar: {transcription}.", args=args)
+
+    print(f"trasncription: {transcription}")
+
+    wer_score = wer(result.text, transcription)
+
+    print(result.text)
+
+    transcription_score = 1 - wer_score
+
+    print(transcription_score)
+
+    return transcription_score
+
 
 def score_model(audio_path):
     y, sr = librosa.load(audio_path, sr=None)
@@ -38,7 +62,8 @@ def score_model(audio_path):
     # if D[-1, -1] < threshold:
     #     print("Likely repetition detected")
 
-
+if __name__ == "__main__":
+    evaluate_transcription("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")
 
 
 

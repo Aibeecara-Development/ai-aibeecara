@@ -1,14 +1,13 @@
 from google.genai import types
 from .data.dialogue_template import roleplay_topics
-from .text_to_speech import transform_speech
 from pydantic import BaseModel
 from google import genai
+from src.chat_model.scoring.score_model import evaluate_transcription
 from typing import Generator
 # from ..pronunciation_model.pronunciation_model import g2p_from_user_history, transcribe_phonemes, score_pronunciation
 
-# TODO: Update how the chat is gonna end.
-#  The summarization and feedback should be provided after about 5-7 exchanges.
-#  The user should be able to ask questions and get clarifications.
+# TODO: Update the chat_stream function for the API so that it yields score
+#  of the evaluation transcription model like the generate_chatbot function.
 
 prompt = """
 You are a friendly and engaging expert at teaching English language to all users above 13 years old. Your task is to:
@@ -89,11 +88,11 @@ def chat_stream(client: genai.Client, input_data: dict) -> Generator[str, None, 
         return
 
     # TTS output
-    transform_speech(
-        f"data/audio/output_{exchange_count+1}_{model}.wav",
-        last_bot_response,
-        model=model
-    )
+    # transform_speech(
+    #     f"data/audio/output_{exchange_count+1}_{model}.wav",
+    #     last_bot_response,
+    #     model=model
+    # )
 
     # Summarize after 7 turns
     if exchange_count + 1 >= 7:
@@ -176,8 +175,8 @@ def generate_chatbot(client, selected_topic_name, model):
     # Conversation tracking
     exchange_count = 1
     history_log = [("user", selected_topic["message"]), ("bot", last_bot_response)]
-    transform_speech(f"data/audio/output_{exchange_count}_{model}.wav", last_bot_response,
-                     model=model)
+    # transform_speech(f"data/audio/output_{exchange_count}_{model}.wav", last_bot_response,
+    #                  model=model)
 
     while True:
         user_input = input("\n🧑 You: ")
@@ -209,13 +208,13 @@ def generate_chatbot(client, selected_topic_name, model):
             print(f"\n❌ Error: {e}")
             continue
 
-        transform_speech(f"data/audio/output_{exchange_count}_{model}.wav", last_bot_response,
-                         model=model)
+        # transform_speech(f"data/audio/output_{exchange_count}_{model}.wav", last_bot_response,
+        #                  model=model)
 
         history_log.append(("bot", last_bot_response))
 
         # Summarize after 7 exchanges (user+bot = 14 lines)
-        if exchange_count >= 7:
+        if exchange_count >= 3:
             print("\n📚 Gemini is summarizing your progress so far...\n")
 
             # Build full conversation history as summary prompt
@@ -251,6 +250,21 @@ Conversation history:
                     if chunk.text:
                         print(chunk.text, end="", flush=True)
                 print("\n👋 Conversation ended.\n")
+
+                user_message = ""
+                user_message_array = []
+                for role, message in history_log:
+                    if role == "user":
+                        user_message_array.append(message)
+
+                for message in user_message_array[-(exchange_count - 1):]:
+                    user_message += message + " "
+
+                # Evaluate transcription
+                score = evaluate_transcription(user_message)
+
+                print(f"📊 Your grammar score: {score * 100:.2f}%")
+
             except Exception as e:
                 print(f"\n❌ Error during summary: {e}")
 
