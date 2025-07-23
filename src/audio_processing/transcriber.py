@@ -3,6 +3,7 @@ import json
 from deepgram import DeepgramClient, PrerecordedOptions, FileSource
 from dotenv import load_dotenv
 import whisper
+from src.chat_model.scoring.score_model import evaluate_pause, evaluate_repetition
 from whisper import transcribe
 
 load_dotenv()

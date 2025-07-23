@@ -1,11 +1,4 @@
-import requests
-import json
-import librosa
-from librosa.feature import rms, mfcc
-from librosa.sequence import dtw
-import itertools
 from jiwer import wer
-import numpy as np
 from happytransformer import HappyTextToText, TTSettings
 
 happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
@@ -30,37 +23,63 @@ def evaluate_transcription(transcription):
     return transcription_score
 
 
-def score_model(audio_path):
-    y, sr = librosa.load(audio_path, sr=None)
+def evaluate_pause(deepgram_response):
+    words = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
 
-    # Calculate short-term energy
-    frame_length = 2048
-    hop_length = 512
-    energy = rms(y=y, frame_length=frame_length, hop_length=hop_length)[0]
+    pause_threshold = 3.0
+    long_pauses = 0
 
-    # Normalize energy
-    energy_db = librosa.amplitude_to_db(energy, ref=np.max)
+    for i in range(len(words) - 1):
+        current_end = words[i]["end"]
+        next_start = words[i + 1]["start"]
 
-    silence_threshold_db = -40
-    silent_frames = energy_db < silence_threshold_db
+        pause_duration = next_start - current_end
 
-    # Convert to time
-    times = librosa.frames_to_time(np.arange(len(energy)), sr=sr, hop_length=hop_length)
+        if pause_duration > pause_threshold:
+            long_pauses += 1
+            print(f"Pause of {pause_duration:.2f}s between '{words[i]['word']}' and '{words[i + 1]['word']}'")
 
-    silent_regions = []
-    for k, g in itertools.groupby(enumerate(silent_frames), lambda x: x[1]):
-        if k:
-            group = list(g)
-            start_time = times[group[0][0]]
-            end_time = times[group[-1][0]]
-            duration = end_time - start_time
-            if duration > 1:  # only keep pauses > 1s
-                silent_regions.append((start_time, end_time))
+    print(f"Number of pauses longer than 3 seconds: {long_pauses}")
 
-    # mfcc_result = mfcc(y=y, sr=sr, n_mfcc=13)
-    # D, wp = dtw(mfcc_result[:, start1:end1], mfcc_result[:, start2:end2])
-    # if D[-1, -1] < threshold:
-    #     print("Likely repetition detected")
+    score = 1.0
+
+    if long_pauses == 0:
+        return score
+    else:
+        return 1 - (long_pauses / len(words))
+
+def evaluate_repetition(deepgram_response):
+    words_list = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
+    words = [w["word"].lower() for w in words_list]
+    count = 0
+    i = 0
+    repeated_phrases = []
+
+    while i < len(words):
+        max_repeat_len = (len(words) - i) // 2
+        found_repeat = False
+
+        for size in range(max_repeat_len, 0, -1):
+            first = words[i:i + size]
+            second = words[i + size:i + 2 * size]
+            if first == second:
+                count += 1
+                repeated_phrases.append(" ".join(first))
+                i += size * 2  # skip the repeated pair
+                found_repeat = True
+                break
+
+        if not found_repeat:
+            i += 1
+
+    print(f"Number of repetitions: {count}")
+    print("Repeated phrases:", repeated_phrases)
+
+    score = 1.0
+    if count == 0:
+        return score
+    else:
+        return 1 - (count / len(words))
 
 if __name__ == "__main__":
     evaluate_transcription("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")
