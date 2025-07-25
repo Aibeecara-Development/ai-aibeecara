@@ -28,6 +28,7 @@ def evaluate_pause(deepgram_response):
 
     pause_threshold = 3.0
     long_pauses = 0
+    pause_between_words = []
 
     for i in range(len(words) - 1):
         current_end = words[i]["end"]
@@ -38,15 +39,16 @@ def evaluate_pause(deepgram_response):
         if pause_duration > pause_threshold:
             long_pauses += 1
             print(f"Pause of {pause_duration:.2f}s between '{words[i]['word']}' and '{words[i + 1]['word']}'")
+        pause_between_words.append({"start_word": words[i]['word'], "end_word": words[i + 1]['word'], "duration": pause_duration})
 
     print(f"Number of pauses longer than 3 seconds: {long_pauses}")
 
     score = 1.0
 
     if long_pauses == 0:
-        return score
+        return score, pause_between_words
     else:
-        return 1 - (long_pauses / len(words))
+        return 1 - (long_pauses / len(words)), pause_between_words
 
 def evaluate_repetition(deepgram_response):
     words_list = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
@@ -77,9 +79,9 @@ def evaluate_repetition(deepgram_response):
 
     score = 1.0
     if count == 0:
-        return score
+        return score, repeated_phrases
     else:
-        return 1 - (count / len(words))
+        return 1 - (count / len(words)), repeated_phrases
 
 if __name__ == "__main__":
     evaluate_transcription("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")

@@ -29,13 +29,16 @@ def process_audio_files(audio_directory, reference_directory):
 
             print(f"\nProcessing: {input_audio}")
 
-            # Transcribe audio
-            response = transcribe_deepgram(input_audio)
+            try:
+                # Transcribe audio
+                response = transcribe_deepgram(input_audio)
 
-            # Extract transcript from response
-            hypothesis = response.to_dict()["results"]["channels"][0]["alternatives"][0]["transcript"]
+                # Extract transcript
+                hypothesis = response.to_dict()["results"]["channels"][0]["alternatives"][0]["transcript"]
 
-            if hypothesis:
+                if not hypothesis:
+                    raise ValueError("Empty hypothesis returned.")
+
                 with open(ref_path, "r", encoding="utf-8") as f:
                     reference = f.read().strip()
 
@@ -48,8 +51,9 @@ def process_audio_files(audio_directory, reference_directory):
                 print(f"Reference:  {reference}")
                 print(f"Hypothesis: {hypothesis}")
                 print(f"Corrected: {corrected_transcript}")
-            else:
-                print("Transcript failed.")
+
+            except Exception as e:
+                print(f"❌ Error processing {file_name}: {e}")
 
     if wer_scores:
         avg_wer = sum(wer_scores) / len(wer_scores)

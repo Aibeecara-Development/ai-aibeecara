@@ -3,13 +3,15 @@ from g2p_en import G2p
 import subprocess
 import os
 import sys
-# from pydub import AudioSegment
+from pydub import AudioSegment
+from transformers.integrations.tensor_parallel import convert_local_tensor_to_dtensor
 
-# def convert_mp3_to_wav(mp3_path):
-#     sound = AudioSegment.from_file(mp3_path, format="mp3")
-#     wav_path = mp3_path.replace(".mp3", ".wav")
-#     sound.export(wav_path, format="wav")
-#     return wav_path
+
+def convert_mp3_to_wav(mp3_path):
+    sound = AudioSegment.from_file(mp3_path, format="mp3")
+    wav_path = mp3_path.replace(".mp3", ".wav")
+    sound.export(wav_path, format="wav")
+    return wav_path
 
 def evaluate_pronunciation(input_audio, reference_text):
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,8 +20,10 @@ def evaluate_pronunciation(input_audio, reference_text):
 
     print("Using Python:", sys.executable)
 
+    converted_audio = convert_mp3_to_wav(input_audio)
+
     result = subprocess.run(
-        [sys.executable, main_py, input_audio, reference_text],
+        [sys.executable, main_py, converted_audio, reference_text],
         capture_output=True,
         text=True,
         cwd=repo_path
@@ -129,3 +133,10 @@ def score_pronunciation(aligned_phonemes, ref_phoneme_sequence):
             align_idx += 1
 
     return round((matched / total) * 100, 2) if total > 0 else 0.0
+
+if __name__ == "__main__":
+    # Example usage
+    input_audio = "data/2025_07_08_14_09_18.mp3"
+    reference_text = "and we want to highlight those and bring that to where we can have a supportive system in place so nutrient recycling our nutrients back on to the land to rejuvenate the soils that have been depleted by plantation agriculture over a long period of time"
+    result = evaluate_pronunciation(input_audio, reference_text)
+    print(result)
