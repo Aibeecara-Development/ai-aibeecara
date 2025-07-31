@@ -3,21 +3,20 @@ import json
 from deepgram import DeepgramClient, PrerecordedOptions, FileSource
 from dotenv import load_dotenv
 import whisper
-from src.chat_model.scoring.score_model import evaluate_pause, evaluate_repetition
 from whisper import transcribe
 
 load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
 deepgram = DeepgramClient(deepgram_key)
 
-def transcribe_audio_api(file_bytes: bytes) -> str:
-    """Transcribes audio using Deepgram and returns the transcript text."""
+def transcribe_audio_api(file_bytes: bytes):
+    """Transcribes audio using Deepgram and returns the response and transcript text."""
     try:
         payload: FileSource = {"buffer": file_bytes}
         options = PrerecordedOptions(model="nova-3", smart_format=True)
         response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
         transcript = response.to_dict()["results"]["channels"][0]["alternatives"][0]["transcript"]
-        return transcript
+        return response, transcript
     except Exception as e:
         raise RuntimeError(f"Deepgram transcription error: {e}")
 

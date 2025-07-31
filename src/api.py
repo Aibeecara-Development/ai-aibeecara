@@ -8,6 +8,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 import time
+from chat_model.scoring.score_model import evaluate_pause, evaluate_repetition
 
 load_dotenv()
 app = FastAPI()
@@ -42,8 +43,22 @@ def chat_endpoint(input: ChatInput):
 async def transcribe_endpoint(file: UploadFile = File(...)):
     try:
         audio_data = await file.read()
-        transcript = transcribe_audio_api(audio_data)
-        return {"transcript": transcript}
+        response, transcript = transcribe_audio_api(audio_data)
+
+        # Evaluate pause
+        pause_score, pause_details = evaluate_pause(response)
+
+        # Evaluate repetition
+        repetition_score, repeated_phrases = evaluate_repetition(response)
+
+        return {
+            "transcript": transcript,
+            "pause_score": pause_score,
+            "pause_details": pause_details,
+            "repetition_score": repetition_score,
+            "repeated_phrases": repeated_phrases
+        }
+
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 

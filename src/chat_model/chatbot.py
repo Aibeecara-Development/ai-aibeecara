@@ -2,7 +2,7 @@ from google.genai import types
 from .data.dialogue_template import roleplay_topics
 from pydantic import BaseModel
 from google import genai
-from src.chat_model.scoring.score_model import evaluate_transcription
+from chat_model.scoring.score_model import evaluate_transcription
 from typing import Generator
 # from ..pronunciation_model.pronunciation_model import g2p_from_user_history, transcribe_phonemes, score_pronunciation
 
