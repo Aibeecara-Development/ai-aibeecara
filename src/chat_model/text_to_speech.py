@@ -2,7 +2,9 @@ import time
 from dotenv import load_dotenv
 import wave
 import os
+import soundfile as sf
 import tempfile
+import librosa
 from deepgram import (
     DeepgramClient,
     SpeakWebSocketEvents,
@@ -15,12 +17,13 @@ deepgram: DeepgramClient = DeepgramClient(deepgram_key)
 
 # AUDIO_FILE = "output.wav"
 # TTS_TEXT = "Hello, this is a text to speech example using Deepgram. How are you doing today? I am fine thanks for asking."
-def generate_tts_wav_api(text: str, accent: str = "american", gender: str = "feminine") -> str:
-    output_path = tempfile.mktemp(suffix=".wav")
+def generate_tts_wav_api(text: str, accent: str = "american", gender: str = "feminine", speed: float = 1.0) -> str:
+    raw_output_path = tempfile.mktemp(suffix="_raw.wav")
+    final_output_path = tempfile.mktemp(suffix=".wav")
 
     dg_connection = deepgram.speak.websocket.v("1")
 
-    wav_writer = wave.open(output_path, "wb")
+    wav_writer = wave.open(raw_output_path, "wb")
     wav_writer.setnchannels(1)
     wav_writer.setsampwidth(2)
     wav_writer.setframerate(16000)
@@ -31,7 +34,6 @@ def generate_tts_wav_api(text: str, accent: str = "american", gender: str = "fem
     dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
 
     model = "aura-2-thalia-en"
-
     if accent == "british" and gender == "feminine":
         model = "aura-2-draco-en"
     elif accent == "british" and gender == "masculine":
@@ -52,11 +54,21 @@ def generate_tts_wav_api(text: str, accent: str = "american", gender: str = "fem
 
     dg_connection.send_text(text)
     dg_connection.flush()
-    time.sleep(7)
+    time.sleep(7)  # crude wait — consider replacing with audio length-based logic
     dg_connection.finish()
     wav_writer.close()
 
-    return output_path
+    if speed == 1.0:
+        return raw_output_path
+    else:
+        # Adjust speed using librosa
+        y, sr = librosa.load(raw_output_path, sr=16000)
+        y_fast = librosa.effects.time_stretch(y, rate=speed)
+        sf.write(final_output_path, y_fast, sr)
+
+        return final_output_path
+
+
 
 def transform_speech(file_path, spoken_text, model="aura-2-thalia-en" ):
     try:

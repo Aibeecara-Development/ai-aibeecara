@@ -26,6 +26,7 @@ class TTSInput(BaseModel):
     text: str
     accent: str = "american"
     gender: str = "feminine"
+    speed: float = 1.0
 
 def mock_stream_response(user_input):
     reply = f"{user_input}"
@@ -66,7 +67,7 @@ async def transcribe_endpoint(file: UploadFile = File(...)):
 @app.post("/chat/tts/")
 async def chat_tts(input: TTSInput):
     try:
-        wav_path = generate_tts_wav_api(input.text, accent=input.accent, gender=input.gender)
+        wav_path = generate_tts_wav_api(input.text, accent=input.accent, gender=input.gender, speed=input.speed)
         return FileResponse(wav_path, media_type="audio/wav", filename="response.wav")
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
