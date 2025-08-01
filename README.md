@@ -49,3 +49,6 @@ python src/pipeline.py
 - **Add FastAPI**: Integrated FastAPI for serving the pipeline as a web service.
 - **Add pause scoring in voice activity detection**: Implemented pause scoring in voice activity detection to improve accuracy.
 - **Add grammar correction**: Added grammar correction functionality to the pipeline using Huggingface model.
+
+### 1 Aug 2025
+- **Add TTS options**: Added extra options for text-to-speech (TTS) in the API such as gender, speed, and accent selection.
