@@ -15,7 +15,7 @@ deepgram: DeepgramClient = DeepgramClient(deepgram_key)
 
 # AUDIO_FILE = "output.wav"
 # TTS_TEXT = "Hello, this is a text to speech example using Deepgram. How are you doing today? I am fine thanks for asking."
-def generate_tts_wav_api(text: str, model: str = "aura-2-thalia-en") -> str:
+def generate_tts_wav_api(text: str, accent: str = "american", gender: str = "feminine") -> str:
     output_path = tempfile.mktemp(suffix=".wav")
 
     dg_connection = deepgram.speak.websocket.v("1")
@@ -29,6 +29,17 @@ def generate_tts_wav_api(text: str, model: str = "aura-2-thalia-en") -> str:
         wav_writer.writeframesraw(data)
 
     dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
+
+    model = "aura-2-thalia-en"
+
+    if accent == "british" and gender == "feminine":
+        model = "aura-2-draco-en"
+    elif accent == "british" and gender == "masculine":
+        model = "aura-2-pandora-en"
+    elif accent == "american" and gender == "feminine":
+        model = "aura-2-thalia-en"
+    elif accent == "american" and gender == "masculine":
+        model = "aura-2-apollo-en"
 
     options = SpeakWSOptions(
         model=model,
