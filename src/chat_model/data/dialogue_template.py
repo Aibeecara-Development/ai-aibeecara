@@ -1,5 +1,23 @@
 roleplay_topics = [
     {
+        "topic_name": "General Conversation",
+        "message": """Hi! Let’s have a casual conversation to practice your English skills. You can talk about anything you like—your day, your thoughts, or something interesting you’ve experienced.
+    
+    Here’s a simple way to begin:
+    How are you feeling today? What’s something that happened recently?
+    
+    Let’s try a grammar activity:
+    Write one sentence using the **present perfect tense**. (e.g., *I have finished my homework*, *She has visited Bali before*)
+    
+    Now let’s focus on vocabulary:
+    Can you describe a place, a person, or an object using at least **three adjectives**?
+    
+    Finally:
+    Ask me a question! Practicing how to ask questions is a great way to improve your fluency.
+    
+    I’ll review your responses and help you with any grammar or word choice improvements. Let’s just chat and have fun with it!"""
+    },
+    {
         "topic_name": "Daily Routine",
         "message": """Hi there! I’m your friendly English tutor, and today we’re going to talk about your morning routine. 
 
