@@ -8,7 +8,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 import time
-from chat_model.scoring.score_model import evaluate_pause, evaluate_repetition
+from chat_model.scoring.score_model import evaluate_pause, evaluate_repetition, evaluate_transcription
 
 load_dotenv()
 app = FastAPI()
@@ -16,7 +16,7 @@ gemini_key = os.getenv("GEMINI_KEY")
 client = genai.Client(api_key=gemini_key)
 
 class ChatInput(BaseModel):
-    selected_topic_name: str
+    selected_topic_name: str = "General"
     user_input: str
     history_log: list[tuple[str, str]]
     exchange_count: int = 0
@@ -27,6 +27,10 @@ class TTSInput(BaseModel):
     accent: str = "american"
     gender: str = "feminine"
     speed: float = 1.0
+
+class EvaluationInput(BaseModel):
+    history_log: list[tuple[str, str]]
+    exchange_count: int
 
 def mock_stream_response(user_input):
     reply = f"{user_input}"
@@ -71,6 +75,15 @@ async def chat_tts(input: TTSInput):
         return FileResponse(wav_path, media_type="audio/wav", filename="response.wav")
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+# Retrieve the history log and exchange count from the POST request of /chat
+@app.post("/evaluate/")
+def evaluate_endpoint(input: EvaluationInput):
+    user_messages = " ".join(
+        msg for role, msg in input.history_log[-(input.exchange_count * 2):] if role == "user"
+    )
+    score = evaluate_transcription(user_messages)
+    return {"evaluation_score": score}
 
 
 

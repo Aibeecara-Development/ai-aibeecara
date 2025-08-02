@@ -120,6 +120,17 @@ Conversation history:
             ):
                 if chunk.text:
                     yield chunk.text
+            user_message = ""
+            user_message_array = []
+            for role, message in history_log:
+                if role == "user":
+                    user_message_array.append(message)
+
+            for message in user_message_array[-(exchange_count - 1):]:
+                user_message += message + " "
+
+            # Evaluate transcription
+            score = evaluate_transcription(user_message)
         except Exception as e:
             yield f"\n❌ Error during summary: {e}"
 

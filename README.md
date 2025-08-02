@@ -52,3 +52,4 @@ python src/pipeline.py
 
 ### 1 Aug 2025
 - **Add TTS options**: Added extra options for text-to-speech (TTS) in the API such as gender, speed, and accent selection.
+- **Add conversation topics**: Implemented conversation topic prompts to enhance the chatbot's context awareness.
