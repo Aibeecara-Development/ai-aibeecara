@@ -1,10 +1,10 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-from chat_model.chatbot import chat_stream
+from chat_model.chatbot import chat_stream, chat_stream_websocket, summarize_conversation
 from audio_processing.transcriber import transcribe_audio_api
 from chat_model.text_to_speech import generate_tts_wav_api
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 import time
@@ -44,6 +44,44 @@ def chat_endpoint(input: ChatInput):
         chat_stream(client, input.model_dump()),
         media_type="text/plain"
     )
+
+@app.websocket("/ws/chat/")
+async def websocket_chat_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            input_data = await websocket.receive_json()
+            await chat_stream_websocket(client, input_data, websocket)
+    except WebSocketDisconnect:
+        print("WebSocket disconnected")
+    except Exception as e:
+        await websocket.send_text(f"❌ Error: {str(e)}")
+
+@app.websocket("/ws/chat/summary")
+async def websocket_summary_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_json()
+            history_log = data.get("history_log", [])
+            user_input = data.get("user_input", "")
+
+            await websocket.send_text("📚 Gemini summary:\n")
+
+            try:
+                summary_text = await summarize_conversation(
+                    client=client,
+                    history_log=history_log,
+                    user_input=user_input
+                )
+                await websocket.send_text(summary_text)
+
+            except Exception as e:
+                await websocket.send_text(f"❌ Error during summary: {str(e)}")
+
+    except WebSocketDisconnect:
+        print("🔌 WebSocket disconnected")
+
 
 @app.post("/transcribe/")
 async def transcribe_endpoint(file: UploadFile = File(...)):

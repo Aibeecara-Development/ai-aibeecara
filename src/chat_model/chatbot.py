@@ -2,8 +2,9 @@ from google.genai import types
 from .data.dialogue_template import roleplay_topics
 from pydantic import BaseModel
 from google import genai
+from fastapi import WebSocket
 from chat_model.scoring.score_model import evaluate_transcription
-from typing import Generator
+from typing import Generator, Dict, List, Tuple
 # from ..pronunciation_model.pronunciation_model import g2p_from_user_history, transcribe_phonemes, score_pronunciation
 
 # TODO: Update the chat_stream function for the API so that it yields score
@@ -38,6 +39,103 @@ class ChatInput(BaseModel):
     history_log: list[tuple[str, str]]
     exchange_count: int
     tts_model: str = "aura-2-thalia-en"
+
+async def chat_stream_websocket(client: genai.Client, input_data: Dict, websocket: WebSocket):
+    selected_topic = next(
+        (topic for topic in roleplay_topics if topic["topic_name"] == input_data["selected_topic_name"]),
+        None
+    )
+    if not selected_topic:
+        await websocket.send_text(f"❌ Topic '{input_data['selected_topic_name']}' not found.")
+        return
+
+    system_instruction = prompt.format(topic_name=input_data["selected_topic_name"])
+    config = types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=-1),
+        response_mime_type="text/plain",
+        system_instruction=[types.Part.from_text(text=system_instruction)],
+    )
+
+    exchange_count = input_data.get("exchange_count", 0)
+    history_log = input_data.get("history_log", [])
+    user_input = input_data.get("user_input", "")
+    model = input_data.get("tts_model", "aura-2-thalia-en")
+
+    # First exchange: kickoff
+    if exchange_count == 0:
+        contents = [
+            types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=selected_topic["message"])]
+            )
+        ]
+    else:
+        contents = []
+        for role, msg in history_log[-2:]:
+            role_ = "user" if role == "user" else "model"
+            contents.append(types.Content(role=role_, parts=[types.Part.from_text(text=msg)]))
+        contents.append(types.Content(role="user", parts=[types.Part.from_text(text=user_input)]))
+
+    last_bot_response = ""
+
+    try:
+        for chunk in client.models.generate_content_stream(
+            model="gemini-2.5-pro", contents=contents, config=config
+        ):
+            if chunk.text:
+                last_bot_response += chunk.text
+                await websocket.send_text(chunk.text)
+    except Exception as e:
+        await websocket.send_text(f"\n❌ Error: {e}")
+        return
+
+    # Summarize if enough turns
+
+async def summarize_conversation(
+    client,
+    history_log: List[Tuple[str, str]],
+    user_input: str = "",
+    model_name: str = "gemini-2.5-pro"
+) -> str:
+    # Construct full summary input
+    summary_input = "\n".join(
+        f"{r.capitalize()}: {msg}" for r, msg in history_log + ([("user", user_input)] if user_input else [])
+    )
+
+    summary_prompt = f"""
+You are an English tutor. The following is a conversation between you and a student. Based on the full conversation history below, summarize the session and give feedback on the user's English language skills. 
+First, say thank you to the user for the conversation and summarize the main points discussed.
+Highlight their strengths, point out areas for improvement, and suggest what they can focus on next.
+
+Also ask if they have any questions about what was discussed, and end the session with a friendly goodbye encouraging them to keep practicing.
+
+Conversation history:
+{summary_input}
+    """.strip()
+
+    summary_contents = [
+        types.Content(role="user", parts=[types.Part.from_text(text=summary_prompt)])
+    ]
+
+    config = types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=-1),
+        response_mime_type="text/plain"
+    )
+
+    # Collect response from Gemini
+    full_summary = ""
+    try:
+        for chunk in client.models.generate_content_stream(
+            model=model_name,
+            contents=summary_contents,
+            config=config
+        ):
+            if chunk.text:
+                full_summary += chunk.text
+    except Exception as e:
+        raise RuntimeError(f"Gemini summarization error: {e}")
+
+    return full_summary
 
 def chat_stream(client: genai.Client, input_data: dict) -> Generator[str, None, None]:
     selected_topic = next(
