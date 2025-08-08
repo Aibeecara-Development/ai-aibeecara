@@ -34,7 +34,11 @@ Stream AI-generated response based on selected roleplay topic and conversation h
 ```
 
 **Output:**
-plain text
+```json
+{
+  "response": "That's a great start to your day! After brushing your teeth, what do you usually do next?"
+}
+```
 
 ### 2. `/ws/chat/` (WebSocket)
 
