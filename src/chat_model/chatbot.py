@@ -97,9 +97,11 @@ async def summarize_conversation(
     user_input: str = "",
     model_name: str = "gemini-2.5-pro"
 ) -> str:
-    # Construct full summary input
+    """Summarize a conversation with Gemini without streaming."""
+
     summary_input = "\n".join(
-        f"{r.capitalize()}: {msg}" for r, msg in history_log + ([("user", user_input)] if user_input else [])
+        f"{r.capitalize()}: {msg}"
+        for r, msg in history_log + ([("user", user_input)] if user_input else [])
     )
 
     summary_prompt = f"""
@@ -122,29 +124,23 @@ Conversation history:
         response_mime_type="text/plain"
     )
 
-    # Collect response from Gemini
-    full_summary = ""
     try:
-        for chunk in client.models.generate_content_stream(
+        response = client.models.generate_content(
             model=model_name,
             contents=summary_contents,
             config=config
-        ):
-            if chunk.text:
-                full_summary += chunk.text
+        )
+        return response.candidates[0].content.parts[0].text
     except Exception as e:
         raise RuntimeError(f"Gemini summarization error: {e}")
 
-    return full_summary
-
-def chat_stream(client: genai.Client, input_data: dict) -> Generator[str, None, None]:
+async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
     selected_topic = next(
         (topic for topic in roleplay_topics if topic["topic_name"] == input_data["selected_topic_name"]),
         None
     )
     if not selected_topic:
-        yield f"❌ Topic '{input_data['selected_topic_name']}' not found."
-        return
+        return f"❌ Topic '{input_data['selected_topic_name']}' not found."
 
     system_instruction = prompt.format(topic_name=input_data["selected_topic_name"])
     config = types.GenerateContentConfig(
@@ -175,62 +171,16 @@ def chat_stream(client: genai.Client, input_data: dict) -> Generator[str, None, 
     last_bot_response = ""
 
     try:
+        # Collect entire response into a string instead of yielding
         for chunk in client.models.generate_content_stream(
             model="gemini-2.5-pro", contents=contents, config=config
         ):
             if chunk.text:
                 last_bot_response += chunk.text
-                yield chunk.text
     except Exception as e:
-        yield f"\n❌ Error: {e}"
-        return
+        return f"\n❌ Error: {e}"
 
-    # TTS output
-    # transform_speech(
-    #     f"data/audio/output_{exchange_count+1}_{model}.wav",
-    #     last_bot_response,
-    #     model=model
-    # )
-
-    # Summarize after 7 turns
-    if exchange_count + 1 >= 7:
-        yield "\n\n📚 Gemini summary:\n"
-        summary_input = "\n".join(f"{r.capitalize()}: {msg}" for r, msg in history_log + [("user", user_input), ("bot", last_bot_response)])
-        summary_prompt = f"""
-You are an English tutor. The following is a conversation between you and a student. Based on the full conversation history below, summarize the session and give feedback on the user's English language skills. 
-First, say thank you to the user for the conversation and summarize the main points discussed.
-Highlight their strengths, point out areas for improvement, and suggest what they can focus on next.
-
-Also ask if they have any questions about what was discussed, and end the session with a friendly goodbye encouraging them to keep practicing.
-
-Conversation history:
-{summary_input}
-        """.strip()
-
-        try:
-            summary_contents = [
-                types.Content(role="user", parts=[types.Part.from_text(text=summary_prompt)])
-            ]
-            for chunk in client.models.generate_content_stream(
-                model="gemini-2.5-pro",
-                contents=summary_contents,
-                config=config
-            ):
-                if chunk.text:
-                    yield chunk.text
-            user_message = ""
-            user_message_array = []
-            for role, message in history_log:
-                if role == "user":
-                    user_message_array.append(message)
-
-            for message in user_message_array[-(exchange_count - 1):]:
-                user_message += message + " "
-
-            # Evaluate transcription
-            score = evaluate_transcription(user_message)
-        except Exception as e:
-            yield f"\n❌ Error during summary: {e}"
+    return last_bot_response
 
 
 

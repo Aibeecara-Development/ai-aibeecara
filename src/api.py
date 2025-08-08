@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-from chat_model.chatbot import chat_stream, chat_stream_websocket, summarize_conversation
+from chat_model.chatbot import chat_api_sync, chat_stream_websocket, summarize_conversation
 from audio_processing.transcriber import transcribe_audio_api
 from chat_model.text_to_speech import generate_tts_wav_api
 from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
@@ -39,11 +39,32 @@ def mock_stream_response(user_input):
         time.sleep(0.2)
 
 @app.post("/chat/")
-def chat_endpoint(input: ChatInput):
-    return StreamingResponse(
-        chat_stream(client, input.model_dump()),
-        media_type="text/plain"
-    )
+async def chat_endpoint(input: ChatInput):
+    response_text = chat_api_sync(client, input.model_dump())
+    return {"response": response_text}
+
+@app.post("/chat/summary")
+async def summary_endpoint(
+    input: ChatInput,
+):
+    """Generate a conversation summary as a REST API."""
+    history_log = input.history_log
+    user_input = input.user_input
+
+    try:
+        summary_text = await summarize_conversation(
+            client=client,
+            history_log=history_log,
+            user_input=user_input
+        )
+        return {
+            "summary": summary_text
+        }
+    except Exception as e:
+        return JSONResponse(
+            content={"error": str(e)},
+            status_code=500
+        )
 
 @app.websocket("/ws/chat/")
 async def websocket_chat_endpoint(websocket: WebSocket):
