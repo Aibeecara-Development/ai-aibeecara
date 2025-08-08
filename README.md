@@ -34,7 +34,7 @@ Stream AI-generated response based on selected roleplay topic and conversation h
 ```
 
 **Output:**
-`StreamingResponse` of plain text chunks
+plain text
 
 ### 2. `/ws/chat/` (WebSocket)
 
