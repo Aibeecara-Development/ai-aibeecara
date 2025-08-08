@@ -8,6 +8,7 @@ from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 import time
+import requests
 from chat_model.scoring.score_model import (evaluate_pause, evaluate_repetition, evaluate_transcription,
                                             evaluate_vocabulary, evaluate_vocabulary_cefr)
 
@@ -28,6 +29,9 @@ class TTSInput(BaseModel):
     accent: str = "american"
     gender: str = "feminine"
     speed: float = 1.0
+
+class AudioURLInput(BaseModel):
+    audio_url: str
 
 class EvaluationInput(BaseModel):
     history_log: list[tuple[str, str]]
@@ -96,9 +100,14 @@ async def websocket_summary_endpoint(websocket: WebSocket):
 
 
 @app.post("/transcribe/")
-async def transcribe_endpoint(file: UploadFile = File(...)):
+async def transcribe_endpoint(input_data: AudioURLInput):
     try:
-        audio_data = await file.read()
+        # Download audio file
+        resp = requests.get(input_data.audio_url, timeout=30)
+        resp.raise_for_status()
+        audio_data = resp.content
+
+        # Transcribe
         response, transcript = transcribe_audio_api(audio_data)
 
         # Evaluate pause
