@@ -1,1 +1,1 @@
-from .score_model import evaluate_transcription, evaluate_pause, evaluate_repetition, evaluate_vocabulary
+from .score_model import evaluate_transcription, evaluate_pause, evaluate_repetition, evaluate_vocabulary, evaluate_vocabulary_cefr

@@ -146,6 +146,8 @@ Performs grammar evaluation of user's conversation based on chat history.
 **Output:**
 ```json
 {
+   "original message": "original user transcript",
+   "corrected_transcript": "corrected user transcript",
   "evaluation_score": 0.73,
    "vocabulary_score": 0.8
 }

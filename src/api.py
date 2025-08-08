@@ -8,7 +8,8 @@ from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 import time
-from chat_model.scoring.score_model import evaluate_pause, evaluate_repetition, evaluate_transcription, evaluate_vocabulary
+from chat_model.scoring.score_model import (evaluate_pause, evaluate_repetition, evaluate_transcription,
+                                            evaluate_vocabulary, evaluate_vocabulary_cefr)
 
 load_dotenv()
 app = FastAPI()
@@ -131,9 +132,12 @@ def evaluate_grammar(input: EvaluationInput):
     user_messages = " ".join(
         msg for role, msg in input.history_log[-(input.exchange_count * 2):] if role == "user"
     )
-    grammar_score = evaluate_transcription(user_messages)
-    vocabulary_score = evaluate_vocabulary(user_messages)
-    return {"evaluation_score": grammar_score, "vocabulary_score": vocabulary_score}
+    grammar_score, corrected_transcript = evaluate_transcription(user_messages)
+    vocabulary_score = evaluate_vocabulary_cefr(user_messages)
+    return {"original message": user_messages,
+            "corrected_transcript": corrected_transcript,
+            "evaluation_score": grammar_score,
+            "vocabulary_score": vocabulary_score}
 
 
 

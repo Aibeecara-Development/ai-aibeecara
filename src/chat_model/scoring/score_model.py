@@ -1,8 +1,11 @@
 from jiwer import wer
 from happytransformer import HappyTextToText, TTSettings
 from lexicalrichness import LexicalRichness
+from transformers import pipeline
 
+# TODO: These models can be deployed on future APIs
 happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
+cefr_classifier = pipeline("text-classification", model="AbdulSami/bert-base-cased-cefr")
 
 def evaluate_transcription(transcription):
     """Evaluate the transcription for grammar issues."""
@@ -17,11 +20,13 @@ def evaluate_transcription(transcription):
 
     print(result.text)
 
+    corrected_text = result.text
+
     transcription_score = 1 - wer_score
 
     print(transcription_score)
 
-    return transcription_score
+    return transcription_score, corrected_text
 
 def evaluate_vocabulary(transcription):
     lex = LexicalRichness(transcription)
@@ -32,6 +37,12 @@ def evaluate_vocabulary(transcription):
         mtld_score += 0.3
     print(f"Vocabulary score: {mtld_score:.2f}")
     return mtld_score
+
+def evaluate_vocabulary_cefr(transcription):
+    """Evaluate the vocabulary of the transcription based on CEFR levels."""
+    cefr_prediction = cefr_classifier(transcription)
+    print(f"CEFR vocabulary score: {cefr_prediction:.2f}")
+    return cefr_prediction
 
 def evaluate_pause(deepgram_response):
     words = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
