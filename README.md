@@ -88,7 +88,7 @@ Transcribes uploaded audio and evaluates for pauses and repetition.
 Form file upload (multipart/form-data) with key: file.
 ```json
 {
-  "file": "<audio_file>"
+  "audio_url": "<audio_url>"
 }
 ```
 
