@@ -1,5 +1,6 @@
 from jiwer import wer
 from happytransformer import HappyTextToText, TTSettings
+from lexicalrichness import LexicalRichness
 
 happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
 
@@ -22,6 +23,15 @@ def evaluate_transcription(transcription):
 
     return transcription_score
 
+def evaluate_vocabulary(transcription):
+    lex = LexicalRichness(transcription)
+    mtld_score = lex.mtld(threshold=0.72) * 0.01  # Scale to a 0-1 range
+    if mtld_score + 0.3 > 1:
+        mtld_score = 1.0
+    else:
+        mtld_score += 0.3
+    print(f"Vocabulary score: {mtld_score:.2f}")
+    return mtld_score
 
 def evaluate_pause(deepgram_response):
     words = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]

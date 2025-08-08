@@ -8,7 +8,7 @@ from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 import time
-from chat_model.scoring.score_model import evaluate_pause, evaluate_repetition, evaluate_transcription
+from chat_model.scoring.score_model import evaluate_pause, evaluate_repetition, evaluate_transcription, evaluate_vocabulary
 
 load_dotenv()
 app = FastAPI()
@@ -116,12 +116,13 @@ async def chat_tts(input: TTSInput):
 
 # Retrieve the history log and exchange count from the POST request of /chat
 @app.post("/evaluate/")
-def evaluate_endpoint(input: EvaluationInput):
+def evaluate_grammar(input: EvaluationInput):
     user_messages = " ".join(
         msg for role, msg in input.history_log[-(input.exchange_count * 2):] if role == "user"
     )
-    score = evaluate_transcription(user_messages)
-    return {"evaluation_score": score}
+    grammar_score = evaluate_transcription(user_messages)
+    vocabulary_score = evaluate_vocabulary(user_messages)
+    return {"evaluation_score": grammar_score, "vocabulary_score": vocabulary_score}
 
 
 

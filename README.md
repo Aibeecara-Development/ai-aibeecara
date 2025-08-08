@@ -142,7 +142,8 @@ Performs grammar evaluation of user's conversation based on chat history.
 **Output:**
 ```json
 {
-  "evaluation_score": 0.73
+  "evaluation_score": 0.73,
+   "vocabulary_score": 0.8
 }
 ```
 
