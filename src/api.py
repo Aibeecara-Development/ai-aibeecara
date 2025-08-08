@@ -39,32 +39,22 @@ def mock_stream_response(user_input):
         time.sleep(0.2)
 
 @app.post("/chat/")
-async def chat_endpoint(input: ChatInput):
-    response_text = chat_api_sync(client, input.model_dump())
+async def chat_endpoint(chat_input: ChatInput):
+    response_text = await chat_api_sync(client, chat_input.model_dump())
     return {"response": response_text}
 
 @app.post("/chat/summary")
-async def summary_endpoint(
-    input: ChatInput,
-):
+async def summary_endpoint(chat_input: ChatInput):
     """Generate a conversation summary as a REST API."""
-    history_log = input.history_log
-    user_input = input.user_input
-
     try:
         summary_text = await summarize_conversation(
             client=client,
-            history_log=history_log,
-            user_input=user_input
+            history_log=chat_input.history_log,
+            user_input=chat_input.user_input
         )
-        return {
-            "summary": summary_text
-        }
+        return {"summary": summary_text}
     except Exception as e:
-        return JSONResponse(
-            content={"error": str(e)},
-            status_code=500
-        )
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.websocket("/ws/chat/")
 async def websocket_chat_endpoint(websocket: WebSocket):
