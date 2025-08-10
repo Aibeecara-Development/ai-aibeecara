@@ -22,7 +22,7 @@ class ChatInput(BaseModel):
     user_input: str
     history_log: list[tuple[str, str]]
     exchange_count: int = 0
-    tts_model: str = "aura-2-thalia-en"
+    tts_model: str = "aura-2-amalthea-en"
 
 class TTSInput(BaseModel):
     text: str

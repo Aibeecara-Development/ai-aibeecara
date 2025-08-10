@@ -211,3 +211,14 @@ Performs grammar evaluation of user's conversation based on chat history.
 ### 1 Aug 2025
 - **Add TTS options**: Added extra options for text-to-speech (TTS) in the API such as gender, speed, and accent selection.
 - **Add conversation topics**: Implemented conversation topic prompts to enhance the chatbot's context awareness.
+
+### 3 Aug 2025
+- **Add evaluation endpoint**: Added an endpoint for evaluating grammar and vocabulary based on conversation history.
+- **Add websocket support**: Implemented WebSocket support for real-time chat interactions.
+
+### 8 Aug 2025
+- **Add vocabulary scoring**: Added vocabulary scoring to the evaluation endpoint to assess language proficiency.
+- **Add vocabulary endpoint**: Created a dedicated endpoint for vocabulary evaluation based on user input.
+
+### 10 Aug 2025
+- **Change TTS model**: Switched TTS model to aura-2-amalthea-en for better performance.

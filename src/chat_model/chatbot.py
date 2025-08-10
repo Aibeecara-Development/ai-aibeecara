@@ -38,7 +38,7 @@ class ChatInput(BaseModel):
     user_input: str
     history_log: list[tuple[str, str]]
     exchange_count: int
-    tts_model: str = "aura-2-thalia-en"
+    tts_model: str = "aura-2-amalthea-en"
 
 async def chat_stream_websocket(client: genai.Client, input_data: Dict, websocket: WebSocket):
     selected_topic = next(
@@ -59,7 +59,7 @@ async def chat_stream_websocket(client: genai.Client, input_data: Dict, websocke
     exchange_count = input_data.get("exchange_count", 0)
     history_log = input_data.get("history_log", [])
     user_input = input_data.get("user_input", "")
-    model = input_data.get("tts_model", "aura-2-thalia-en")
+    model = input_data.get("tts_model", "aura-2-amalthea-en")
 
     # First exchange: kickoff
     if exchange_count == 0:
@@ -152,7 +152,7 @@ async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
     exchange_count = input_data.get("exchange_count", 0)
     history_log = input_data.get("history_log", [])
     user_input = input_data.get("user_input", "")
-    model = input_data.get("tts_model", "aura-2-thalia-en")
+    model = input_data.get("tts_model", "aura-2-amalthea-en")
 
     if exchange_count == 0:
         contents = [

@@ -33,13 +33,13 @@ def generate_tts_wav_api(text: str, accent: str = "american", gender: str = "fem
 
     dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
 
-    model = "aura-2-thalia-en"
+    model = "aura-2-amalthea-en"
     if accent == "british" and gender == "feminine":
         model = "aura-2-draco-en"
     elif accent == "british" and gender == "masculine":
         model = "aura-2-pandora-en"
     elif accent == "american" and gender == "feminine":
-        model = "aura-2-thalia-en"
+        model = "aura-2-amalthea-en"
     elif accent == "american" and gender == "masculine":
         model = "aura-2-apollo-en"
 
@@ -70,7 +70,7 @@ def generate_tts_wav_api(text: str, accent: str = "american", gender: str = "fem
 
 
 
-def transform_speech(file_path, spoken_text, model="aura-2-thalia-en" ):
+def transform_speech(file_path, spoken_text, model="aura-2-amalthea-en" ):
     try:
         # Create a websocket connection to Deepgram
         dg_connection = deepgram.speak.websocket.v("1")
