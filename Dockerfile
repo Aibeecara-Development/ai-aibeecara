@@ -20,4 +20,4 @@ COPY --chown=araceebia:araceebia . .
 
 WORKDIR /app/src
 USER araceebia
-CMD ["python", "-m", "gunicorn", "api:app", "--workers", "2", "--worker-class", "uvicorn_worker.UvicornWorker", "--bind", "0.0.0.0:8000"]
+CMD ["python", "-m", "gunicorn", "api:app", "--worker-class", "uvicorn_worker.UvicornWorker", "--bind", "0.0.0.0:8000"]
