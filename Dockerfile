@@ -14,7 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
-RUN useradd --system araceebia && mkdir -p /home/araceebia/.config && chown -R araceebia:araceebia /home/araceebia/.config
+RUN useradd --system araceebia && mkdir /home/araceebia && chown araceebia:araceebia /home/araceebia
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --chown=araceebia:araceebia . .
 
