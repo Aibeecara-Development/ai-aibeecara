@@ -14,7 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
-RUN useradd -M -s /bin/false -c '' -p '!' araceebia
+RUN useradd -s /bin/false -c '' -p '!' araceebia
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --chown=araceebia:araceebia . .
 
