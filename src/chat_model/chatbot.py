@@ -182,7 +182,36 @@ async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
 
     return last_bot_response
 
+async def custom_topic_validation(client: genai.Client, selected_topic_name: str) -> str:
+    prompt = f"""
+You are a classifier that determines if a given topic is a BROAD, conversation-worthy topic 
+or a NARROW, object-specific topic.
 
+BROAD: Topics that are large in scope, can be discussed in many contexts, and often involve ideas, fields, or domains.
+NARROW: Topics that are specific physical objects or highly limited in scope.
+
+Examples:
+- "politics" → BROAD
+- "geography" → BROAD
+- "climate change" → BROAD
+- "table" → NARROW
+- "chair" → NARROW
+- "HDMI cable" → NARROW
+- "chess" → BROAD
+- "basketball" → BROAD
+- "toothbrush" → NARROW
+
+Classify the following topic and respond with only BROAD or NARROW:
+
+Topic: {selected_topic_name}
+"""
+
+    response = await client.models.generate_content(
+        model="gemini-pro",
+        contents=prompt
+    )
+
+    return response.text.strip()
 
 # e.g. selected_topic_name = "Daily Routine", "Travel", "Work", "Hobbies and Interests"
 

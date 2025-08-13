@@ -7,6 +7,7 @@ from pronunciation_model.pronunciation_model import (regular_score_pronunciation
                                                      transcribe_phonemes, generate_text_reference)
 from google import genai
 from jiwer import wer
+from chat_model.emotion_detection import detect_emotion
 
 load_dotenv()
 gemini_key = os.getenv('GEMINI_KEY')
@@ -77,4 +78,4 @@ if __name__ == "__main__":
             # print(f"Pronunciation score for {file_name}: {score}")
     # reference_dir = os.path.join("data", "transcript_ref")
     # process_audio_files(audio_dir, reference_dir)
-    generate_chatbot(client, "General", model="aura-2-thalia-en")
+    print(detect_emotion("Yes I heard abt the f bombs! That has to be why. Thanks for your reply:) until then hubby and I will anxiously wait 😝"))
