@@ -127,7 +127,43 @@ Generates a TTS `.wav` file from input text using Deepgram TTS with adjustable v
 **Output:**
 Returns `.wav` audio file response (`audio/wav`).
 
-### 6. `/evaluate/` (POST)
+### 6. `/chat/topic/` (POST)
+**Description:**
+Validates whether or not a topic is valid (BROAD or NARROW).
+
+**Input:**
+```json
+{
+  "selected_topic_name": "Daily Routine"
+}
+```
+
+**Output:**
+```json
+{
+  "validation": "BROAD"
+}
+```
+
+#### 7. `/chat/emotion/` (POST)
+**Description:**
+Detects emotion from what the chatbot says and returns the detected emotion.
+
+**Input:**
+```json
+{
+  "model_output": "I am feeling very happy today!"
+}
+```
+
+**Output:**
+```json
+{
+  "emotion": "happy"
+}
+```
+
+### 8. `/evaluate/` (POST)
 
 **Description:**  
 Performs grammar evaluation of user's conversation based on chat history.
@@ -222,3 +258,7 @@ Performs grammar evaluation of user's conversation based on chat history.
 
 ### 10 Aug 2025
 - **Change TTS model**: Switched TTS model to aura-2-amalthea-en for better performance.
+
+### 13 Aug 2025
+- **Add emotion detection**: Implemented emotion detection based on chatbot responses to enhance user interaction.
+- **Add topic validation**: Added an endpoint to validate conversation topics as either broad or narrow.

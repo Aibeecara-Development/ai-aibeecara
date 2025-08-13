@@ -41,6 +41,9 @@ class EvaluationInput(BaseModel):
 class CustomTopicInput(BaseModel):
     selected_topic_name: str
 
+class ChatEmotion(BaseModel):
+    model_output: str
+
 def mock_stream_response(user_input):
     reply = f"{user_input}"
     for word in reply.split():
