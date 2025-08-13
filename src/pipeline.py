@@ -1,6 +1,6 @@
 from audio_processing.transcriber import process_audio, transcribe_deepgram, transcribe_whisper
 from chat_model.grammar_corrector import correct_transcript
-from chat_model.chatbot import generate_chatbot
+from chat_model.chatbot import custom_topic_validation
 import os
 from dotenv import load_dotenv
 from pronunciation_model.pronunciation_model import (regular_score_pronunciation, evaluate_pronunciation,
@@ -78,4 +78,6 @@ if __name__ == "__main__":
             # print(f"Pronunciation score for {file_name}: {score}")
     # reference_dir = os.path.join("data", "transcript_ref")
     # process_audio_files(audio_dir, reference_dir)
-    print(detect_emotion("Yes I heard abt the f bombs! That has to be why. Thanks for your reply:) until then hubby and I will anxiously wait 😝"))
+    # print(detect_emotion("Yes I heard abt the f bombs! That has to be why. Thanks for your reply:) until then hubby and I will anxiously wait 😝"))
+    print(f"The topic of curtain is {custom_topic_validation(client, "curtain")}")
+    print(f"The topic of walkie-talkie is {custom_topic_validation(client, "walkie-talkie")}")

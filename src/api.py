@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-from chat_model.chatbot import chat_api_sync, chat_stream_websocket, summarize_conversation
+from chat_model.chatbot import chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation
+from chat_model.emotion_detection import detect_emotion
 from audio_processing.transcriber import transcribe_audio_api
 from chat_model.text_to_speech import generate_tts_wav_api
 from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
@@ -36,6 +37,9 @@ class AudioURLInput(BaseModel):
 class EvaluationInput(BaseModel):
     history_log: list[tuple[str, str]]
     exchange_count: int
+
+class CustomTopicInput(BaseModel):
+    selected_topic_name: str
 
 def mock_stream_response(user_input):
     reply = f"{user_input}"
@@ -132,6 +136,23 @@ async def chat_tts(input: TTSInput):
     try:
         wav_path = generate_tts_wav_api(input.text, accent=input.accent, gender=input.gender, speed=input.speed)
         return FileResponse(wav_path, media_type="audio/wav", filename="response.wav")
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+## Custom topic validation endpoint --> Either between BROAD or NARROW
+@app.post("/chat/topic/")
+async def chat_topic(input: CustomTopicInput):
+    try:
+        message = custom_topic_validation(client, input.selected_topic_name)
+        return {"validation": message}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/chat/emotion/")
+async def chat_emotion(input: ChatInput):
+    try:
+        emotion = detect_emotion(input.user_input)
+        return {"emotion": emotion}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 

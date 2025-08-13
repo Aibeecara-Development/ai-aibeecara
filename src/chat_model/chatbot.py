@@ -182,7 +182,7 @@ async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
 
     return last_bot_response
 
-async def custom_topic_validation(client: genai.Client, selected_topic_name: str) -> str:
+def custom_topic_validation(client: genai.Client, selected_topic_name: str) -> str:
     prompt = f"""
 You are a classifier that determines if a given topic is a BROAD, conversation-worthy topic 
 or a NARROW, object-specific topic.
@@ -206,8 +206,8 @@ Classify the following topic and respond with only BROAD or NARROW:
 Topic: {selected_topic_name}
 """
 
-    response = await client.models.generate_content(
-        model="gemini-pro",
+    response = client.models.generate_content(
+        model="gemini-2.5-pro",
         contents=prompt
     )
 
