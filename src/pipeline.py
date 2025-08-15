@@ -3,8 +3,6 @@ from chat_model.grammar_corrector import correct_transcript
 from chat_model.chatbot import custom_topic_validation
 import os
 from dotenv import load_dotenv
-from pronunciation_model.pronunciation_model import (regular_score_pronunciation, evaluate_pronunciation,
-                                                     transcribe_phonemes, generate_text_reference)
 from google import genai
 from jiwer import wer
 from chat_model.emotion_detection import detect_emotion
