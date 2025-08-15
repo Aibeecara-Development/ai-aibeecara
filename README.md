@@ -15,6 +15,9 @@
    ```
    As well as `.env` files with `GEMINI_KEY` and `DEEPGRAM_KEY` in `evaluation/grammar-correction` and `evaluation/speech-recognition` respectively if needed.
 
+# IMPORTANT: 
+Make sure to increment the exchange_count in the request body for each new user input in the chatbot.
+
 ## API Endpoints
 
 ### 1. `/chat/` (POST)

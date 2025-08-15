@@ -9,6 +9,27 @@ load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
 deepgram = DeepgramClient(deepgram_key)
 
+async def transcription_task(ws, chat_queue, deepgram_client):
+    """
+    Streams audio from WebSocket to Deepgram transcription
+    and queues complete sentences to chat_queue.
+    """
+    async with deepgram_client.listen.websocket.v("1") as dg_ws:
+
+        @dg_ws.on("transcript_received")
+        async def handle_transcript(data):
+            transcript_text = data["channel"]["alternatives"][0]["transcript"]
+            if transcript_text.strip().endswith((".", "?", "!")):
+                await chat_queue.put(transcript_text)
+
+        try:
+            while True:
+                audio_chunk = await ws.receive_bytes()
+                await dg_ws.send(audio_chunk)
+        except:
+            pass
+
+
 def transcribe_audio_api(file_bytes: bytes):
     """Transcribes audio using Deepgram and returns the response and transcript text."""
     try:
