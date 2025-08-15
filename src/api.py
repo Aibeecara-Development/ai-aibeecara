@@ -167,7 +167,7 @@ def evaluate_grammar(input: EvaluationInput):
     )
     grammar_score, corrected_transcript = evaluate_transcription(user_messages)
     vocabulary_score = evaluate_vocabulary_cefr(user_messages)
-    return {"original message": user_messages,
+    return {"original_message": user_messages,
             "corrected_transcript": corrected_transcript,
             "evaluation_score": grammar_score,
             "vocabulary_score": vocabulary_score}
