@@ -41,7 +41,7 @@ def evaluate_vocabulary(transcription):
 def evaluate_vocabulary_cefr(transcription):
     """Evaluate the vocabulary of the transcription based on CEFR levels."""
     cefr_prediction = cefr_classifier(transcription)
-    print(f"CEFR vocabulary score: {cefr_prediction:.2f}")
+    print(f"CEFR vocabulary score: {cefr_prediction}")
     return cefr_prediction
 
 def evaluate_pause(deepgram_response):
