@@ -185,7 +185,7 @@ Performs grammar evaluation of user's conversation based on chat history.
    "original message": "original user transcript",
    "corrected_transcript": "corrected user transcript",
   "evaluation_score": 0.73,
-   "vocabulary_score": 0.8
+   "vocabulary_score": "A1"
 }
 ```
 
