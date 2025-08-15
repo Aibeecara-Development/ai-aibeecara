@@ -1,1 +1,1 @@
-from .pronunciation_model import (phonemize_text, pronunciation_to_phonemes, count_phoneme_error_rate)
+from .pronunciation_model import (phonemize_text, pronunciation_to_phonemes, count_pronunciation_score)
