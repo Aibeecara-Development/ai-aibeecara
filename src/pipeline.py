@@ -1,12 +1,11 @@
 from audio_processing.transcriber import process_audio, transcribe_deepgram, transcribe_whisper
 from chat_model.grammar_corrector import correct_transcript
-from chat_model.chatbot import generate_chatbot
+from chat_model.chatbot import custom_topic_validation
 import os
 from dotenv import load_dotenv
-from pronunciation_model.pronunciation_model import (regular_score_pronunciation, evaluate_pronunciation,
-                                                     transcribe_phonemes, generate_text_reference)
 from google import genai
 from jiwer import wer
+from chat_model.emotion_detection import detect_emotion
 
 load_dotenv()
 gemini_key = os.getenv('GEMINI_KEY')
@@ -77,4 +76,8 @@ if __name__ == "__main__":
             # print(f"Pronunciation score for {file_name}: {score}")
     # reference_dir = os.path.join("data", "transcript_ref")
     # process_audio_files(audio_dir, reference_dir)
-    generate_chatbot(client, "General", model="aura-2-thalia-en")
+    print(detect_emotion("Thanks for your reply, I will wait for your response."))
+    print(detect_emotion("I am so sorry."))
+    print(detect_emotion("Can you please repeat that?"))
+    # print(f"The topic of curtain is {custom_topic_validation(client, "curtain")}")
+    # print(f"The topic of walkie-talkie is {custom_topic_validation(client, "walkie-talkie")}")

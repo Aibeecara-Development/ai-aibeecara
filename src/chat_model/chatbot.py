@@ -40,6 +40,83 @@ class ChatInput(BaseModel):
     exchange_count: int
     tts_model: str = "aura-2-amalthea-en"
 
+async def chat_task(ws, chat_queue, client, tts_stream, input_data: ChatInput):
+    """
+    Processes messages from chat_queue,
+    streams Gemini responses, and sends TTS audio to WebSocket in real-time.
+    Mimics chat_api_sync logic for topic/history handling.
+    """
+    while True:
+        user_text = await chat_queue.get()
+        if user_text is None:
+            break
+
+        # --- Select topic ---
+        selected_topic = next(
+            (topic for topic in roleplay_topics if topic["topic_name"] == input_data["selected_topic_name"]),
+            None
+        )
+        if not selected_topic:
+            await ws.send_text(f"❌ Topic '{input_data['selected_topic_name']}' not found.")
+            continue
+
+        # --- System instruction setup ---
+        system_instruction = prompt.format(topic_name=input_data["selected_topic_name"])
+        system_instruction_content = types.Content(
+            role="system",
+            parts=[types.Part.from_text(text=system_instruction)]
+        )
+        config = types.GenerateContentConfig(
+            thinking_config=types.ThinkingConfig(thinking_budget=-1),
+            response_mime_type="text/plain",
+            system_instruction=system_instruction_content,
+        )
+
+        # --- Conversation history ---
+        exchange_count = input_data.get("exchange_count", 0)
+        history_log = input_data.get("history_log", [])
+
+        if exchange_count == 0:
+            # First message: send topic's initial message
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[types.Part.from_text(text=selected_topic["message"])]
+                )
+            ]
+        else:
+            # Include last exchanges + new user message
+            contents = []
+            for role, msg in history_log[-2:]:
+                role_ = "user" if role == "user" else "model"
+                contents.append(types.Content(role=role_, parts=[types.Part.from_text(text=msg)]))
+            contents.append(types.Content(role="user", parts=[types.Part.from_text(text=user_text)]))
+
+        # --- Stream Gemini output + TTS in real-time ---
+        try:
+            stream = client.models.generate_content_stream(
+                model="gemini-2.5-pro",
+                contents=contents,
+                config=config
+            )
+
+            async for final_text in _stream_text_to_tts(ws, stream, tts_stream):
+                pass  # Already handled inside helper
+
+        except Exception as e:
+            await ws.send_text(f"\n❌ Error: {e}")
+
+
+async def _stream_text_to_tts(ws, stream, tts_stream):
+    """
+    Helper to iterate over Gemini chunks and send TTS audio in real-time.
+    """
+    for chunk in stream:
+        if chunk.text:
+            async for audio_chunk in tts_stream(chunk.text):
+                await ws.send_bytes(audio_chunk)
+            yield chunk.text
+
 async def chat_stream_websocket(client: genai.Client, input_data: Dict, websocket: WebSocket):
     selected_topic = next(
         (topic for topic in roleplay_topics if topic["topic_name"] == input_data["selected_topic_name"]),
@@ -59,7 +136,6 @@ async def chat_stream_websocket(client: genai.Client, input_data: Dict, websocke
     exchange_count = input_data.get("exchange_count", 0)
     history_log = input_data.get("history_log", [])
     user_input = input_data.get("user_input", "")
-    model = input_data.get("tts_model", "aura-2-amalthea-en")
 
     # First exchange: kickoff
     if exchange_count == 0:
@@ -143,10 +219,14 @@ async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
         return f"❌ Topic '{input_data['selected_topic_name']}' not found."
 
     system_instruction = prompt.format(topic_name=input_data["selected_topic_name"])
+    system_instruction_content = types.Content(
+        role="system",
+        parts=[types.Part.from_text(text=system_instruction)]
+    )
     config = types.GenerateContentConfig(
         thinking_config=types.ThinkingConfig(thinking_budget=-1),
         response_mime_type="text/plain",
-        system_instruction=[types.Part.from_text(text=system_instruction)],
+        system_instruction=system_instruction_content,
     )
 
     exchange_count = input_data.get("exchange_count", 0)
@@ -182,7 +262,36 @@ async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
 
     return last_bot_response
 
+def custom_topic_validation(client: genai.Client, selected_topic_name: str) -> str:
+    prompt = f"""
+You are a classifier that determines if a given topic is a BROAD, conversation-worthy topic 
+or a NARROW, object-specific topic.
 
+BROAD: Topics that are large in scope, can be discussed in many contexts, and often involve ideas, fields, or domains.
+NARROW: Topics that are specific physical objects or highly limited in scope.
+
+Examples:
+- "politics" → BROAD
+- "geography" → BROAD
+- "climate change" → BROAD
+- "table" → NARROW
+- "chair" → NARROW
+- "HDMI cable" → NARROW
+- "chess" → BROAD
+- "basketball" → BROAD
+- "toothbrush" → NARROW
+
+Classify the following topic and respond with only BROAD or NARROW:
+
+Topic: {selected_topic_name}
+"""
+
+    response = client.models.generate_content(
+        model="gemini-2.5-pro",
+        contents=prompt
+    )
+
+    return response.text.strip()
 
 # e.g. selected_topic_name = "Daily Routine", "Travel", "Work", "Hobbies and Interests"
 
