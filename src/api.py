@@ -1,14 +1,20 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-from chat_model.chatbot import chat_api_sync, chat_stream_websocket, summarize_conversation
-from audio_processing.transcriber import transcribe_audio_api
-from chat_model.text_to_speech import generate_tts_wav_api
+from chat_model.chatbot import chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation, chat_task
+from chat_model.emotion_detection import detect_emotion
+from audio_processing.transcriber import transcribe_audio_api, transcription_task
+from chat_model.text_to_speech import generate_tts_wav_api, tts_stream
 from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 import time
 import requests
+from deepgram import DeepgramClient
+import asyncio
+import tempfile
+import wave
+import deepgram
 from chat_model.scoring.score_model import (evaluate_pause, evaluate_repetition, evaluate_transcription,
                                             evaluate_vocabulary, evaluate_vocabulary_cefr)
 
@@ -16,6 +22,9 @@ load_dotenv()
 app = FastAPI()
 gemini_key = os.getenv("GEMINI_KEY")
 client = genai.Client(api_key=gemini_key)
+load_dotenv()
+deepgram_key = os.getenv('DEEPGRAM_KEY')
+deepgram_client = DeepgramClient(deepgram_key)
 
 class ChatInput(BaseModel):
     selected_topic_name: str = "General"
@@ -36,6 +45,12 @@ class AudioURLInput(BaseModel):
 class EvaluationInput(BaseModel):
     history_log: list[tuple[str, str]]
     exchange_count: int
+
+class CustomTopicInput(BaseModel):
+    selected_topic_name: str
+
+class ChatEmotion(BaseModel):
+    model_output: str
 
 def mock_stream_response(user_input):
     reply = f"{user_input}"
@@ -135,6 +150,23 @@ async def chat_tts(input: TTSInput):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+## Custom topic validation endpoint --> Either between BROAD or NARROW
+@app.post("/chat/topic/")
+async def chat_topic(input: CustomTopicInput):
+    try:
+        message = custom_topic_validation(client, input.selected_topic_name)
+        return {"validation": message}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/chat/emotion/")
+async def chat_emotion(input: ChatInput):
+    try:
+        emotion = detect_emotion(input.user_input)
+        return {"emotion": emotion}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
 # Retrieve the history log and exchange count from the POST request of /chat
 @app.post("/evaluate/")
 def evaluate_grammar(input: EvaluationInput):
@@ -143,10 +175,23 @@ def evaluate_grammar(input: EvaluationInput):
     )
     grammar_score, corrected_transcript = evaluate_transcription(user_messages)
     vocabulary_score = evaluate_vocabulary_cefr(user_messages)
-    return {"original message": user_messages,
+    return {"original_message": user_messages,
             "corrected_transcript": corrected_transcript,
             "evaluation_score": grammar_score,
             "vocabulary_score": vocabulary_score}
+
+@app.websocket("/conversation_stream/")
+async def conversation_stream(ws: WebSocket, input: ChatInput):
+    await ws.accept()
+
+    chat_queue = asyncio.Queue()
+
+    await asyncio.gather(
+        transcription_task(ws, chat_queue, deepgram_client),
+        chat_task(ws, chat_queue, client, lambda text: tts_stream(text, deepgram_client), input_data=input)
+    )
+
+    await chat_queue.put(None)
 
 
 
