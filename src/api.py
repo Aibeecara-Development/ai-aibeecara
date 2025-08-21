@@ -17,6 +17,7 @@ import wave
 import deepgram
 from chat_model.scoring.score_model import (evaluate_pause, evaluate_repetition, evaluate_transcription,
                                             evaluate_vocabulary, evaluate_vocabulary_cefr)
+from chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
 app = FastAPI()
@@ -174,7 +175,7 @@ def evaluate_grammar(input: EvaluationInput):
         msg for role, msg in input.history_log[-(input.exchange_count * 2):] if role == "user"
     )
     grammar_score, corrected_transcript = evaluate_transcription(user_messages)
-    vocabulary_score = evaluate_vocabulary_cefr(user_messages)
+    vocabulary_score = evaluate_cefr_stats(user_messages)
     return {"original_message": user_messages,
             "corrected_transcript": corrected_transcript,
             "evaluation_score": grammar_score,
