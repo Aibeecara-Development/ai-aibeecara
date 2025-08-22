@@ -240,7 +240,25 @@ Translates user input text to Indonesian using Google Translate API.
 }
 ```
 
-### 10. `/conversation_stream/` (WebSocket)
+### 10. `/hint/` (POST)
+**Description:**
+Provides hints for the user based on the last chatbot output.
+
+**Input:**
+```json
+{
+  "response": "Do you like pizza with pineapple?"
+}
+```
+
+**Output:**
+```json
+{
+  "hint": "I thought it was meh."
+}
+```
+
+### 11. `/conversation_stream/` (WebSocket)
 **Description:**
 Streams conversation history and AI responses in real-time.
 

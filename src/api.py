@@ -1,12 +1,13 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-from chat_model.chatbot import chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation, chat_task
+from chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation,
+                                chat_task, hint_to_users)
 from chat_model.emotion_detection import detect_emotion
 from audio_processing.transcriber import transcribe_audio_api, transcription_task
 from chat_model.text_to_speech import generate_tts_wav_api, tts_stream
-from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 import time
 import requests
@@ -45,6 +46,9 @@ class AudioURLInput(BaseModel):
 class EvaluationInput(BaseModel):
     history_log: list[tuple[str, str]]
     exchange_count: int
+
+class ChatbotOutput(BaseModel):
+    response: str
 
 class CustomTopicInput(BaseModel):
     selected_topic_name: str
@@ -186,6 +190,14 @@ def translate_text(input: ChatInput):
     try:
         translated_text = GoogleTranslator(source='auto', target='id').translate(input.user_input)
         return {"translated_text": translated_text}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/hint/")
+def hint_endpoint(input: ChatbotOutput):
+    try:
+        hint = hint_to_users(client, input.response)
+        return {"hint": hint}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
