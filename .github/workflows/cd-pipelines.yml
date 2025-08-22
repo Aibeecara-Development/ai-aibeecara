@@ -7,8 +7,10 @@ on:
 env:
   PROJECT_ID: ${{ github.ref == 'refs/heads/main' && 'aibeecara-production' || 'aibeecara-staging' }}
   REGION: 'asia-southeast2'
+  INSTANCE_NAME: 'ai-service'
   SERVICE: ${{ github.ref == 'refs/heads/main' && 'aibeecara' || 'staging' }}
   WORKLOAD_IDENTITY_PROVIDER: ${{ github.ref == 'refs/heads/main' && 'projects/962402779544/locations/global/workloadIdentityPools/github/providers/aibeecara-prod-repo' || 'projects/718931632338/locations/global/workloadIdentityPools/github/providers/aibeecara-staging-repo' }}
+  # SERVICE_ACCOUNT: ${{ github.ref == 'refs/heads/main' && '962402779544-compute@developer.gserviceaccount.com' || '718931632338-compute@developer.gserviceaccount.com' }}
 
 jobs:
   build-and-run:
@@ -42,9 +44,16 @@ jobs:
           docker build --tag "${DOCKER_TAG}" .
           docker push "${DOCKER_TAG}"
 
-      # - name: 'Deploy to Cloud Run'
-      #   uses: 'google-github-actions/deploy-cloudrun@v2.7.3'
-      #   with:
-      #     service: 'ai'
-      #     region: '${{ env.REGION }}'
-      #     image: '${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/ai:${{ github.sha }}'
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2.1.12'
+        with:
+          workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
+          # service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2.2.0'
+
+      - name: 'Update Container Image'
+        run: gcloud compute instances update-container ${{ env.INSTANCE_NAME }} \
+            --project=${{ env.PROJECT_ID }} \
+            --container-image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/ai:${{ github.sha }}
