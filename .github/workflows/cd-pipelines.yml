@@ -1,0 +1,55 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ "main", "staging" ]
+
+env:
+  PROJECT_ID: ${{ github.ref == 'refs/heads/main' && 'aibeecara-production' || 'aibeecara-staging' }}
+  REGISTRY_NAME: ${{ github.ref == 'refs/heads/main' && 'aibeecara' || 'staging' }}
+  REGISTRY_REGION: 'asia-southeast2'
+  INSTANCE_NAME: 'ai-service'
+  INSTANCE_ZONE: 'asia-southeast1-b'
+  WORKLOAD_IDENTITY_PROVIDER: ${{ github.ref == 'refs/heads/main' && 'projects/962402779544/locations/global/workloadIdentityPools/github/providers/aibeecara-prod-repo' || 'projects/718931632338/locations/global/workloadIdentityPools/github/providers/aibeecara-staging-repo' }}
+
+jobs:
+  build-and-run:
+    runs-on: 'ubuntu-latest'
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@v4.2.2'
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2.1.12'
+        with:
+          project_id: '${{ env.PROJECT_ID }}'
+          workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
+        
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2.2.0'
+
+      - name: 'Docker Auth'
+        uses: 'docker/login-action@v3.4.0'
+        with:
+          username: 'oauth2accesstoken'
+          password: '${{ steps.auth.outputs.auth_token }}'
+          registry: '${{ env.REGISTRY_REGION }}-docker.pkg.dev'
+
+      - name: 'Build and Push Container'
+        run: |-
+          DOCKER_TAG="${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REGISTRY_NAME }}/ai:${{ github.sha }}"
+          docker build --tag "${DOCKER_TAG}" .
+          docker push "${DOCKER_TAG}"
+
+      - name: 'Update Container Image'
+        run: |-
+              gcloud compute instances update-container ${{ env.INSTANCE_NAME }} \
+              --project=${{ env.PROJECT_ID }} \
+              --zone=${{ env.INSTANCE_ZONE }} \
+              --container-image=${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REGISTRY_NAME }}/ai:${{ github.sha }}
