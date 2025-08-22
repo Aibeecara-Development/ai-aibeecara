@@ -6,9 +6,10 @@ on:
 
 env:
   PROJECT_ID: ${{ github.ref == 'refs/heads/main' && 'aibeecara-production' || 'aibeecara-staging' }}
-  REGION: 'asia-southeast2'
+  REGISTRY_NAME: ${{ github.ref == 'refs/heads/main' && 'aibeecara' || 'staging' }}
+  REGISTRY_REGION: 'asia-southeast2'
   INSTANCE_NAME: 'ai-service'
-  SERVICE: ${{ github.ref == 'refs/heads/main' && 'aibeecara' || 'staging' }}
+  INSTANCE_ZONE: 'asia-southeast1-b'
   WORKLOAD_IDENTITY_PROVIDER: ${{ github.ref == 'refs/heads/main' && 'projects/962402779544/locations/global/workloadIdentityPools/github/providers/aibeecara-prod-repo' || 'projects/718931632338/locations/global/workloadIdentityPools/github/providers/aibeecara-staging-repo' }}
   # SERVICE_ACCOUNT: ${{ github.ref == 'refs/heads/main' && '962402779544-compute@developer.gserviceaccount.com' || '718931632338-compute@developer.gserviceaccount.com' }}
 
@@ -36,11 +37,11 @@ jobs:
         with:
           username: 'oauth2accesstoken'
           password: '${{ steps.auth.outputs.auth_token }}'
-          registry: '${{ env.REGION }}-docker.pkg.dev'
+          registry: '${{ env.REGISTRY_REGION }}-docker.pkg.dev'
 
       - name: 'Build and Push Container'
         run: |-
-          DOCKER_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/ai:${{ github.sha }}"
+          DOCKER_TAG="${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REGISTRY_NAME }}/ai:${{ github.sha }}"
           docker build --tag "${DOCKER_TAG}" .
           docker push "${DOCKER_TAG}"
 
@@ -58,4 +59,5 @@ jobs:
         run: |
               gcloud compute instances update-container ${{ env.INSTANCE_NAME }} \
               --project=${{ env.PROJECT_ID }} \
-              --container-image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/ai:${{ github.sha }}
+              --zone=${{ env.INSTANCE_ZONE }} \
+              --container-image=${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REGISTRY_NAME }}/ai:${{ github.sha }}
