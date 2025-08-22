@@ -47,8 +47,8 @@ jobs:
       - name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v2.1.12'
         with:
-          workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
           project_id: '${{ env.PROJECT_ID }}'
+          workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
           # service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
       - name: 'Set up Cloud SDK'
@@ -56,5 +56,5 @@ jobs:
 
       - name: 'Update Container Image'
         run: gcloud compute instances update-container ${{ env.INSTANCE_NAME }} \
-            --project=${{ env.PROJECT_ID }} \
-            --container-image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/ai:${{ github.sha }}
+            --project ${{ env.PROJECT_ID }} \
+            --container-image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/ai:${{ github.sha }}
