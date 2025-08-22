@@ -11,7 +11,6 @@ env:
   INSTANCE_NAME: 'ai-service'
   INSTANCE_ZONE: 'asia-southeast1-b'
   WORKLOAD_IDENTITY_PROVIDER: ${{ github.ref == 'refs/heads/main' && 'projects/962402779544/locations/global/workloadIdentityPools/github/providers/aibeecara-prod-repo' || 'projects/718931632338/locations/global/workloadIdentityPools/github/providers/aibeecara-staging-repo' }}
-  # SERVICE_ACCOUNT: ${{ github.ref == 'refs/heads/main' && '962402779544-compute@developer.gserviceaccount.com' || '718931632338-compute@developer.gserviceaccount.com' }}
 
 jobs:
   build-and-run:
@@ -50,13 +49,12 @@ jobs:
         with:
           project_id: '${{ env.PROJECT_ID }}'
           workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
-          # service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2.2.0'
 
       - name: 'Update Container Image'
-        run: |
+        run: |-
               gcloud compute instances update-container ${{ env.INSTANCE_NAME }} \
               --project=${{ env.PROJECT_ID }} \
               --zone=${{ env.INSTANCE_ZONE }} \
