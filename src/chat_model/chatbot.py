@@ -293,6 +293,44 @@ Topic: {selected_topic_name}
 
     return response.text.strip()
 
+def hint_to_users(client: genai.Client, chatbot_message: str) -> str:
+    hint_prompt = f"""
+        You are helping learners practice English conversation.
+        Given a chatbot’s last message, generate a hint for the learner that includes:
+        
+        Example you can say – a short, natural sentence they could reply with.
+        
+        Context – explain briefly why this response works and how it keeps the conversation going.
+        
+        Keep the format clean and consistent like this:
+        
+        Example you can say
+        I’d love to try it with cheese and mushrooms.
+        
+        Context
+        This works because it adds a fun twist to the conversation by suggesting flavors. It also invites the other person to share more about their food preferences.
+        
+        Another Example
+        
+        Example you can say
+        That sounds exciting! Have you done it before?
+        
+        Context
+        This works because it shows enthusiasm while also asking a follow-up question, encouraging a deeper conversation.
+        
+        Generate example you can say and context for the following chatbot message:
+        {chatbot_message}
+        """
+
+    response = client.models.generate_content(
+        model="gemini-2.5-pro",
+        contents=prompt
+    )
+
+    return response.text.strip()
+
+
+
 # e.g. selected_topic_name = "Daily Routine", "Travel", "Work", "Hobbies and Interests"
 
 def generate_chatbot(client, selected_topic_name, model):

@@ -1,20 +1,20 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-from chat_model.chatbot import chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation, chat_task
+from chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation,
+                                chat_task, hint_to_users)
 from chat_model.emotion_detection import detect_emotion
 from audio_processing.transcriber import transcribe_audio_api, transcription_task
 from chat_model.text_to_speech import generate_tts_wav_api, tts_stream
-from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 import time
 import requests
 from deepgram import DeepgramClient
 import asyncio
-import tempfile
-import wave
-import deepgram
+from deep_translator import GoogleTranslator
+from pronunciation_model.pronunciation_model import evaluate_pronunciation
 from chat_model.scoring.score_model import (evaluate_pause, evaluate_repetition, evaluate_transcription,
                                             evaluate_vocabulary, evaluate_vocabulary_cefr)
 from chat_model.scoring.vocab import evaluate_cefr_stats
@@ -46,6 +46,9 @@ class AudioURLInput(BaseModel):
 class EvaluationInput(BaseModel):
     history_log: list[tuple[str, str]]
     exchange_count: int
+
+class ChatbotOutput(BaseModel):
+    response: str
 
 class CustomTopicInput(BaseModel):
     selected_topic_name: str
@@ -163,7 +166,7 @@ async def chat_topic(input: CustomTopicInput):
 @app.post("/chat/emotion/")
 async def chat_emotion(input: ChatInput):
     try:
-        emotion = detect_emotion(input.user_input)
+        emotion = await asyncio.to_thread(detect_emotion(input.user_input))
         return {"emotion": emotion}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
@@ -181,6 +184,26 @@ def evaluate_grammar(input: EvaluationInput):
             "evaluation_score": grammar_score,
             "vocabulary_score": vocabulary_score}
 
+# is it async or not?
+@app.post("/translate/")
+def translate_text(input: ChatInput):
+    try:
+        translated_text = GoogleTranslator(source='auto', target='id').translate(input.user_input)
+        return {"translated_text": translated_text}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/hint/")
+def hint_endpoint(input: ChatbotOutput):
+    try:
+        hint = hint_to_users(client, input.response)
+        return {"hint": hint}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+# Don't forget to integrate the evaluate_transcription, evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
+# evaluate_repetition functions into this websocket API so that it can be evaluated every time the user
+# makes an input. In the end, the evaluation results are averaged and returned to the user.
 @app.websocket("/conversation_stream/")
 async def conversation_stream(ws: WebSocket, input: ChatInput):
     await ws.accept()

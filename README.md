@@ -218,7 +218,47 @@ Performs grammar evaluation of user's conversation based on chat history.
 }
 ```
 
-### 9. `/conversation_stream/` (WebSocket)
+### 9. `/translate/` (POST)
+**Description:**
+Translates user input text to Indonesian using Google Translate API.
+
+**Input:**
+```json
+{
+  "selected_topic_name": "Daily Routine",
+  "user_input": "I usually wake up at 7am and brush my teeth.",
+  "history_log": [["user", "I wake up early"], ["bot", "Good job! What do you do after?"]],
+  "exchange_count": 1,
+  "tts_model": "aura-2-thalia-en"
+}
+```
+
+**Output:**
+```json
+{
+  "translated_text": "Saya biasanya bangun jam 7 pagi dan menyikat gigi."
+}
+```
+
+### 10. `/hint/` (POST)
+**Description:**
+Provides hints for the user based on the last chatbot output.
+
+**Input:**
+```json
+{
+  "response": "Do you like pizza with pineapple?"
+}
+```
+
+**Output:**
+```json
+{
+  "hint": "I thought it was meh."
+}
+```
+
+### 11. `/conversation_stream/` (WebSocket)
 **Description:**
 Streams conversation history and AI responses in real-time.
 
@@ -268,6 +308,14 @@ Streams conversation history and AI responses in real-time.
 - Friendship and Achievements
 - Global Issues
 - Custom User Topic
+
+## TO-DO:
+- # Don't forget to integrate the evaluate_transcription, evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
+# evaluate_repetition functions into this websocket API so that it can be evaluated every time the user
+# makes an input. In the end, the evaluation results are averaged and returned to the user.
+
+- # Don't forget to set API functions like translate_text, chat_topic, chat_emotion, etc into async or non-async 
+# functions.
 
 ## Logs
 
