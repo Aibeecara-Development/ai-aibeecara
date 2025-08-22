@@ -55,6 +55,7 @@ jobs:
         uses: 'google-github-actions/setup-gcloud@v2.2.0'
 
       - name: 'Update Container Image'
-        run: gcloud compute instances update-container ${{ env.INSTANCE_NAME }} \
-            --project ${{ env.PROJECT_ID }} \
-            --container-image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/ai:${{ github.sha }}
+        run: |
+              gcloud compute instances update-container ${{ env.INSTANCE_NAME }} \
+              --project=${{ env.PROJECT_ID }} \
+              --container-image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/ai:${{ github.sha }}
