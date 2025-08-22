@@ -185,11 +185,61 @@ Performs grammar evaluation of user's conversation based on chat history.
 **Output:**
 ```json
 {
-   "original_message": "original user transcript",
-   "corrected_transcript": "corrected user transcript",
-  "evaluation_score": 0.73,
-   "vocabulary_score": "A1"
+  "original_message": "user's message here",
+   "corrected_transcript": "corrected message here",
+   "evaluation_score": 0.78,
+   "vocabulary_score": {
+     "statistics": {
+       "A1": 69,
+       "A2": 34,
+       "B1": 23,
+       "B2": 11,
+       "C1": 2,
+       "C2": 7
+     },
+     "tokens": [
+       {
+         "word": "going",
+         "lemma": "go",
+         "pos": "VERB",
+         "level_score": 1.23,
+         "cefr": "A1"
+       },
+       {
+         "word": "university",
+         "lemma": "university",
+         "pos": "NOUN",
+         "level_score": 3.41,
+         "cefr": "B1"
+       },
+        ...
+     ]
 }
+}
+```
+
+### 9. `/conversation_stream/` (WebSocket)
+**Description:**
+Streams conversation history and AI responses in real-time.
+
+**Input:**
+```json
+{
+  "selected_topic_name": "Daily Routine",
+  "user_input": "I usually wake up at 7am and brush my teeth.",
+  "history_log": [["user", "I wake up early"], ["bot", "Good job! What do you do after?"]],
+  "exchange_count": 1,
+  "tts_model": "aura-2-thalia-en"
+}
+```
+
+**Output:**
+```json
+{"type": "transcript", "text": "Hello, I want to travel."},
+{"type": "chat", "text": "Great! Where do you want to go?"},
+{"type": "tts", "audio": "<base64...>"},
+{"type": "tts", "audio": "<base64...>"},
+{"type": "tts", "audio": "<base64...>"},
 ```
 
 ## Setup & Run Instructions
