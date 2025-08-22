@@ -44,6 +44,19 @@ def count_pronunciation_score(hypothesis, reference):
 
     return 1 - per_score
 
+def evaluate_pronunciation(input_audio, reference_text):
+    """Evaluate pronunciation by comparing audio to reference text."""
+    # Transcribe the audio to phonemes
+    hypothesis_phoneme = pronunciation_to_phonemes(input_audio)
+
+    # Phonemize the reference text
+    reference_phoneme = phonemize_text(reference_text)
+
+    # Count the pronunciation score
+    score = count_pronunciation_score(hypothesis_phoneme, reference_phoneme)
+
+    return score
+
 # def evaluate_pronunciation(input_audio, reference_text):
 #     current_dir = os.path.dirname(os.path.abspath(__file__))
 #     repo_path = os.path.join(current_dir, "Goodness-of-Pronounciation-main")
