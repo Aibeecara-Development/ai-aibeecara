@@ -22,7 +22,7 @@ ensure_spacy_model("en_core_web_sm")
 
 NLP = spacy.load("en_core_web_sm", exclude = ['parser', 'ner'])
 
-DATABASE_FILENAME = '../data/word_cefr_minified.db'
+DATABASE_FILENAME = '/app/src/chat_model/data/word_cefr_minified.db'
 
 conn = sqlite3.connect(DATABASE_FILENAME)
 cursor = conn.cursor()
