@@ -1,6 +1,10 @@
 from transformers import pipeline
 
-classifier = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None)
+emotion_classifier = pipeline(
+    task="text-classification",
+    model="SamLowe/roberta-base-go_emotions",
+    top_k=None
+)
 
 confusion_category = [
     "confusion"
@@ -24,7 +28,7 @@ sad_category = [
 
 def detect_emotion(text: str):
     sentence = [text]
-    results = classifier(sentence)
+    results = emotion_classifier(sentence)
     print(results)
     emotion = results[0][0]['label']
     if emotion in confusion_category:
