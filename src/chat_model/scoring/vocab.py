@@ -5,6 +5,13 @@ import os
 import json
 from spacy.util import is_package
 
+import nltk
+from nltk.corpus import wordnet as wn
+
+# Make sure WordNet is downloaded
+nltk.download("wordnet")
+nltk.download("omw-1.4")
+
 def ensure_spacy_model(model_name: str = "en_core_web_sm"):
     try:
         # Try loading the model
@@ -190,10 +197,10 @@ full of fascinating stories waiting to be discovered.
 
 # tokens = custom_tokenize_text(input_text)
 # level_tokens = get_levels_tokens(tokens)
-
+#
 # print("Text length:", len(input_text))
 # print("Total tokens:", len(tokens))
-
+#
 # counter = 0
 # print(f'{"WORD".ljust(26)}\t{"LEMMA".ljust(26)}\tPOS\tLEVEL\tCEFR')
 # print('-' * 85)
@@ -206,6 +213,54 @@ full of fascinating stories waiting to be discovered.
 #         counter += 1
 #         if counter >= 200:
 #             break
+
+def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> list[dict]:
+    """Fetch synonyms of a word, assign CEFR levels, and provide WordNet example sentences."""
+    from nltk.corpus import wordnet as wn
+
+    # Map POS tag to WordNet POS
+    pos_map = {
+        "NOUN": wn.NOUN,
+        "VERB": wn.VERB,
+        "ADJ": wn.ADJ,
+        "ADV": wn.ADV
+    }
+    wn_pos = pos_map.get(pos.upper(), wn.NOUN)
+
+    synonyms = {}
+    for synset in wn.synsets(word, pos=wn_pos):
+        examples = synset.examples()  # WordNet example sentences
+        for lemma in synset.lemmas():
+            synonym = lemma.name().replace("_", " ")
+            if synonym.lower() != word.lower():
+                if synonym not in synonyms:
+                    synonyms[synonym] = examples  # store example list (may be empty)
+
+    # If no synonyms found → return early
+    if not synonyms:
+        return []
+
+    # Convert to token structure
+    synonym_tokens = [(syn, syn, pos) for syn in synonyms.keys()]
+    if not synonym_tokens:  # safeguard before DB
+        return []
+
+    # Get CEFR levels for synonyms
+    level_tokens = get_levels_tokens_func(synonym_tokens)
+
+    results = []
+    for syn, lemma, pos_tag, level in level_tokens:
+        examples = synonyms.get(syn, [])
+        example_sentence = examples[0] if examples else f"No example available for '{syn}'."
+        results.append({
+            "synonym": syn,
+            "pos": pos_tag,
+            "level_score": round(level, 2),
+            "cefr": DIFFICULTY_MAPPING_REVERSE.get(round(level), "NA"),
+            "example_sentence": example_sentence
+        })
+
+    return results
 
 
 def evaluate_cefr_stats(input_text: str) -> dict:
@@ -222,19 +277,28 @@ def evaluate_cefr_stats(input_text: str) -> dict:
         results["statistics"][DIFFICULTY_MAPPING_REVERSE.get(i)] = difficulty_levels_count_unique[i - 1]
 
     # --- Token details ---
-    counter = 0
+    synonym_counter = 0  # count how many words got synonyms
     for token in level_tokens:
         word, lemma, pos, level = token
         cefr = DIFFICULTY_MAPPING_REVERSE.get(round(level))
+
         if pos != '_SP':
-            results["tokens"].append({
+            token_entry = {
                 "word": word,
                 "lemma": lemma,
                 "pos": pos,
                 "level_score": round(level, 2),
                 "cefr": cefr
-            })
+            }
 
-            counter += 1
+            # only add synonyms if POS = JJ and limit to 5 words
+            if (pos == "VBG" or pos == "VBN" or pos == "NNS" or pos == "NN") and synonym_counter < 5:
+                token_entry["synonyms"] = get_synonyms_with_levels(word, pos, get_levels_tokens)
+                synonym_counter += 1
+
+            results["tokens"].append(token_entry)
 
     return results
+
+cefr_stats = evaluate_cefr_stats(input_text)
+print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))
