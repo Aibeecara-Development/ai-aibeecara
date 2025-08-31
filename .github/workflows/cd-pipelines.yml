@@ -8,7 +8,7 @@ env:
   PROJECT_ID: ${{ github.ref == 'refs/heads/main' && 'aibeecara-production' || 'aibeecara-staging' }}
   REGISTRY_NAME: ${{ github.ref == 'refs/heads/main' && 'aibeecara' || 'staging' }}
   REGISTRY_REGION: 'asia-southeast2'
-  INSTANCE_NAME: 'ai-service'
+  INSTANCE_NAME: 'main-service'
   INSTANCE_ZONE: 'asia-southeast1-b'
   WORKLOAD_IDENTITY_PROVIDER: ${{ github.ref == 'refs/heads/main' && 'projects/962402779544/locations/global/workloadIdentityPools/github/providers/aibeecara-prod-repo' || 'projects/718931632338/locations/global/workloadIdentityPools/github/providers/aibeecara-staging-repo' }}
 
@@ -30,9 +30,6 @@ jobs:
         with:
           project_id: '${{ env.PROJECT_ID }}'
           workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
-        
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2.2.0'
 
       - name: 'Docker Auth'
         uses: 'docker/login-action@v3.4.0'
