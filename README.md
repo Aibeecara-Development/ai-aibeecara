@@ -304,6 +304,10 @@ Streams conversation history and AI responses in real-time.
    cd src
    uvicorn src.api:app --reload
    ```
+# TTS Options Available:
+Default TTS model: `aura-2-amalthea-en` (american feminine)
+Accent TTS choices: `american`, `british`, `australian`
+Gender TTS choices: `masculine`, `feminine`
 
 ## Topics Available
 - General 

@@ -91,8 +91,8 @@ def generate_tts_wav_api(
         model = "aura-2-pandora-en"
     elif accent == "american" and gender == "feminine":
         model = "aura-2-amalthea-en"
-    elif accent == "american" and gender == "masculine":
-        model = "aura-2-apollo-en"
+    elif accent == "australian":
+        model = "aura-2-athena-en"
 
     options = SpeakWSOptions(
         model=model,
