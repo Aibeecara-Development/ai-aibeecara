@@ -1,11 +1,10 @@
 import spacy
 import sqlite3
-import lemminflect
 import os
 import json
 from spacy.util import is_package
 import nltk
-from llama_cpp import Llama
+from phonemizer import phonemize
 
 def ensure_wordnet_downloaded():
     try:
@@ -72,7 +71,7 @@ def custom_tokenize_text(text: str) -> list[tuple[str, str, str]]:
     for token in doc:
         word = token.text.lower().strip()
         word_pos = token.tag_
-        proposed_lemma = token._.lemma().lower()
+        proposed_lemma = token.lemma_.lower()
 
         abbreviation_form = ABBREVIATION_MAPPING.get(word)
         if abbreviation_form:
@@ -272,9 +271,17 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
     for syn, lemma, pos_tag, level in level_tokens:
         examples = synonyms.get(syn, [])
         example_sentence = examples[0] if examples else f"No example available for '{syn}'."
+        phonemes = phonemize(
+            syn,
+            language='en-us',
+            backend='espeak',
+            strip=True,
+            preserve_punctuation=True,
+        )
         results.append({
             "synonym": syn,
             "pos": pos_tag,
+            "pronunciation": phonemes,
             "level_score": round(level, 2),
             "cefr": DIFFICULTY_MAPPING_REVERSE.get(round(level), "NA"),
             "example_sentence": example_sentence
@@ -320,5 +327,5 @@ def evaluate_cefr_stats(input_text: str) -> dict:
 
     return results
 
-# cefr_stats = evaluate_cefr_stats(input_text)
-# print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))
+cefr_stats = evaluate_cefr_stats(input_text)
+print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))
