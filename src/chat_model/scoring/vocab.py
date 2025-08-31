@@ -4,13 +4,20 @@ import lemminflect
 import os
 import json
 from spacy.util import is_package
-
 import nltk
-from nltk.corpus import wordnet as wn
+from llama_cpp import Llama
 
-# Make sure WordNet is downloaded
-nltk.download("wordnet")
-nltk.download("omw-1.4")
+def ensure_wordnet_downloaded():
+    try:
+        nltk.data.find("corpora/wordnet")
+        nltk.data.find("corpora/omw-1.4")
+        print("WordNet already downloaded ✅")
+    except LookupError:
+        print("Downloading WordNet resources...")
+        nltk.download("wordnet")
+        nltk.download("omw-1.4")
+
+ensure_wordnet_downloaded()
 
 def ensure_spacy_model(model_name: str = "en_core_web_sm"):
     try:
@@ -229,12 +236,25 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
 
     synonyms = {}
     for synset in wn.synsets(word, pos=wn_pos):
-        examples = synset.examples()  # WordNet example sentences
         for lemma in synset.lemmas():
             synonym = lemma.name().replace("_", " ")
-            if synonym.lower() != word.lower():
-                if synonym not in synonyms:
-                    synonyms[synonym] = examples  # store example list (may be empty)
+            if synonym.lower() == word.lower():
+                continue
+
+            # Collect only examples that *contain the synonym*
+            valid_examples = []
+            for ex in synset.examples():
+                # Replace original word with synonym if present
+                if word.lower() in ex.lower():
+                    new_ex = ex.lower().replace(word.lower(), synonym)
+                    if synonym.lower() in new_ex:  # ensure synonym appears
+                        valid_examples.append(new_ex)
+
+            # Only keep synonym if there’s at least one valid example
+            if valid_examples:
+                synonyms[synonym] = valid_examples
+                print(f"Found synonym: {synonym} for word: {word}")
+                print(f"Examples: {valid_examples}")
 
     # If no synonyms found → return early
     if not synonyms:
