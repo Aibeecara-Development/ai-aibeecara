@@ -23,6 +23,7 @@ Make sure to increment the exchange_count in the request body for each new user 
 
 ## API Endpoints
 
+<!--
 ### 1. `/chat/` (POST)
 
 **Description:**  
@@ -130,8 +131,10 @@ Generates a TTS `.wav` file from input text using Deepgram TTS with adjustable v
 }
 ```
 
+
 **Output:**
 Returns `.wav` audio file response (`audio/wav`).
+ -->
 
 ### 6. `/chat/topic/` (POST)
 **Description:**
