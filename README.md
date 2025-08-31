@@ -6,7 +6,10 @@
 
 2. **Install dependencies using requirements.txt**
 
-3. **Set up environment variables**:
+3. Download the LLAMA 2 model here: https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_S.gguf
+4. Place the downloaded model in the `src/data/` directory.
+
+5. **Set up environment variables**:
    Ensure that you have the necessary API keys for Deepgram and Gemini. You can create a `.env` file in the `src` 
    directory with the following content:
    ```
@@ -20,6 +23,7 @@ Make sure to increment the exchange_count in the request body for each new user 
 
 ## API Endpoints
 
+<!--
 ### 1. `/chat/` (POST)
 
 **Description:**  
@@ -127,8 +131,10 @@ Generates a TTS `.wav` file from input text using Deepgram TTS with adjustable v
 }
 ```
 
+
 **Output:**
 Returns `.wav` audio file response (`audio/wav`).
+ -->
 
 ### 6. `/chat/topic/` (POST)
 **Description:**
@@ -298,6 +304,10 @@ Streams conversation history and AI responses in real-time.
    cd src
    uvicorn src.api:app --reload
    ```
+# TTS Options Available:
+Default TTS model: `aura-2-amalthea-en` (american feminine)
+Accent TTS choices: `american`, `british`, `australian`
+Gender TTS choices: `masculine`, `feminine`
 
 ## Topics Available
 - General 
