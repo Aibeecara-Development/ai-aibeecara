@@ -320,5 +320,5 @@ def evaluate_cefr_stats(input_text: str) -> dict:
 
     return results
 
-cefr_stats = evaluate_cefr_stats(input_text)
-print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))
+# cefr_stats = evaluate_cefr_stats(input_text)
+# print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))

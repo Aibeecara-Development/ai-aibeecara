@@ -1,5 +1,5 @@
 from google.genai import types
-from .data.dialogue_template import roleplay_topics
+from src.chat_model.data.dialogue_template import roleplay_topics
 from pydantic import BaseModel
 from google import genai
 from fastapi import WebSocket
@@ -263,7 +263,7 @@ async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
     return last_bot_response
 
 def custom_topic_validation(client: genai.Client, selected_topic_name: str) -> str:
-    prompt = f"""
+    validation_prompt = f"""
 You are a classifier that determines if a given topic is a BROAD, conversation-worthy topic 
 or a NARROW, object-specific topic.
 
@@ -288,7 +288,7 @@ Topic: {selected_topic_name}
 
     response = client.models.generate_content(
         model="gemini-2.5-pro",
-        contents=prompt
+        contents=validation_prompt
     )
 
     return response.text.strip()
@@ -324,7 +324,7 @@ def hint_to_users(client: genai.Client, chatbot_message: str) -> str:
 
     response = client.models.generate_content(
         model="gemini-2.5-pro",
-        contents=prompt
+        contents=hint_prompt
     )
 
     return response.text.strip()
