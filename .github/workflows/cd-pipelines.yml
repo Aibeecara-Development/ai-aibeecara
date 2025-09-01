@@ -6,8 +6,7 @@ on:
 
 env:
   PROJECT_ID: ${{ github.ref == 'refs/heads/main' && 'aibeecara-production' || 'aibeecara-staging' }}
-  REGISTRY_NAME: ${{ github.ref == 'refs/heads/main' && 'aibeecara' || 'staging' }}
-  REGISTRY_REGION: 'asia-southeast2'
+  IMAGE_NAME: 'ai-service'
   INSTANCE_NAME: 'main-service'
   INSTANCE_ZONE: 'asia-southeast1-b'
   WORKLOAD_IDENTITY_PROVIDER: ${{ github.ref == 'refs/heads/main' && 'projects/962402779544/locations/global/workloadIdentityPools/github/providers/aibeecara-prod-repo' || 'projects/718931632338/locations/global/workloadIdentityPools/github/providers/aibeecara-staging-repo' }}
