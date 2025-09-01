@@ -51,6 +51,3 @@ jobs:
       uses: github/codeql-action/analyze@v3
       with:
         category: "/language:python"
-
-    - name : Show CodeQL Results
-      run: cat /home/runner/work/ai-aibeecara/results/python.sarif
