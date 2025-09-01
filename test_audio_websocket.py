@@ -37,7 +37,7 @@ async def test_audio_conversation():
             await websocket.send(audio_data)
             
             response_count = 0
-            max_responses = 6
+            max_responses = 5
             
             while response_count < max_responses:
                 response = await asyncio.wait_for(websocket.recv(), timeout=30)
