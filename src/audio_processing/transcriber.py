@@ -14,20 +14,41 @@ async def transcription_task(ws, chat_queue, deepgram_client):
     Streams audio from WebSocket to Deepgram transcription
     and queues complete sentences to chat_queue.
     """
-    async with deepgram_client.listen.websocket.v("1") as dg_ws:
-
-        @dg_ws.on("transcript_received")
+    try:
+        dg_connection = deepgram_client.listen.websocket.v("1")
+        
+        @dg_connection.on("transcript_received")
         async def handle_transcript(data):
-            transcript_text = data["channel"]["alternatives"][0]["transcript"]
-            if transcript_text.strip().endswith((".", "?", "!")):
-                await chat_queue.put(transcript_text)
+            try:
+                transcript_text = data["channel"]["alternatives"][0]["transcript"]
+                if transcript_text.strip().endswith((".", "?", "!")):
+                    await chat_queue.put(transcript_text)
+            except Exception as e:
+                print(f"Error handling transcript: {e}")
 
-        try:
-            while True:
-                audio_chunk = await ws.receive_bytes()
-                await dg_ws.send(audio_chunk)
-        except:
-            pass
+        @dg_connection.on("error")
+        async def handle_error(error):
+            print(f"Deepgram WebSocket error: {error}")
+
+        # Start the connection
+        if await dg_connection.start():
+            try:
+                while True:
+                    try:
+                        audio_chunk = await ws.receive_bytes()
+                        dg_connection.send(audio_chunk)
+                    except Exception as e:
+                        print(f"Error receiving audio chunk: {e}")
+                        break
+            finally:
+                await dg_connection.finish()
+        else:
+            print("Failed to start Deepgram connection")
+            await chat_queue.put("Error: Could not connect to Deepgram")
+            
+    except Exception as e:
+        print(f"Error in transcription_task: {e}")
+        await chat_queue.put(f"Transcription error: {str(e)}")
 
 
 def transcribe_audio_api(file_bytes: bytes):

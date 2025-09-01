@@ -8,6 +8,7 @@ from audio_processing.transcriber import transcribe_audio_api, transcription_tas
 from chat_model.text_to_speech import generate_tts_wav_api, tts_stream
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import time
 import requests
@@ -21,6 +22,16 @@ from chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
 gemini_key = os.getenv("GEMINI_KEY")
 client = genai.Client(api_key=gemini_key)
 load_dotenv()
@@ -201,21 +212,78 @@ def hint_endpoint(input: ChatbotOutput):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# Don't forget to integrate the evaluate_transcription, evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
-# evaluate_repetition functions into this websocket API so that it can be evaluated every time the user
-# makes an input. In the end, the evaluation results are averaged and returned to the user.
 @app.websocket("/conversation_stream/")
-async def conversation_stream(ws: WebSocket, input: ChatInput):
+async def conversation_stream(ws: WebSocket):
     await ws.accept()
+    
+    try:
+        await ws.send_text("🔗 Connected to conversation stream")
+        
+        config_data = await ws.receive_json()
+        
+        input_data = ChatInput(
+            selected_topic_name=config_data.get("selected_topic_name", "General"),
+            user_input=config_data.get("user_input", ""),
+            history_log=config_data.get("history_log", []),
+            exchange_count=config_data.get("exchange_count", 0),
+            tts_model=config_data.get("tts_model", "aura-2-amalthea-en")
+        )
 
-    chat_queue = asyncio.Queue()
+        await ws.send_text(f"Configuration received: Topic = {input_data.selected_topic_name}")
+        await ws.send_text("Ready to receive audio.")
 
-    await asyncio.gather(
-        transcription_task(ws, chat_queue, deepgram_client),
-        chat_task(ws, chat_queue, client, lambda text: tts_stream(text, deepgram_client), input_data=input)
-    )
-
-    await chat_queue.put(None)
-
-
-
+        while True:
+            try:
+                audio_data = await ws.receive_bytes()
+                
+                await ws.send_text("Transcribing audio...")
+                
+                try:
+                    response, transcript = transcribe_audio_api(audio_data)
+                    
+                    if not transcript.strip():
+                        await ws.send_text("❌ No speech detected in audio")
+                        continue
+                        
+                    await ws.send_text(f"Transcribed: {transcript}")
+                    
+                    input_data.user_input = transcript
+                    
+                    input_data.exchange_count = max(1, input_data.exchange_count)
+                    
+                    await ws.send_text("Generating response...")
+                    
+                    chat_response = await chat_api_sync(client, input_data.model_dump())
+                    
+                    await ws.send_text(f"Bot: {chat_response}")
+                    
+                    evaluation_result = {
+                        "transcript": transcript,
+                        "response": chat_response
+                    }
+                    
+                    await ws.send_text(f"📈 Evaluation: {evaluation_result}")
+                    
+                    input_data.history_log.append(("user", transcript))
+                    input_data.history_log.append(("assistant", chat_response))
+                    input_data.exchange_count += 1
+                    
+                except Exception as transcription_error:
+                    await ws.send_text(f"❌ Transcription error: {str(transcription_error)}")
+                    continue
+                    
+            except Exception as e:
+                if "receive_bytes" in str(e):
+                    await ws.send_text("⚠️  Please send audio data as binary, not text")
+                else:
+                    await ws.send_text(f"❌ Error processing audio: {str(e)}")
+                break
+        
+    except WebSocketDisconnect:
+        print("🔌 WebSocket disconnected")
+    except Exception as e:
+        try:
+            await ws.send_text(f"❌ Error: {str(e)}")
+        except:
+            pass
+        print(f"❌ Error in conversation_stream: {str(e)}")

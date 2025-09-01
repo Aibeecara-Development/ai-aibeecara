@@ -1,9 +1,9 @@
 from google.genai import types
-from src.chat_model.data.dialogue_template import roleplay_topics
+from chat_model.data.dialogue_template import roleplay_topics
 from pydantic import BaseModel
 from google import genai
 from fastapi import WebSocket
-from src.chat_model.scoring.score_model import evaluate_transcription
+from chat_model.scoring.score_model import evaluate_transcription
 from typing import Dict, List, Tuple
 # from ..pronunciation_model.pronunciation_model import g2p_from_user_history, transcribe_phonemes, score_pronunciation
 
@@ -53,15 +53,15 @@ async def chat_task(ws, chat_queue, client, tts_stream, input_data: ChatInput):
 
         # --- Select topic ---
         selected_topic = next(
-            (topic for topic in roleplay_topics if topic["topic_name"] == input_data["selected_topic_name"]),
+            (topic for topic in roleplay_topics if topic["topic_name"] == input_data.selected_topic_name),
             None
         )
         if not selected_topic:
-            await ws.send_text(f"❌ Topic '{input_data['selected_topic_name']}' not found.")
+            await ws.send_text(f"❌ Topic '{input_data.selected_topic_name}' not found.")
             continue
 
         # --- System instruction setup ---
-        system_instruction = prompt.format(topic_name=input_data["selected_topic_name"])
+        system_instruction = prompt.format(topic_name=input_data.selected_topic_name)
         system_instruction_content = types.Content(
             role="system",
             parts=[types.Part.from_text(text=system_instruction)]
@@ -73,8 +73,8 @@ async def chat_task(ws, chat_queue, client, tts_stream, input_data: ChatInput):
         )
 
         # --- Conversation history ---
-        exchange_count = input_data.get("exchange_count", 0)
-        history_log = input_data.get("history_log", [])
+        exchange_count = input_data.exchange_count
+        history_log = input_data.history_log
 
         if exchange_count == 0:
             # First message: send topic's initial message
@@ -234,7 +234,17 @@ async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
     user_input = input_data.get("user_input", "")
     model = input_data.get("tts_model", "aura-2-amalthea-en")
 
-    if exchange_count == 0:
+    if exchange_count == 0 and user_input.strip():
+        # Special case: if we have user_input but exchange_count is 0,
+        # treat it as the first user message instead of using topic's initial message
+        contents = [
+            types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=user_input)]
+            )
+        ]
+    elif exchange_count == 0:
+        # Normal case: use topic's initial message for first exchange
         contents = [
             types.Content(
                 role="user",

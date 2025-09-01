@@ -35,7 +35,7 @@ ensure_spacy_model("en_core_web_sm")
 
 NLP = spacy.load("en_core_web_sm", exclude = ['parser', 'ner'])
 
-DATABASE_FILENAME = '../data/word_cefr_minified.db'
+DATABASE_FILENAME = os.path.join(os.path.dirname(__file__), '..', 'data', 'word_cefr_minified.db')
 
 conn = sqlite3.connect(DATABASE_FILENAME)
 cursor = conn.cursor()
@@ -327,5 +327,5 @@ def evaluate_cefr_stats(input_text: str) -> dict:
 
     return results
 
-cefr_stats = evaluate_cefr_stats(input_text)
-print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))
+# cefr_stats = evaluate_cefr_stats(input_text)
+# print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))
