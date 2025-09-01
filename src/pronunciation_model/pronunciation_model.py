@@ -1,11 +1,11 @@
-import whisperx
-from g2p_en import G2p
-import subprocess
-import os
-import sys
 from pydub import AudioSegment
 from phonemizer import phonemize
 from transformers import pipeline
+import pandas as pd
+import numpy as np
+import os
+import random
+import soundfile as sf
 import jiwer
 
 # Load the model
@@ -156,17 +156,67 @@ def evaluate_pronunciation(input_audio, reference_text):
 #     return round((matched / total) * 100, 2) if total > 0 else 0.0
 
 
-if __name__ == "__main__":
-    # Example usage
-    input_audio = "data/2025_07_08_14_09_18.mp3"
-    hypothesis_phoneme = pronunciation_to_phonemes(input_audio)
-    print("Audio pronunciation to phonemes:")
-    print(hypothesis_phoneme)
-    reference_text = "and we want to highlight those and bring that to where we can have a supportive system in place so nutrient recycling our nutrients back on to the land to rejuvenate the soils that have been depleted by plantation agriculture over a long period of time"
-    reference_phoneme = phonemize_text(reference_text)
-    print("Phonemized reference text:")
-    print(reference_phoneme)
-    print("Counting phoneme error rate:")
-    print(count_pronunciation_score(hypothesis_phoneme, reference_phoneme))
-    # result = evaluate_pronunciation(input_audio, reference_text)
-    # print(result)
+# df = pd.read_csv("data/speech_emotions.csv")
+#
+# # Pick 15 random rows
+# samples = df.sample(n=15, random_state=42)
+#
+# scores = []
+# results = []
+# count = 1
+#
+# for _, row in samples.iterrows():
+#     set_id = row["set_id"]
+#     reference_text = row["text"]
+#
+#     # Path to the folder containing wav files
+#     folder_path = os.path.join("files", str(set_id))
+#
+#     # Get all wav files in the folder
+#     wav_files = [f for f in os.listdir(folder_path) if f.endswith(".wav")]
+#
+#     if not wav_files:
+#         print(f"No .wav files found in folder: {folder_path}")
+#         continue
+#
+#     # Pick a random wav file
+#     wav_file = random.choice(wav_files)
+#     wav_path = os.path.join(folder_path, wav_file)
+#     print(f"Processing file {count}: {wav_path}")
+#
+#     # Hypothesis phonemes from audio
+#     hypothesis_phoneme = pronunciation_to_phonemes(wav_path)
+#     print(f"Reference text {count}: {reference_text}")
+#     print(f"Hypothesis phoneme {count}: {hypothesis_phoneme}")
+#
+#     # Reference phonemes from text
+#     reference_phoneme = phonemize_text(reference_text)
+#     print(f"Reference phoneme {count}: {reference_phoneme}")
+#
+#     # Pronunciation score
+#     score = round(count_pronunciation_score(hypothesis_phoneme, reference_phoneme), 4)
+#     scores.append(score)
+#     print(f"Pronunciation score {count}: {score}\n")
+#     print("-----------------------------------\n")
+#
+#     # Save results for Excel
+#     results.append({
+#         "wav_path": wav_path,
+#         "reference_text": reference_text,
+#         "hypothesis_phoneme": hypothesis_phoneme,
+#         "reference_phoneme": reference_phoneme,
+#         "pronunciation_score": score
+#     })
+#
+#     count += 1
+#
+# # Mean score
+# mean_score = round(np.mean(scores), 4) if scores else None
+#
+# print("Pronunciation scores:", scores)
+# print("Mean pronunciation score:", mean_score)
+#
+# # Save to CSV
+# results_df = pd.DataFrame(results)
+# results_df.to_csv("data/pronunciation_results.csv", index=False)
+# print("Results saved to data/pronunciation_results.csv")
