@@ -262,7 +262,8 @@ async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
 
     return last_bot_response
 
-def custom_topic_validation(client: genai.Client, selected_topic_name: str) -> str:
+async def custom_topic_validation(client: genai.Client, selected_topic_name: str) -> str:
+
     validation_prompt = f"""
 You are a classifier that determines if a given topic is a BROAD, conversation-worthy topic 
 or a NARROW, object-specific topic.
@@ -286,14 +287,14 @@ Classify the following topic and respond with only BROAD or NARROW:
 Topic: {selected_topic_name}
 """
 
-    response = client.models.generate_content(
+    response = await client.models.generate_content(
         model="gemini-2.5-pro",
         contents=validation_prompt
     )
 
     return response.text.strip()
 
-def hint_to_users(client: genai.Client, chatbot_message: str) -> str:
+async def hint_to_users(client: genai.Client, chatbot_message: str) -> str:
     hint_prompt = f"""
         You are helping learners practice English conversation.
         Given a chatbot’s last message, generate a hint for the learner that includes:
@@ -322,7 +323,7 @@ def hint_to_users(client: genai.Client, chatbot_message: str) -> str:
         {chatbot_message}
         """
 
-    response = client.models.generate_content(
+    response = await client.models.generate_content(
         model="gemini-2.5-pro",
         contents=hint_prompt
     )
