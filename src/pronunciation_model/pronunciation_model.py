@@ -1,5 +1,7 @@
 from pydub import AudioSegment
 from phonemizer import phonemize
+from nltk.tokenize import SyllableTokenizer
+from nltk.tokenize import word_tokenize
 from transformers import pipeline
 import pandas as pd
 import numpy as np
@@ -33,6 +35,13 @@ def phonemize_text(text, language='en-us'):
         preserve_punctuation=True,
     )
     return phonemes
+
+def tokenize_syllables(text):
+    """Tokenize the input text into syllables."""
+    ssp = SyllableTokenizer()
+    words = word_tokenize(text)
+    syllables_in_sentence = [ssp.tokenize(word) for word in words]
+    return syllables_in_sentence
 
 def count_pronunciation_score(hypothesis, reference):
     # Convert to lower case for case-insensitive comparison
@@ -220,3 +229,11 @@ def evaluate_pronunciation(input_audio, reference_text):
 # results_df = pd.DataFrame(results)
 # results_df.to_csv("data/pronunciation_results.csv", index=False)
 # print("Results saved to data/pronunciation_results.csv")
+
+# input_text = """
+# In the heart of every forest, a hidden world thrives among the towering trees. Trees,
+# those silent giants, are more than just passive observers of nature's drama; they are
+# active participants in an intricate dance of life.
+# """
+#
+# print(tokenize_syllables(input_text))
