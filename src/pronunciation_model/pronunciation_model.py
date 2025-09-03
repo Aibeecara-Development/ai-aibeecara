@@ -13,6 +13,17 @@ import jiwer
 # Load the model
 pipe = pipeline(model="vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
 
+PHONEME_MAP = {
+    "a": ["a", "ɑ", "æ", "ʌ", "ɒ"],              # open mouth vowels
+    "fv": ["f", "v"],                            # teeth on lip
+    "ie": ["i", "ɪ", "e", "ɛ", "j"],             # smile vowels + /j/
+    "l": ["l"],                                  # tongue up
+    "mb": ["m", "b", "p"],                       # closed lips
+    "o": ["o", "ɔ", "u", "ʊ"],                   # round lips
+    "th": ["θ", "ð"],                            # tongue between teeth
+    "neutral": [".", ",", "?", "!"]              # punctuation
+}
+
 def convert_mp3_to_wav(mp3_path):
     sound = AudioSegment.from_file(mp3_path, format="mp3")
     wav_path = mp3_path.replace(".mp3", ".wav")
@@ -36,12 +47,56 @@ def phonemize_text(text, language='en-us'):
     )
     return phonemes
 
+def categorize_phoneme(phoneme: str) -> str:
+    """Map a phoneme (syllable string) to a mouth movement category."""
+    # Look inside the string for any matching symbol
+    for category, phon_list in PHONEME_MAP.items():
+        for symbol in phon_list:
+            if symbol in phoneme:  # substring match
+                return category
+    return "neutral"
+
 def tokenize_syllables(text):
     """Tokenize the input text into syllables."""
     ssp = SyllableTokenizer()
     words = word_tokenize(text)
     syllables_in_sentence = [ssp.tokenize(word) for word in words]
-    return syllables_in_sentence
+    result = []
+    current_time = 0.476  # initial break
+
+    syllable_arr = []
+
+    for group in syllables_in_sentence:
+        for syllable in group:
+            syllable_arr += [syllable]
+
+    phonemes = phonemize_text(syllable_arr)
+
+    for syll in phonemes:
+        # Handle punctuation directly
+        if syll in [".", "?", "!"]:
+            duration = 0.7
+            category = "neutral"
+        elif syll == ",":
+            duration = 0.3
+            category = "neutral"
+        else:
+            if phonemes:
+                category = categorize_phoneme(syll)
+            else:
+                category = "neutral"
+            duration = random.uniform(0.172, 0.240)
+
+        result.append({
+            "syllable": syll,
+            "category": category,
+            "start_time": round(current_time, 3),
+            "duration": round(duration, 3),
+            "end_time": round(current_time + duration, 3)
+        })
+        current_time += duration
+
+    return result
 
 def count_pronunciation_score(hypothesis, reference):
     # Convert to lower case for case-insensitive comparison
@@ -230,10 +285,15 @@ def evaluate_pronunciation(input_audio, reference_text):
 # results_df.to_csv("data/pronunciation_results.csv", index=False)
 # print("Results saved to data/pronunciation_results.csv")
 
-# input_text = """
-# In the heart of every forest, a hidden world thrives among the towering trees. Trees,
-# those silent giants, are more than just passive observers of nature's drama; they are
-# active participants in an intricate dance of life.
-# """
-#
-# print(tokenize_syllables(input_text))
+input_text = """
+In the heart of every forest, a hidden world thrives among the towering trees. Trees,
+those silent giants, are more than just passive observers of nature's drama; they are
+active participants in an intricate dance of life.
+"""
+
+tokens = tokenize_syllables(input_text)
+sum = 0
+for entry in tokens:
+    print(entry)
+    sum += entry["duration"]
+print(f"Total duration: {sum} seconds")
