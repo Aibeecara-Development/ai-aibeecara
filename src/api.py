@@ -1,11 +1,11 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-from chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation,
+from .chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation,
                                 chat_task, hint_to_users)
-from chat_model.emotion_detection import detect_emotion
-from audio_processing.transcriber import transcribe_audio_api, transcription_task
-from chat_model.text_to_speech import generate_tts_wav_api, tts_stream
+from .chat_model.emotion_detection import detect_emotion
+from .audio_processing.transcriber import transcribe_audio_api, transcription_task
+from .chat_model.text_to_speech import generate_tts_wav_api, tts_stream
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,10 +15,8 @@ import requests
 from deepgram import DeepgramClient
 import asyncio
 from deep_translator import GoogleTranslator
-from pronunciation_model.pronunciation_model import evaluate_pronunciation
-from chat_model.scoring.score_model import (evaluate_pause, evaluate_repetition, evaluate_transcription,
-                                            evaluate_vocabulary, evaluate_vocabulary_cefr)
-from chat_model.scoring.vocab import evaluate_cefr_stats
+from .chat_model.scoring.score_model import (evaluate_pause, evaluate_repetition, evaluate_transcription)
+from .chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
 app = FastAPI()
