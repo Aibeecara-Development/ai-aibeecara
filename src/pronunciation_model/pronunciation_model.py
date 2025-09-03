@@ -36,14 +36,14 @@ def pronunciation_to_phonemes(audio_file):
     phoneme_output = pipe(audio_file, chunk_length_s=10, stride_length_s=(4, 2))
     return phoneme_output['text']
 
-def phonemize_text(text, language='en-us'):
+def phonemize_text(text, language='en-us', preserve_punctuation=True):
     """Phonemize the input text into phonemes."""
     phonemes = phonemize(
         text,
         language=language,
         backend='espeak',
         strip=True,
-        preserve_punctuation=True,
+        preserve_punctuation=preserve_punctuation,
     )
     return phonemes
 
@@ -106,15 +106,22 @@ def count_pronunciation_score(hypothesis, reference):
     # Calculate the phoneme error rate
     per_score = jiwer.cer(reference, hypothesis)
 
-    return 1 - per_score
+    actual_score = 1 - per_score
+
+    if actual_score < 0.30:
+        return 0.40
+    elif actual_score >= 0.70:
+        return 1.0
+    else:
+        return 0.40 + (actual_score - 0.30) * (0.60 / 0.40)
 
 def evaluate_pronunciation(input_audio, reference_text):
     """Evaluate pronunciation by comparing audio to reference text."""
     # Transcribe the audio to phonemes
-    hypothesis_phoneme = pronunciation_to_phonemes(input_audio)
+    hypothesis_phoneme = "".join(pronunciation_to_phonemes(input_audio).split())
 
     # Phonemize the reference text
-    reference_phoneme = phonemize_text(reference_text)
+    reference_phoneme = "".join(phonemize_text(reference_text, preserve_punctuation=False).split())
 
     # Count the pronunciation score
     score = count_pronunciation_score(hypothesis_phoneme, reference_phoneme)
@@ -220,80 +227,82 @@ def evaluate_pronunciation(input_audio, reference_text):
 #     return round((matched / total) * 100, 2) if total > 0 else 0.0
 
 
-# df = pd.read_csv("data/speech_emotions.csv")
-#
-# # Pick 15 random rows
-# samples = df.sample(n=15, random_state=42)
-#
-# scores = []
-# results = []
-# count = 1
-#
-# for _, row in samples.iterrows():
-#     set_id = row["set_id"]
-#     reference_text = row["text"]
-#
-#     # Path to the folder containing wav files
-#     folder_path = os.path.join("files", str(set_id))
-#
-#     # Get all wav files in the folder
-#     wav_files = [f for f in os.listdir(folder_path) if f.endswith(".wav")]
-#
-#     if not wav_files:
-#         print(f"No .wav files found in folder: {folder_path}")
-#         continue
-#
-#     # Pick a random wav file
-#     wav_file = random.choice(wav_files)
-#     wav_path = os.path.join(folder_path, wav_file)
-#     print(f"Processing file {count}: {wav_path}")
-#
-#     # Hypothesis phonemes from audio
-#     hypothesis_phoneme = pronunciation_to_phonemes(wav_path)
-#     print(f"Reference text {count}: {reference_text}")
-#     print(f"Hypothesis phoneme {count}: {hypothesis_phoneme}")
-#
-#     # Reference phonemes from text
-#     reference_phoneme = phonemize_text(reference_text)
-#     print(f"Reference phoneme {count}: {reference_phoneme}")
-#
-#     # Pronunciation score
-#     score = round(count_pronunciation_score(hypothesis_phoneme, reference_phoneme), 4)
-#     scores.append(score)
-#     print(f"Pronunciation score {count}: {score}\n")
-#     print("-----------------------------------\n")
-#
-#     # Save results for Excel
-#     results.append({
-#         "wav_path": wav_path,
-#         "reference_text": reference_text,
-#         "hypothesis_phoneme": hypothesis_phoneme,
-#         "reference_phoneme": reference_phoneme,
-#         "pronunciation_score": score
-#     })
-#
-#     count += 1
-#
-# # Mean score
-# mean_score = round(np.mean(scores), 4) if scores else None
-#
-# print("Pronunciation scores:", scores)
-# print("Mean pronunciation score:", mean_score)
-#
-# # Save to CSV
-# results_df = pd.DataFrame(results)
-# results_df.to_csv("data/pronunciation_results.csv", index=False)
-# print("Results saved to data/pronunciation_results.csv")
+df = pd.read_csv("data/speech_emotions.csv")
 
-input_text = """
-In the heart of every forest, a hidden world thrives among the towering trees. Trees,
-those silent giants, are more than just passive observers of nature's drama; they are
-active participants in an intricate dance of life.
-"""
+# Pick 15 random rows
+samples = df
 
-tokens = tokenize_syllables(input_text)
-sum = 0
-for entry in tokens:
-    print(entry)
-    sum += entry["duration"]
-print(f"Total duration: {sum} seconds")
+scores = []
+results = []
+count = 1
+
+for _, row in samples.iterrows():
+    set_id = row["set_id"]
+    reference_text = row["text"]
+
+    # Path to the folder containing wav files
+    folder_path = os.path.join("files", str(set_id))
+
+    # Get all wav files in the folder
+    wav_files = [f for f in os.listdir(folder_path) if f.endswith(".wav")]
+
+    if not wav_files:
+        print(f"No .wav files found in folder: {folder_path}")
+        continue
+
+    # Pick a random wav file
+    wav_file = random.choice(wav_files)
+    wav_path = os.path.join(folder_path, wav_file)
+    print(f"Processing file {count}: {wav_path}")
+
+    # Hypothesis phonemes from audio
+    hypothesis_phoneme = pronunciation_to_phonemes(wav_path)
+    hypothesis_phoneme = "".join(hypothesis_phoneme.split())
+    print(f"Reference text {count}: {reference_text}")
+    print(f"Hypothesis phoneme {count}: {hypothesis_phoneme}")
+
+    # Reference phonemes from text
+    reference_phoneme = phonemize_text(reference_text, preserve_punctuation=False)
+    reference_phoneme = "".join(reference_phoneme.split())
+    print(f"Reference phoneme {count}: {reference_phoneme}")
+
+    # Pronunciation score
+    score = round(count_pronunciation_score(hypothesis_phoneme, reference_phoneme), 4)
+    scores.append(score)
+    print(f"Pronunciation score {count}: {score}\n")
+    print("-----------------------------------\n")
+
+    # Save results for Excel
+    results.append({
+        "wav_path": wav_path,
+        "reference_text": reference_text,
+        "hypothesis_phoneme": hypothesis_phoneme,
+        "reference_phoneme": reference_phoneme,
+        "pronunciation_score": score
+    })
+
+    count += 1
+
+# Mean score
+mean_score = round(np.mean(scores), 4) if scores else None
+
+print("Pronunciation scores:", scores)
+print("Mean pronunciation score:", mean_score)
+
+# Save to CSV
+results_df = pd.DataFrame(results)
+results_df.to_csv("data/pronunciation_results.csv", index=False)
+print("Results saved to data/pronunciation_results.csv")
+
+# input_text = """
+# In the heart of every forest, a hidden world thrives among the towering trees. Trees,
+# those silent giants, are more than just passive observers of nature's drama; they are
+# active participants in an intricate dance of life.
+# """
+#
+# tokens = tokenize_syllables(input_text)
+# sum = 0
+# for entry in tokens:
+#     print(entry)
+#     sum += entry["duration"]
+# print(f"Total duration: {sum} seconds")
