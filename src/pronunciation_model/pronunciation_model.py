@@ -56,19 +56,19 @@ def categorize_phoneme(phoneme: str) -> str:
                 return category
     return "neutral"
 
-def tokenize_syllables(text):
-    """Tokenize the input text into syllables."""
+def tokenize_syllables(text, speed: float = 1.0):
+    """Tokenize the input text into syllables with adjustable speed multiplier."""
     ssp = SyllableTokenizer()
     words = word_tokenize(text)
     syllables_in_sentence = [ssp.tokenize(word) for word in words]
     result = []
-    current_time = 0.476  # initial break
+    current_time = 0.476 * speed  # initial break scaled
 
     syllable_arr = []
 
     for group in syllables_in_sentence:
         for syllable in group:
-            syllable_arr += [syllable]
+            syllable_arr.append(syllable)
 
     phonemes = phonemize_text(syllable_arr)
 
@@ -86,6 +86,8 @@ def tokenize_syllables(text):
             else:
                 category = "neutral"
             duration = random.uniform(0.172, 0.240)
+
+        duration *= speed
 
         result.append({
             "syllable": syll,
@@ -227,82 +229,82 @@ def evaluate_pronunciation(input_audio, reference_text):
 #     return round((matched / total) * 100, 2) if total > 0 else 0.0
 
 
-df = pd.read_csv("data/speech_emotions.csv")
-
-# Pick 15 random rows
-samples = df
-
-scores = []
-results = []
-count = 1
-
-for _, row in samples.iterrows():
-    set_id = row["set_id"]
-    reference_text = row["text"]
-
-    # Path to the folder containing wav files
-    folder_path = os.path.join("files", str(set_id))
-
-    # Get all wav files in the folder
-    wav_files = [f for f in os.listdir(folder_path) if f.endswith(".wav")]
-
-    if not wav_files:
-        print(f"No .wav files found in folder: {folder_path}")
-        continue
-
-    # Pick a random wav file
-    wav_file = random.choice(wav_files)
-    wav_path = os.path.join(folder_path, wav_file)
-    print(f"Processing file {count}: {wav_path}")
-
-    # Hypothesis phonemes from audio
-    hypothesis_phoneme = pronunciation_to_phonemes(wav_path)
-    hypothesis_phoneme = "".join(hypothesis_phoneme.split())
-    print(f"Reference text {count}: {reference_text}")
-    print(f"Hypothesis phoneme {count}: {hypothesis_phoneme}")
-
-    # Reference phonemes from text
-    reference_phoneme = phonemize_text(reference_text, preserve_punctuation=False)
-    reference_phoneme = "".join(reference_phoneme.split())
-    print(f"Reference phoneme {count}: {reference_phoneme}")
-
-    # Pronunciation score
-    score = round(count_pronunciation_score(hypothesis_phoneme, reference_phoneme), 4)
-    scores.append(score)
-    print(f"Pronunciation score {count}: {score}\n")
-    print("-----------------------------------\n")
-
-    # Save results for Excel
-    results.append({
-        "wav_path": wav_path,
-        "reference_text": reference_text,
-        "hypothesis_phoneme": hypothesis_phoneme,
-        "reference_phoneme": reference_phoneme,
-        "pronunciation_score": score
-    })
-
-    count += 1
-
-# Mean score
-mean_score = round(np.mean(scores), 4) if scores else None
-
-print("Pronunciation scores:", scores)
-print("Mean pronunciation score:", mean_score)
-
-# Save to CSV
-results_df = pd.DataFrame(results)
-results_df.to_csv("data/pronunciation_results.csv", index=False)
-print("Results saved to data/pronunciation_results.csv")
-
-# input_text = """
-# In the heart of every forest, a hidden world thrives among the towering trees. Trees,
-# those silent giants, are more than just passive observers of nature's drama; they are
-# active participants in an intricate dance of life.
-# """
+# df = pd.read_csv("data/speech_emotions.csv")
 #
-# tokens = tokenize_syllables(input_text)
-# sum = 0
-# for entry in tokens:
-#     print(entry)
-#     sum += entry["duration"]
-# print(f"Total duration: {sum} seconds")
+# # Pick 15 random rows
+# samples = df
+#
+# scores = []
+# results = []
+# count = 1
+#
+# for _, row in samples.iterrows():
+#     set_id = row["set_id"]
+#     reference_text = row["text"]
+#
+#     # Path to the folder containing wav files
+#     folder_path = os.path.join("files", str(set_id))
+#
+#     # Get all wav files in the folder
+#     wav_files = [f for f in os.listdir(folder_path) if f.endswith(".wav")]
+#
+#     if not wav_files:
+#         print(f"No .wav files found in folder: {folder_path}")
+#         continue
+#
+#     # Pick a random wav file
+#     wav_file = random.choice(wav_files)
+#     wav_path = os.path.join(folder_path, wav_file)
+#     print(f"Processing file {count}: {wav_path}")
+#
+#     # Hypothesis phonemes from audio
+#     hypothesis_phoneme = pronunciation_to_phonemes(wav_path)
+#     hypothesis_phoneme = "".join(hypothesis_phoneme.split())
+#     print(f"Reference text {count}: {reference_text}")
+#     print(f"Hypothesis phoneme {count}: {hypothesis_phoneme}")
+#
+#     # Reference phonemes from text
+#     reference_phoneme = phonemize_text(reference_text, preserve_punctuation=False)
+#     reference_phoneme = "".join(reference_phoneme.split())
+#     print(f"Reference phoneme {count}: {reference_phoneme}")
+#
+#     # Pronunciation score
+#     score = round(count_pronunciation_score(hypothesis_phoneme, reference_phoneme), 4)
+#     scores.append(score)
+#     print(f"Pronunciation score {count}: {score}\n")
+#     print("-----------------------------------\n")
+#
+#     # Save results for Excel
+#     results.append({
+#         "wav_path": wav_path,
+#         "reference_text": reference_text,
+#         "hypothesis_phoneme": hypothesis_phoneme,
+#         "reference_phoneme": reference_phoneme,
+#         "pronunciation_score": score
+#     })
+#
+#     count += 1
+#
+# # Mean score
+# mean_score = round(np.mean(scores), 4) if scores else None
+#
+# print("Pronunciation scores:", scores)
+# print("Mean pronunciation score:", mean_score)
+#
+# # Save to CSV
+# results_df = pd.DataFrame(results)
+# results_df.to_csv("data/pronunciation_results.csv", index=False)
+# print("Results saved to data/pronunciation_results.csv")
+
+input_text = """
+In the heart of every forest, a hidden world thrives among the towering trees. Trees,
+those silent giants, are more than just passive observers of nature's drama; they are
+active participants in an intricate dance of life.
+"""
+
+tokens = tokenize_syllables(input_text)
+sum = 0
+for entry in tokens:
+    print(entry)
+    sum += entry["duration"]
+print(f"Total duration: {sum} seconds")
