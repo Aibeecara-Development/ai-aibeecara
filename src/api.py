@@ -225,7 +225,7 @@ async def hint_endpoint(input: ChatbotOutput):
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 # Don't forget to integrate the evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
-# evaluate_repetition functions into this websocket API so that it can be evaluated every time the user
+# evaluate_repetition functions into the chatbot API so that it can be evaluated every time the user
 # makes an input. In the end, the evaluation results are averaged and returned to the user.
 @app.websocket("/conversation_stream/")
 async def conversation_stream(ws: WebSocket, input: ChatInput):

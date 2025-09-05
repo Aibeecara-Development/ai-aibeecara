@@ -176,6 +176,9 @@ Detects emotion from what the chatbot says and returns the detected emotion.
 
 **Description:**  
 Performs grammar evaluation of user's conversation based on chat history.
+Before using this, make sure that evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
+evaluate_repetition functions are integrated into the chatbot API so that it can be evaluated every time the user
+makes an input. In the end, the evaluation results are averaged and returned to the user.
 
 **Input:**
 ```json
