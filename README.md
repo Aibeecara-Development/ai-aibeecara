@@ -184,44 +184,21 @@ Performs grammar evaluation of user's conversation based on chat history.
     ["user", "I go school everyday."],
     ["bot", "Good try!"]
   ],
-  "exchange_count": 1
+  "exchange_count": 1,
+   "pronunciation_array": [0.8, 0.6, 0.7],
+    "pause_array": [0.8, 0.9, 0.7],
+    "repetition_array": [0.7, 0.6, 0.8]
 }
 ```
 
 **Output:**
 ```json
-{
-  "original_message": "user's message here",
-   "corrected_transcript": "corrected message here",
-   "evaluation_score": 0.78,
-   "vocabulary_score": {
-     "statistics": {
-       "A1": 69,
-       "A2": 34,
-       "B1": 23,
-       "B2": 11,
-       "C1": 2,
-       "C2": 7
-     },
-     "tokens": [
-       {
-         "word": "going",
-         "lemma": "go",
-         "pos": "VERB",
-         "level_score": 1.23,
-         "cefr": "A1"
-       },
-       {
-         "word": "university",
-         "lemma": "university",
-         "pos": "NOUN",
-         "level_score": 3.41,
-         "cefr": "B1"
-       },
-        ...
-     ]
-}
-}
+ {"original_message": "An original message with bad grammar.",
+   "corrected_transcript": "A corrected message with good grammar.",
+   "grammar_score": 0.6,
+   "vocabulary_score": 0.7,
+   "pronunciation_score": 0.7,
+   "total_score": 0.7}
 ```
 
 ### 9. `/translate/` (POST)

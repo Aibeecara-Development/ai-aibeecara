@@ -46,6 +46,9 @@ class AudioURLInput(BaseModel):
 class EvaluationInput(BaseModel):
     history_log: list[tuple[str, str]]
     exchange_count: int
+    pronunciation_array: list[float] = []
+    pause_array: list[float] = []
+    repetition_array: list[float] = []
 
 class ChatbotOutput(BaseModel):
     response: str
@@ -174,15 +177,35 @@ async def chat_emotion(input: ChatInput):
 # Retrieve the history log and exchange count from the POST request of /chat
 @app.post("/evaluate/")
 def evaluate_grammar(input: EvaluationInput):
+    vocab_score_mapping = {
+        "A1": 0.2,
+        "A2": 0.4,
+        "B1": 0.6,
+        "B2": 0.8,
+        "C1": 0.9,
+        "C2": 1.0
+    }
     user_messages = " ".join(
         msg for role, msg in input.history_log[-(input.exchange_count * 2):] if role == "user"
     )
     grammar_score, corrected_transcript = evaluate_transcription(user_messages)
-    vocabulary_score = evaluate_cefr_stats(user_messages)
+    # vocabulary_stats = evaluate_cefr_stats(user_messages)
+    vocabulary_score = evaluate_vocabulary_cefr(user_messages)
+    vocabulary_score = vocab_score_mapping.get(vocabulary_score, 0.0)
+    pronunciation_scores = input.pronunciation_array
+    pronunciation_score = sum(pronunciation_scores) / len(pronunciation_scores)
+    pause_scores = input.pause_array
+    pause_score = sum(pause_scores) / len(pause_scores)
+    repetition_scores = input.repetition_array
+    repetition_score = sum(repetition_scores) / len(repetition_scores)
+    fluency_score = (pause_score + repetition_score) / 2.0
+    total_score = (grammar_score + vocabulary_score + pronunciation_score + fluency_score) / 4.0
     return {"original_message": user_messages,
             "corrected_transcript": corrected_transcript,
-            "evaluation_score": grammar_score,
-            "vocabulary_score": vocabulary_score}
+            "grammar_score": grammar_score,
+            "vocabulary_score": vocabulary_score,
+            "pronunciation_score": pronunciation_score,
+            "total_score": total_score,}
 
 # is it async or not?
 @app.post("/translate/")
@@ -201,7 +224,7 @@ async def hint_endpoint(input: ChatbotOutput):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# Don't forget to integrate the evaluate_transcription, evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
+# Don't forget to integrate the evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
 # evaluate_repetition functions into this websocket API so that it can be evaluated every time the user
 # makes an input. In the end, the evaluation results are averaged and returned to the user.
 @app.websocket("/conversation_stream/")
