@@ -368,7 +368,43 @@ async def hint_to_users(client: genai.Client, chatbot_message: str) -> str:
 
     return response.text.strip()
 
+def grammar_correction(client: genai.Client, incorrect_transcript: str) -> str:
+    prompt = f"""
+        You are a grammar correction assistant. 
+        Follow the format strictly:
+        
+        Explanation:
+            Explain why the grammar is wrong in no more than 50 words.
+        
+        Tense Used:
+            Briefly describe the tense used in the corrected version in no more than 50 words.
+        
+        Here are examples:
+        
+        Text: "He go to school every day."
+        Explanation:
+            The verb "go" does not agree with the subject "he." It should be "goes."
+        Tense Used:
+            Present simple tense, used for regular or habitual actions.
+        
+        Text: "Yesterday, she is playing tennis with her friend."
+        Explanation:
+            "Is playing" is incorrect with "yesterday." It should be "was playing."
+        Tense Used:
+            Past continuous tense, used for ongoing actions in the past.
+        
+        Now do the same for this text:
+        
+        Text: "{incorrect_transcript}"
+        Explanation:
+    """
 
+    response = client.models.generate_content(
+        model="gemini-2.5-pro",
+        contents=prompt
+    )
+
+    return response.text.strip()
 
 # e.g. selected_topic_name = "Daily Routine", "Travel", "Work", "Hobbies and Interests"
 

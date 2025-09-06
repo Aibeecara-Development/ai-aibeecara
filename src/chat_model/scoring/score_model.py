@@ -3,10 +3,18 @@ from happytransformer import HappyTextToText, TTSettings
 from lexicalrichness import LexicalRichness
 from transformers import pipeline
 import pyphen
+import os
+from dotenv import load_dotenv
+from google import genai
+from src.chat_model.chatbot import grammar_correction
 
 # TODO: These models can be deployed on future APIs
 happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
 cefr_classifier = pipeline("text-classification", model="AbdulSami/bert-base-cased-cefr")
+
+load_dotenv()
+gemini_key = os.getenv("GEMINI_KEY")
+client = genai.Client(api_key=gemini_key)
 
 def evaluate_transcription(transcription):
     """Evaluate the transcription for grammar issues."""
@@ -15,19 +23,15 @@ def evaluate_transcription(transcription):
     # Add the prefix "grammar: " before each input
     result = happy_tt.generate_text(f"grammar: {transcription}.", args=args)
 
-    print(f"trasncription: {transcription}")
-
     wer_score = wer(result.text, transcription)
-
-    print(result.text)
 
     corrected_text = result.text
 
     transcription_score = 1 - wer_score
 
-    print(transcription_score)
+    grammar_explanation = grammar_correction(client, transcription)
 
-    return transcription_score, corrected_text
+    return transcription_score, corrected_text, grammar_explanation
 
 def evaluate_vocabulary(transcription):
     lex = LexicalRichness(transcription)
@@ -123,8 +127,8 @@ def calculate_speech_rates(deepgram_response) -> dict:
         "spm": int(spm),
     }
 
-if __name__ == "__main__":
-    evaluate_transcription("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")
+# if __name__ == "__main__":
+#     evaluate_transcription("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")
 
 
 

@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from jiwer import wer
+from chat_model.scoring.score_model import evaluate_transcription
 from pronunciation_model.pronunciation_model import evaluate_pronunciation, highlight_wrong_words
 
 load_dotenv()
@@ -62,6 +63,12 @@ def process_audio_files(audio_directory, reference_directory):
 
 
 # if __name__ == "__main__":
+#     incorrect_transcript = "It was a real nice day today. Can I have you’re coat? We should contact they’re friend."
+#     transcription_score, corrected_transcript, grammar_explanation = evaluate_transcription(incorrect_transcript)
+#     print(f"Original Transcript: {incorrect_transcript}")
+#     print(f"Transcription Score: {transcription_score}")
+#     print(f"Corrected Transcript: {corrected_transcript}")
+#     print(f"Grammar Explanation: {grammar_explanation}")
 #     audio_directory = "data/audio/Recording_14.wav"
 #     example_text = """
 #     and we want to highlight those and bring that to where we can have
@@ -78,3 +85,4 @@ def process_audio_files(audio_directory, reference_directory):
 #
 #     for w in wrong_words:
 #         print(w)
+
