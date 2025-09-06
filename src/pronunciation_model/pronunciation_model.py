@@ -3,12 +3,9 @@ from phonemizer import phonemize
 from nltk.tokenize import SyllableTokenizer
 from nltk.tokenize import word_tokenize
 from transformers import pipeline
-import pandas as pd
-import numpy as np
-import os
 import random
-import soundfile as sf
 import jiwer
+import textdistance
 
 # Load the model
 pipe = pipeline(model="vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
@@ -46,6 +43,81 @@ def phonemize_text(text, language='en-us', preserve_punctuation=True):
         preserve_punctuation=preserve_punctuation,
     )
     return phonemes
+
+def get_word_phonemes(text: str) -> list[tuple[str, str]]:
+    """
+    Split transcript into words and get phonemes for each word.
+    Returns list of (word, phoneme_string).
+    """
+    words = text.split()
+    phonemes = phonemize_text(text, language="en-us", preserve_punctuation=False).split()
+    return list(zip(words, phonemes))
+
+def highlight_wrong_words(hypothesis_phonemes: str, reference_phonemes: str, reference_text: str, top_k: int = 3) -> list[dict]:
+    """
+    Highlight up to top_k words with the worst phoneme mismatch between
+    hypothesis and reference.
+    """
+
+    # Split reference into word-level phonemes
+    ref_words = get_word_phonemes(reference_text)  # [(word, phoneme_str), ...]
+
+    # Now, split hypothesis phonemes proportionally across words (since it's one long string)
+    hyp_phonemes = hypothesis_phonemes.strip()
+    total_len = sum(len(p) for _, p in ref_words)
+
+    hyp_word_phons = []
+    idx = 0
+    for word, ref_phon in ref_words:
+        share = max(1, int(len(hyp_phonemes) * (len(ref_phon) / total_len)))
+        hyp_word_phons.append((word, hyp_phonemes[idx:idx + share]))
+        idx += share
+
+    # Compare word by word
+    results = []
+    for (ref_word, ref_phon), (hyp_word, hyp_phon) in zip(ref_words, hyp_word_phons):
+        dist = textdistance.levenshtein.normalized_distance(ref_phon, hyp_phon)
+        results.append({
+            "reference_word": ref_word,
+            "hypothesis_word": hyp_word,
+            "ref_phonemes": ref_phon,
+            "hyp_phonemes": hyp_phon,
+            "error_score": round(dist, 3)
+        })
+
+    # Sort and return worst offenders
+    results = sorted(results, key=lambda x: x["error_score"], reverse=True)[:top_k]
+    return results
+
+def count_pronunciation_score(hypothesis, reference):
+    # Convert to lower case for case-insensitive comparison
+    hypothesis = hypothesis.lower()
+    reference = reference.lower()
+
+    # Calculate the phoneme error rate
+    per_score = jiwer.cer(reference, hypothesis)
+
+    actual_score = 1 - per_score
+
+    if actual_score < 0.30:
+        return 0.40
+    elif actual_score >= 0.70:
+        return 1.0
+    else:
+        return 0.40 + (actual_score - 0.30) * (0.60 / 0.40)
+
+def evaluate_pronunciation(input_audio, reference_text):
+    """Evaluate pronunciation by comparing audio to reference text."""
+    # Transcribe the audio to phonemes
+    hypothesis_phoneme = "".join(pronunciation_to_phonemes(input_audio).split())
+
+    # Phonemize the reference text
+    reference_phoneme = "".join(phonemize_text(reference_text, preserve_punctuation=False).split())
+
+    # Count the pronunciation score
+    score = count_pronunciation_score(hypothesis_phoneme, reference_phoneme)
+
+    return hypothesis_phoneme, reference_phoneme, score
 
 def categorize_phoneme(phoneme: str) -> str:
     """Map a phoneme (syllable string) to a mouth movement category."""
@@ -99,36 +171,6 @@ def tokenize_syllables(text, speed: float = 1.0):
         current_time += duration
 
     return result
-
-def count_pronunciation_score(hypothesis, reference):
-    # Convert to lower case for case-insensitive comparison
-    hypothesis = hypothesis.lower()
-    reference = reference.lower()
-
-    # Calculate the phoneme error rate
-    per_score = jiwer.cer(reference, hypothesis)
-
-    actual_score = 1 - per_score
-
-    if actual_score < 0.30:
-        return 0.40
-    elif actual_score >= 0.70:
-        return 1.0
-    else:
-        return 0.40 + (actual_score - 0.30) * (0.60 / 0.40)
-
-def evaluate_pronunciation(input_audio, reference_text):
-    """Evaluate pronunciation by comparing audio to reference text."""
-    # Transcribe the audio to phonemes
-    hypothesis_phoneme = "".join(pronunciation_to_phonemes(input_audio).split())
-
-    # Phonemize the reference text
-    reference_phoneme = "".join(phonemize_text(reference_text, preserve_punctuation=False).split())
-
-    # Count the pronunciation score
-    score = count_pronunciation_score(hypothesis_phoneme, reference_phoneme)
-
-    return score
 
 # def evaluate_pronunciation(input_audio, reference_text):
 #     current_dir = os.path.dirname(os.path.abspath(__file__))
