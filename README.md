@@ -10,7 +10,7 @@
 4. Place the downloaded model in the `src/data/` directory.
 
 5. **Set up environment variables**:
-   Ensure that you have the necessary API keys for Deepgram and Gemini. You can create a `.env` file in the `src` 
+   Ensure that you have the necessary API keys for Deepgram and Gemini. You can create a `.env` file in the `src`
    directory with the following content:
    ```
    DEEPGRAM_KEY=<your_deepgram_api_key>
@@ -18,7 +18,8 @@
    ```
    As well as `.env` files with `GEMINI_KEY` and `DEEPGRAM_KEY` in `evaluation/grammar-correction` and `evaluation/speech-recognition` respectively if needed.
 
-# IMPORTANT: 
+# IMPORTANT:
+
 Make sure to increment the exchange_count in the request body for each new user input in the chatbot.
 
 ## API Endpoints
@@ -26,7 +27,7 @@ Make sure to increment the exchange_count in the request body for each new user 
 <!--
 ### 1. `/chat/` (POST)
 
-**Description:**  
+**Description:**
 Stream AI-generated response based on selected roleplay topic and conversation history.
 
 **Input:**
@@ -49,7 +50,7 @@ Stream AI-generated response based on selected roleplay topic and conversation h
 
 ### 2. `/ws/chat/` (WebSocket)
 
-**Description:**  
+**Description:**
 Real-time streaming chat endpoint using WebSocket.
 
 **Input:**
@@ -68,7 +69,7 @@ Real-time AI response streamed as `send_text()` chunks
 
 ### 3. `/ws/chat/summary` (WebSocket)
 
-**Description:**  
+**Description:**
 Generates a summary and grammar feedback after a conversation.
 
 **Input:**
@@ -88,8 +89,8 @@ Textual summary and feedback sent as WebSocket text messages.
 
 ### 4. `/transcribe/` (POST)
 
-**Description:**  
-Transcribes uploaded audio and evaluates for pauses and repetition.
+**Description:**
+Transcribes uploaded audio and evaluates for pauses and stutter.
 
 **Input:**
 Form file upload (multipart/form-data) with key: file.
@@ -111,14 +112,14 @@ Form file upload (multipart/form-data) with key: file.
       "duration": 3.5
     }
   ],
-  "repetition_score": 0.75,
-  "repeated_phrases": ["i like to read books"]
+  "stutter_score": 0.75,
+  "stuttered_phrases": ["i like to read books"]
 }
 ```
 
 ### 5. `/chat/tts/` (POST)
 
-**Description:**  
+**Description:**
 Generates a TTS `.wav` file from input text using Deepgram TTS with adjustable voice and speed.
 
 **Input:**
@@ -137,10 +138,12 @@ Returns `.wav` audio file response (`audio/wav`).
  -->
 
 ### 6. `/chat/topic/` (POST)
+
 **Description:**
 Validates whether or not a topic is valid (BROAD or NARROW).
 
 **Input:**
+
 ```json
 {
   "selected_topic_name": "Daily Routine"
@@ -148,6 +151,7 @@ Validates whether or not a topic is valid (BROAD or NARROW).
 ```
 
 **Output:**
+
 ```json
 {
   "validation": "BROAD"
@@ -155,10 +159,12 @@ Validates whether or not a topic is valid (BROAD or NARROW).
 ```
 
 #### 7. `/chat/emotion/` (POST)
+
 **Description:**
 Detects emotion from what the chatbot says and returns the detected emotion.
 
 **Input:**
+
 ```json
 {
   "model_output": "I am feeling very happy today!"
@@ -166,6 +172,7 @@ Detects emotion from what the chatbot says and returns the detected emotion.
 ```
 
 **Output:**
+
 ```json
 {
   "emotion": "happy"
@@ -177,10 +184,12 @@ Detects emotion from what the chatbot says and returns the detected emotion.
 **Description:**  
 Performs grammar evaluation of user's conversation based on chat history.
 Before using this, make sure that evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
-evaluate_repetition functions are integrated into the chatbot API so that it can be evaluated every time the user
-makes an input. In the end, the evaluation results are averaged and returned to the user.
+evaluate_stutter functions are integrated into the chatbot API so that it can be evaluated every time the user
+makes an input. In the end, grab the scores from each bubble chat from the user, put them into array, and send the
+request so that the evaluation results are averaged and returned to the user.
 
 **Input:**
+
 ```json
 {
   "history_log": [
@@ -188,38 +197,47 @@ makes an input. In the end, the evaluation results are averaged and returned to 
     ["bot", "Good try!"]
   ],
   "exchange_count": 1,
-   "pronunciation_array": [0.8, 0.6, 0.7],
-    "pause_array": [0.8, 0.9, 0.7],
-    "repetition_array": [0.7, 0.6, 0.8]
+  "pronunciation_array": [0.8, 0.6, 0.7],
+  "pause_array": [0.8, 0.9, 0.7],
+  "stutter_array": [0.7, 0.6, 0.8]
 }
 ```
 
 **Output:**
+
 ```json
- {"original_message": "An original message with bad grammar.",
-   "corrected_transcript": "A corrected message with good grammar.",
-   "grammar_score": 0.6,
-   "vocabulary_score": 0.7,
-   "pronunciation_score": 0.7,
-   "total_score": 0.7}
+{
+  "original_message": "An original message with bad grammar.",
+  "corrected_transcript": "A corrected message with good grammar.",
+  "grammar_score": 0.6,
+  "vocabulary_score": 0.7,
+  "pronunciation_score": 0.7,
+  "total_score": 0.7
+}
 ```
 
 ### 9. `/translate/` (POST)
+
 **Description:**
 Translates user input text to Indonesian using Google Translate API.
 
 **Input:**
+
 ```json
 {
   "selected_topic_name": "Daily Routine",
   "user_input": "I usually wake up at 7am and brush my teeth.",
-  "history_log": [["user", "I wake up early"], ["bot", "Good job! What do you do after?"]],
+  "history_log": [
+    ["user", "I wake up early"],
+    ["bot", "Good job! What do you do after?"]
+  ],
   "exchange_count": 1,
   "tts_model": "aura-2-thalia-en"
 }
 ```
 
 **Output:**
+
 ```json
 {
   "translated_text": "Saya biasanya bangun jam 7 pagi dan menyikat gigi."
@@ -227,10 +245,12 @@ Translates user input text to Indonesian using Google Translate API.
 ```
 
 ### 10. `/hint/` (POST)
+
 **Description:**
 Provides hints for the user based on the last chatbot output.
 
 **Input:**
+
 ```json
 {
   "response": "Do you like pizza with pineapple?"
@@ -238,6 +258,7 @@ Provides hints for the user based on the last chatbot output.
 ```
 
 **Output:**
+
 ```json
 {
   "hint": "I thought it was meh."
@@ -245,21 +266,27 @@ Provides hints for the user based on the last chatbot output.
 ```
 
 ### 11. `/conversation_stream/` (WebSocket)
+
 **Description:**
 Streams conversation history and AI responses in real-time.
 
 **Input:**
+
 ```json
 {
   "selected_topic_name": "Daily Routine",
   "user_input": "I usually wake up at 7am and brush my teeth.",
-  "history_log": [["user", "I wake up early"], ["bot", "Good job! What do you do after?"]],
+  "history_log": [
+    ["user", "I wake up early"],
+    ["bot", "Good job! What do you do after?"]
+  ],
   "exchange_count": 1,
   "tts_model": "aura-2-thalia-en"
 }
 ```
 
 **Output:**
+
 ```json
 {"type": "transcript", "text": "Hello, I want to travel."},
 {"type": "chat", "text": "Great! Where do you want to go?"},
@@ -284,15 +311,18 @@ Streams conversation history and AI responses in real-time.
    cd src
    uvicorn src.api:app --reload
    ```
+
 # TTS Options Available:
+
 Default TTS model: `aura-2-amalthea-en` (american feminine)
 Accent TTS choices: `american`, `british`, `australian`
 Gender TTS choices: `masculine`, `feminine`
 
 ## Topics Available
-- General 
-- School Subjects 
-- At Home Activities 
+
+- General
+- School Subjects
+- At Home Activities
 - Hobbies
 - Lifestyle
 - Friendship and Achievements
@@ -300,56 +330,72 @@ Gender TTS choices: `masculine`, `feminine`
 - Custom User Topic
 
 ## TO-DO:
+
 - # Don't forget to integrate the evaluate_transcription, evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
-# evaluate_repetition functions into this websocket API so that it can be evaluated every time the user
+
+# evaluate_stutter functions into this websocket API so that it can be evaluated every time the user
+
 # makes an input. In the end, the evaluation results are averaged and returned to the user.
 
-- # Don't forget to set API functions like translate_text, chat_topic, chat_emotion, etc into async or non-async 
+- # Don't forget to set API functions like translate_text, chat_topic, chat_emotion, etc into async or non-async
+
 # functions.
 
 ## Logs
 
-### 29 Jun 2025 
+### 29 Jun 2025
+
 - **Pipeline**: Pipeline execution (ASR + grammar correction) completed successfully
 - **Deepgram**: Uses Deepgram model for ASR.
 - **Gemini**: Uses Gemini model for grammar correction.
 
 ### 2 Jul 2025
+
 - **Add whisper model to timeline**: Added Whisper model to the pipeline for ASR.
 
 ### 3 Jul 2025
+
 - **Add chatbot simulation**: Added Gemini chatbot simulation.
 - **Dialogue template**: Created a dialogue template for the chatbot simulation.
 
 ### 4 Jul 2025
+
 - **Add streaming chatbot**: Implemented a streaming chatbot using Gemini.
 
 ### 7 Jul 2025
+
 - **Add summarization**: Added summarization of the conversation to the pipeline.
 
 ### 12 Jul 2025
+
 - **Add text-to-speech**: Implemented text-to-speech functionality using Deepgram.
 
 ### 22 Jul 2025
+
 - **Add FastAPI**: Integrated FastAPI for serving the pipeline as a web service.
 - **Add pause scoring in voice activity detection**: Implemented pause scoring in voice activity detection to improve accuracy.
 - **Add grammar correction**: Added grammar correction functionality to the pipeline using Huggingface model.
 
 ### 1 Aug 2025
+
 - **Add TTS options**: Added extra options for text-to-speech (TTS) in the API such as gender, speed, and accent selection.
 - **Add conversation topics**: Implemented conversation topic prompts to enhance the chatbot's context awareness.
 
 ### 3 Aug 2025
+
 - **Add evaluation endpoint**: Added an endpoint for evaluating grammar and vocabulary based on conversation history.
 - **Add websocket support**: Implemented WebSocket support for real-time chat interactions.
 
 ### 8 Aug 2025
+
 - **Add vocabulary scoring**: Added vocabulary scoring to the evaluation endpoint to assess language proficiency.
 - **Add vocabulary endpoint**: Created a dedicated endpoint for vocabulary evaluation based on user input.
 
 ### 10 Aug 2025
+
 - **Change TTS model**: Switched TTS model to aura-2-amalthea-en for better performance.
 
 ### 13 Aug 2025
+
 - **Add emotion detection**: Implemented emotion detection based on chatbot responses to enhance user interaction.
 - **Add topic validation**: Added an endpoint to validate conversation topics as either broad or narrow.

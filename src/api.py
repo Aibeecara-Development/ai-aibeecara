@@ -15,7 +15,7 @@ from deepgram import DeepgramClient
 import asyncio
 from deep_translator import GoogleTranslator
 from pronunciation_model.pronunciation_model import evaluate_pronunciation
-from chat_model.scoring.score_model import (evaluate_pause, evaluate_repetition, evaluate_transcription,
+from chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
                                             evaluate_vocabulary, evaluate_vocabulary_cefr)
 from chat_model.scoring.vocab import evaluate_cefr_stats
 
@@ -46,9 +46,10 @@ class AudioURLInput(BaseModel):
 class EvaluationInput(BaseModel):
     history_log: list[tuple[str, str]]
     exchange_count: int
+    grammar_array: list[float] = []
     pronunciation_array: list[float] = []
     pause_array: list[float] = []
-    repetition_array: list[float] = []
+    stutter_array: list[float] = []
 
 class ChatbotOutput(BaseModel):
     response: str
@@ -135,15 +136,15 @@ async def transcribe_endpoint(input_data: AudioURLInput):
         # Evaluate pause
         pause_score, pause_details = evaluate_pause(response)
 
-        # Evaluate repetition
-        repetition_score, repeated_phrases = evaluate_repetition(response)
+        # Evaluate stutter
+        stutter_score, stuttered_phrases = evaluate_stutter(response)
 
         return {
             "transcript": transcript,
             "pause_score": pause_score,
             "pause_details": pause_details,
-            "repetition_score": repetition_score,
-            "repeated_phrases": repeated_phrases
+            "stutter_score": stutter_score,
+            "stuttered_phrases": stuttered_phrases
         }
 
     except Exception as e:
@@ -188,21 +189,21 @@ def evaluate_grammar(input: EvaluationInput):
     user_messages = " ".join(
         msg for role, msg in input.history_log[-(input.exchange_count * 2):] if role == "user"
     )
-    grammar_score, corrected_transcript = evaluate_transcription(user_messages)
+    # grammar_score, corrected_transcript = evaluate_transcription(user_messages)
     # vocabulary_stats = evaluate_cefr_stats(user_messages)
+    grammar_scores = input.grammar_array
+    grammar_score = sum(grammar_scores) / len(grammar_scores)
     vocabulary_score = evaluate_vocabulary_cefr(user_messages)
     vocabulary_score = vocab_score_mapping.get(vocabulary_score, 0.0)
     pronunciation_scores = input.pronunciation_array
     pronunciation_score = sum(pronunciation_scores) / len(pronunciation_scores)
     pause_scores = input.pause_array
     pause_score = sum(pause_scores) / len(pause_scores)
-    repetition_scores = input.repetition_array
-    repetition_score = sum(repetition_scores) / len(repetition_scores)
-    fluency_score = (pause_score + repetition_score) / 2.0
+    stutter_scores = input.stutter_array
+    stutter_score = sum(stutter_scores) / len(stutter_scores)
+    fluency_score = (pause_score + stutter_score) / 2.0
     total_score = (grammar_score + vocabulary_score + pronunciation_score + fluency_score) / 4.0
-    return {"original_message": user_messages,
-            "corrected_transcript": corrected_transcript,
-            "grammar_score": grammar_score,
+    return {"grammar_score": grammar_score,
             "vocabulary_score": vocabulary_score,
             "pronunciation_score": pronunciation_score,
             "total_score": total_score,}
@@ -224,8 +225,9 @@ async def hint_endpoint(input: ChatbotOutput):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# Don't forget to integrate the evaluate_cefr_stats, evaluate_pronunciation, evaluate_pause, and
-# evaluate_repetition functions into the chatbot API so that it can be evaluated every time the user
+# Don't forget to integrate the evaluate_cefr_stats, evaluate_transcription,
+# evaluate_pronunciation, evaluate_pause, and evaluate_stutter functions into
+# the chatbot API so that it can be evaluated every time the user
 # makes an input. In the end, the evaluation results are averaged and returned to the user.
 @app.websocket("/conversation_stream/")
 async def conversation_stream(ws: WebSocket, input: ChatInput):

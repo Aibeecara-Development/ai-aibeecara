@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from jiwer import wer
+from chat_model.scoring.score_model import evaluate_pause, evaluate_stutter, calculate_speech_rates
 from chat_model.emotion_detection import detect_emotion
 
 load_dotenv()
@@ -76,8 +77,16 @@ if __name__ == "__main__":
             # print(f"Pronunciation score for {file_name}: {score}")
     # reference_dir = os.path.join("data", "transcript_ref")
     # process_audio_files(audio_dir, reference_dir)
-    print(detect_emotion("Thanks for your reply, I will wait for your response."))
-    print(detect_emotion("I am so sorry."))
-    print(detect_emotion("Can you please repeat that?"))
+    # print(detect_emotion("Thanks for your reply, I will wait for your response."))
+    # print(detect_emotion("I am so sorry."))
+    # print(detect_emotion("Can you please stutter that?"))
     # print(f"The topic of curtain is {custom_topic_validation(client, "curtain")}")
     # print(f"The topic of walkie-talkie is {custom_topic_validation(client, "walkie-talkie")}")
+    deepgram_response = transcribe_deepgram("data/audio/Recording_14.wav")
+    print(deepgram_response)
+    print("Pause Evaluation:")
+    print(evaluate_pause(deepgram_response))
+    print("\nstutter Evaluation:")
+    print(evaluate_stutter(deepgram_response))
+    print("\nspeech rate Evaluation:")
+    print(calculate_speech_rates(deepgram_response))

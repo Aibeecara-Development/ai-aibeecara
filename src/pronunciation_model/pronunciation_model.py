@@ -296,15 +296,15 @@ def evaluate_pronunciation(input_audio, reference_text):
 # results_df.to_csv("data/pronunciation_results.csv", index=False)
 # print("Results saved to data/pronunciation_results.csv")
 
-input_text = """
-In the heart of every forest, a hidden world thrives among the towering trees. Trees,
-those silent giants, are more than just passive observers of nature's drama; they are
-active participants in an intricate dance of life.
-"""
-
-tokens = tokenize_syllables(input_text)
-sum = 0
-for entry in tokens:
-    print(entry)
-    sum += entry["duration"]
-print(f"Total duration: {sum} seconds")
+# input_text = """
+# In the heart of every forest, a hidden world thrives among the towering trees. Trees,
+# those silent giants, are more than just passive observers of nature's drama; they are
+# active participants in an intricate dance of life.
+# """
+#
+# tokens = tokenize_syllables(input_text)
+# sum = 0
+# for entry in tokens:
+#     print(entry)
+#     sum += entry["duration"]
+# print(f"Total duration: {sum} seconds")
