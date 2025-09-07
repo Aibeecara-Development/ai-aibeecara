@@ -1,5 +1,5 @@
 from google.genai import types
-from src.chat_model.data.dialogue_template import roleplay_topics
+from .data.dialogue_template import roleplay_topics
 from pydantic import BaseModel
 from google import genai
 from fastapi import WebSocket
