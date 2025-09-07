@@ -1,11 +1,11 @@
 from audio_processing.transcriber import process_audio, transcribe_deepgram, transcribe_whisper
 from chat_model.grammar_corrector import correct_transcript
-from chat_model.chatbot import custom_topic_validation
 import os
 from dotenv import load_dotenv
 from google import genai
 from jiwer import wer
-from chat_model.emotion_detection import detect_emotion
+from chat_model.scoring.score_model import evaluate_transcription
+from pronunciation_model.pronunciation_model import evaluate_pronunciation, highlight_wrong_words
 
 load_dotenv()
 gemini_key = os.getenv('GEMINI_KEY')
@@ -62,22 +62,27 @@ def process_audio_files(audio_directory, reference_directory):
 
 
 
-if __name__ == "__main__":
-    # audio_dir = os.path.join("data", "audio")
-    # for file_name in os.listdir(audio_dir):
-    #     if file_name.endswith((".mp3", ".wav", ".m4a", ".flac")):
-    #         input_audio = os.path.abspath(os.path.join(audio_dir, file_name))
-    #         print(f"Transcribing: {input_audio}")
-    #         ground_text = generate_text_reference()
-    #         print(f"Ground truth text: {ground_text}")
-    #         phoneme = evaluate_pronunciation(input_audio, ground_text)
-    #         print(f"Scores for {file_name}: {phoneme}")
-            # score = regular_score_pronunciation(phoneme, ground_phoneme)
-            # print(f"Pronunciation score for {file_name}: {score}")
-    # reference_dir = os.path.join("data", "transcript_ref")
-    # process_audio_files(audio_dir, reference_dir)
-    print(detect_emotion("Thanks for your reply, I will wait for your response."))
-    print(detect_emotion("I am so sorry."))
-    print(detect_emotion("Can you please repeat that?"))
-    # print(f"The topic of curtain is {custom_topic_validation(client, "curtain")}")
-    # print(f"The topic of walkie-talkie is {custom_topic_validation(client, "walkie-talkie")}")
+# if __name__ == "__main__":
+#     incorrect_transcript = "It was a real nice day today. Can I have you’re coat? We should contact they’re friend."
+#     transcription_score, corrected_transcript, grammar_explanation = evaluate_transcription(incorrect_transcript)
+#     print(f"Original Transcript: {incorrect_transcript}")
+#     print(f"Transcription Score: {transcription_score}")
+#     print(f"Corrected Transcript: {corrected_transcript}")
+#     print(f"Grammar Explanation: {grammar_explanation}")
+#     audio_directory = "data/audio/Recording_14.wav"
+#     example_text = """
+#     and we want to highlight those and bring that to where we can have
+#     a supportive system in place so nutrient recycling our nutrients back
+#     on to the land to rejuvenate the soils that have been depleted by
+#     plantation agriculture over a long period of time
+#     """
+#     hypothesis_phoneme, reference_phoneme, score = evaluate_pronunciation(audio_directory, example_text)
+#     print(f"Pronunciation Score: {score}")
+#     print(f"Hypothesis Phonemes: {hypothesis_phoneme}")
+#     print(f"Reference Phonemes: {reference_phoneme}")
+#
+#     wrong_words = highlight_wrong_words(hypothesis_phoneme, reference_phoneme, example_text)
+#
+#     for w in wrong_words:
+#         print(w)
+

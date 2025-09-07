@@ -14,7 +14,11 @@ async def transcription_task(ws, chat_queue, deepgram_client):
     Streams audio from WebSocket to Deepgram transcription
     and queues complete sentences to chat_queue.
     """
-    async with deepgram_client.listen.websocket.v("1") as dg_ws:
+    async with deepgram_client.listen.websocket.v("1",
+                                                  model="nova-3",
+                                                  smart_format=True,
+                                                  filler_words=True  # ✅ include filler words in streaming too
+                                                  ) as dg_ws:
 
         @dg_ws.on("transcript_received")
         async def handle_transcript(data):
@@ -48,7 +52,7 @@ def transcribe_deepgram(audio_path):
             buffer_data = audio_file.read()
 
         payload: FileSource = {"buffer": buffer_data}
-        options = PrerecordedOptions(model="nova-3", smart_format=True)
+        options = PrerecordedOptions(model="nova-3", smart_format=True, filler_words=True)
 
         response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
 

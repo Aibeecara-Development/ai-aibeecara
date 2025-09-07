@@ -35,7 +35,11 @@ ensure_spacy_model("en_core_web_sm")
 
 NLP = spacy.load("en_core_web_sm", exclude = ['parser', 'ner'])
 
-DATABASE_FILENAME = '/app/src/chat_model/data/word_cefr_minified.db'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE_FILENAME = os.path.join(BASE_DIR, "..", "..", "data", "word_cefr_minified.db")
+
+# Normalize the path
+DATABASE_FILENAME = os.path.normpath(DATABASE_FILENAME)
 
 conn = sqlite3.connect(DATABASE_FILENAME)
 cursor = conn.cursor()
@@ -180,25 +184,6 @@ input_text = """
 In the heart of every forest, a hidden world thrives among the towering trees. Trees, 
 those silent giants, are more than just passive observers of nature's drama; they are 
 active participants in an intricate dance of life.
-
-Did you know that trees communicate with each other? It's not through words or gestures 
-like ours, but rather through a complex network of fungi that connect their roots 
-underground. This network, often called the "wood wide web," allows trees to share 
-nutrients, water, and even warnings about potential threats.
-
-But trees are not just generous benefactors; they are also masters of adaptation. Take 
-the mighty sequoias, for example, towering giants that have stood the test of time for 
-thousands of years. These giants have evolved thick, fire-resistant bark to withstand 
-the frequent wildfires of their native California.
-
-And speaking of longevity, did you know that some trees have been around for centuries, 
-witnessing history unfold? The ancient bristlecone pines of the American West, for 
-instance, can live for over 5,000 years, making them some of the oldest living organisms 
-on Earth.
-
-So the next time you find yourself wandering through a forest, take a moment to appreciate 
-the remarkable world of trees. They may seem like silent spectators, but their lives are 
-full of fascinating stories waiting to be discovered.
 """
 
 # tokens = custom_tokenize_text(input_text)
@@ -221,7 +206,7 @@ full of fascinating stories waiting to be discovered.
 #             break
 
 def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> list[dict]:
-    """Fetch synonyms of a word, assign CEFR levels, and provide WordNet example sentences."""
+    """Fetch synonyms of a word, assign CEFR levels, WordNet example sentences, and definitions."""
     from nltk.corpus import wordnet as wn
 
     # Map POS tag to WordNet POS
@@ -243,17 +228,20 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
             # Collect only examples that *contain the synonym*
             valid_examples = []
             for ex in synset.examples():
-                # Replace original word with synonym if present
                 if word.lower() in ex.lower():
                     new_ex = ex.lower().replace(word.lower(), synonym)
-                    if synonym.lower() in new_ex:  # ensure synonym appears
+                    if synonym.lower() in new_ex:
                         valid_examples.append(new_ex)
 
             # Only keep synonym if there’s at least one valid example
             if valid_examples:
-                synonyms[synonym] = valid_examples
-                print(f"Found synonym: {synonym} for word: {word}")
-                print(f"Examples: {valid_examples}")
+                synonyms[synonym] = {
+                    "examples": valid_examples,
+                    "definition": synset.definition()
+                }
+                # print(f"Found synonym: {synonym} for word: {word}")
+                # print(f"Examples: {valid_examples}")
+                # print(f"Definition: {synset.definition()}")
 
     # If no synonyms found → return early
     if not synonyms:
@@ -269,8 +257,11 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
 
     results = []
     for syn, lemma, pos_tag, level in level_tokens:
-        examples = synonyms.get(syn, [])
+        data = synonyms.get(syn, {})
+        examples = data.get("examples", [])
+        definition = data.get("definition", "No definition available.")
         example_sentence = examples[0] if examples else f"No example available for '{syn}'."
+
         phonemes = phonemize(
             syn,
             language='en-us',
@@ -278,13 +269,15 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
             strip=True,
             preserve_punctuation=True,
         )
+
         results.append({
             "synonym": syn,
             "pos": pos_tag,
             "pronunciation": phonemes,
+            "definition": definition,
             "level_score": round(level, 2),
             "cefr": DIFFICULTY_MAPPING_REVERSE.get(round(level), "NA"),
-            "example_sentence": example_sentence
+            "example_sentence": example_sentence,
         })
 
     return results
@@ -327,5 +320,6 @@ def evaluate_cefr_stats(input_text: str) -> dict:
 
     return results
 
-cefr_stats = evaluate_cefr_stats(input_text)
-print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))
+# # Only run on this directory only
+# cefr_stats = evaluate_cefr_stats(input_text)
+# print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))

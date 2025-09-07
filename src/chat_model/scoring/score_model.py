@@ -2,10 +2,19 @@ from jiwer import wer
 from happytransformer import HappyTextToText, TTSettings
 from lexicalrichness import LexicalRichness
 from transformers import pipeline
+import pyphen
+import os
+from dotenv import load_dotenv
+from google import genai
+from src.chat_model.chatbot import grammar_correction
 
 # TODO: These models can be deployed on future APIs
 happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
 cefr_classifier = pipeline("text-classification", model="AbdulSami/bert-base-cased-cefr")
+
+load_dotenv()
+gemini_key = os.getenv("GEMINI_KEY")
+client = genai.Client(api_key=gemini_key)
 
 def evaluate_transcription(transcription):
     """Evaluate the transcription for grammar issues."""
@@ -14,19 +23,15 @@ def evaluate_transcription(transcription):
     # Add the prefix "grammar: " before each input
     result = happy_tt.generate_text(f"grammar: {transcription}.", args=args)
 
-    print(f"trasncription: {transcription}")
-
     wer_score = wer(result.text, transcription)
-
-    print(result.text)
 
     corrected_text = result.text
 
     transcription_score = 1 - wer_score
 
-    print(transcription_score)
+    grammar_explanation = grammar_correction(client, transcription)
 
-    return transcription_score, corrected_text
+    return transcription_score, corrected_text, grammar_explanation
 
 def evaluate_vocabulary(transcription):
     lex = LexicalRichness(transcription)
@@ -47,7 +52,7 @@ def evaluate_vocabulary_cefr(transcription):
 def evaluate_pause(deepgram_response):
     words = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
 
-    pause_threshold = 3.0
+    pause_threshold = 1.0
     long_pauses = 0
     pause_between_words = []
 
@@ -60,9 +65,9 @@ def evaluate_pause(deepgram_response):
         if pause_duration > pause_threshold:
             long_pauses += 1
             print(f"Pause of {pause_duration:.2f}s between '{words[i]['word']}' and '{words[i + 1]['word']}'")
-        pause_between_words.append({"start_word": words[i]['word'], "end_word": words[i + 1]['word'], "duration": pause_duration})
+            pause_between_words.append({"start_word": words[i]['word'], "end_word": words[i + 1]['word'], "duration": pause_duration})
 
-    print(f"Number of pauses longer than 3 seconds: {long_pauses}")
+    print(f"Number of pauses longer than 1 second: {long_pauses}")
 
     score = 1.0
 
@@ -71,41 +76,59 @@ def evaluate_pause(deepgram_response):
     else:
         return 1 - (long_pauses / len(words)), pause_between_words
 
-def evaluate_repetition(deepgram_response):
+def evaluate_stutter(deepgram_response):
     words_list = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
     words = [w["word"].lower() for w in words_list]
     count = 0
     i = 0
-    repeated_phrases = []
+    stuttered_phrases = []
 
     while i < len(words):
-        max_repeat_len = (len(words) - i) // 2
-        found_repeat = False
+        if words[i] in ["um", "uh", "mhmm", "mm-mm", "uh-uh", "uh-huh", "nuh-uh"]:
+            count += 1
+            stuttered_phrases.append(words[i])
+        i += 1
 
-        for size in range(max_repeat_len, 0, -1):
-            first = words[i:i + size]
-            second = words[i + size:i + 2 * size]
-            if first == second:
-                count += 1
-                repeated_phrases.append(" ".join(first))
-                i += size * 2  # skip the repeated pair
-                found_repeat = True
-                break
-
-        if not found_repeat:
-            i += 1
-
-    print(f"Number of repetitions: {count}")
-    print("Repeated phrases:", repeated_phrases)
+    print(f"Number of stutters: {count}")
+    print("stuttered phrases:", stuttered_phrases)
 
     score = 1.0
     if count == 0:
-        return score, repeated_phrases
+        return score, stuttered_phrases
     else:
-        return 1 - (count / len(words)), repeated_phrases
+        return 1 - (count / len(words)), stuttered_phrases
 
-if __name__ == "__main__":
-    evaluate_transcription("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")
+
+def calculate_speech_rates(deepgram_response) -> dict:
+    dic = pyphen.Pyphen(lang='en')
+    words_data = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
+    duration = deepgram_response.to_dict()["metadata"]["duration"]
+
+    # Extract words
+    words = [w["word"] for w in words_data if w.get("word")]
+    total_words = len(words)
+
+    # Count syllables
+    total_syllables = 0
+    for word in words:
+        hyphenated = dic.inserted(word)
+        if hyphenated:
+            total_syllables += len(hyphenated.split("-"))
+        else:
+            total_syllables += 1  # fallback
+
+    minutes = duration / 60 if duration > 0 else 1
+
+    wpm = total_words / minutes
+    spm = total_syllables / minutes
+
+    return {
+        "wpm": int(wpm),
+        "spm": int(spm),
+    }
+
+# if __name__ == "__main__":
+#     evaluate_transcription("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")
 
 
 
