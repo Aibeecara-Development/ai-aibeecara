@@ -87,7 +87,7 @@ def evaluate_pause(deepgram_response):
     return {
         "score": score,
         "pause_between_words": pause_between_words,
-        "corrected_transcript": new_transcript
+        "pause_transcript": new_transcript
     }
 
 def evaluate_stutter(deepgram_response):
