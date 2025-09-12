@@ -50,31 +50,45 @@ def evaluate_vocabulary_cefr(transcription):
     return cefr_prediction
 
 def evaluate_pause(deepgram_response):
-    words = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
+    data = deepgram_response["results"]["channels"][0]["alternatives"][0]
+    words = data["words"]
 
     pause_threshold = 1.0
     long_pauses = 0
     pause_between_words = []
 
+    corrected_transcript = []
+
     for i in range(len(words) - 1):
+        current_word = words[i]["punctuated_word"]
         current_end = words[i]["end"]
         next_start = words[i + 1]["start"]
 
-        pause_duration = next_start - current_end
+        corrected_transcript.append(current_word)
 
+        pause_duration = next_start - current_end
         if pause_duration > pause_threshold:
             long_pauses += 1
-            print(f"Pause of {pause_duration:.2f}s between '{words[i]['word']}' and '{words[i + 1]['word']}'")
-            pause_between_words.append({"start_word": words[i]['word'], "end_word": words[i + 1]['word'], "duration": pause_duration})
+            pause_between_words.append({
+                "start_word": words[i]["word"],
+                "end_word": words[i + 1]["word"],
+                "duration": pause_duration
+            })
+            corrected_transcript.append("...")  # insert pause marker
 
-    print(f"Number of pauses longer than 1 second: {long_pauses}")
+    # Add the last word
+    corrected_transcript.append(words[-1]["punctuated_word"])
 
-    score = 1.0
+    # Rebuild transcript
+    new_transcript = " ".join(corrected_transcript)
 
-    if long_pauses == 0:
-        return score, pause_between_words
-    else:
-        return 1 - (long_pauses / len(words)), pause_between_words
+    score = 1.0 if long_pauses == 0 else 1 - (long_pauses / len(words))
+
+    return {
+        "score": score,
+        "pause_between_words": pause_between_words,
+        "pause_transcript": new_transcript
+    }
 
 def evaluate_stutter(deepgram_response):
     words_list = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]

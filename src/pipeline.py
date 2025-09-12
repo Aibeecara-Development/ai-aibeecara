@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from jiwer import wer
-from chat_model.scoring.score_model import evaluate_transcription
+from chat_model.scoring.score_model import evaluate_pause, evaluate_stutter, calculate_speech_rates
 from pronunciation_model.pronunciation_model import evaluate_pronunciation, highlight_wrong_words
 
 load_dotenv()
@@ -62,27 +62,35 @@ def process_audio_files(audio_directory, reference_directory):
 
 
 
-# if __name__ == "__main__":
-#     incorrect_transcript = "It was a real nice day today. Can I have you’re coat? We should contact they’re friend."
-#     transcription_score, corrected_transcript, grammar_explanation = evaluate_transcription(incorrect_transcript)
-#     print(f"Original Transcript: {incorrect_transcript}")
-#     print(f"Transcription Score: {transcription_score}")
-#     print(f"Corrected Transcript: {corrected_transcript}")
-#     print(f"Grammar Explanation: {grammar_explanation}")
-#     audio_directory = "data/audio/Recording_14.wav"
-#     example_text = """
-#     and we want to highlight those and bring that to where we can have
-#     a supportive system in place so nutrient recycling our nutrients back
-#     on to the land to rejuvenate the soils that have been depleted by
-#     plantation agriculture over a long period of time
-#     """
-#     hypothesis_phoneme, reference_phoneme, score = evaluate_pronunciation(audio_directory, example_text)
-#     print(f"Pronunciation Score: {score}")
-#     print(f"Hypothesis Phonemes: {hypothesis_phoneme}")
-#     print(f"Reference Phonemes: {reference_phoneme}")
-#
-#     wrong_words = highlight_wrong_words(hypothesis_phoneme, reference_phoneme, example_text)
-#
-#     for w in wrong_words:
-#         print(w)
+if __name__ == "__main__":
+    # incorrect_transcript = "It was a real nice day today. Can I have you’re coat? We should contact they’re friend."
+    # transcription_score, corrected_transcript, grammar_explanation = evaluate_transcription(incorrect_transcript)
+    # print(f"Original Transcript: {incorrect_transcript}")
+    # print(f"Transcription Score: {transcription_score}")
+    # print(f"Corrected Transcript: {corrected_transcript}")
+    # print(f"Grammar Explanation: {grammar_explanation}")
+    # audio_directory = "data/audio/Recording_14.wav"
+    # example_text = """
+    # and we want to highlight those and bring that to where we can have
+    # a supportive system in place so nutrient recycling our nutrients back
+    # on to the land to rejuvenate the soils that have been depleted by
+    # plantation agriculture over a long period of time
+    # """
+    # hypothesis_phoneme, reference_phoneme, score = evaluate_pronunciation(audio_directory, example_text)
+    # print(f"Pronunciation Score: {score}")
+    # print(f"Hypothesis Phonemes: {hypothesis_phoneme}")
+    # print(f"Reference Phonemes: {reference_phoneme}")
+    #
+    # wrong_words = highlight_wrong_words(hypothesis_phoneme, reference_phoneme, example_text)
+    #
+    # for w in wrong_words:
+    #     print(w)
+    deepgram_response = transcribe_deepgram("data/audio/Recording_14.wav")
+    print("Pause Evaluation:")
+    print(evaluate_pause(deepgram_response))
+    print("\nstutter Evaluation:")
+    print(evaluate_stutter(deepgram_response))
+    print("\nspeech rate Evaluation:")
+    print(calculate_speech_rates(deepgram_response))
+
 
