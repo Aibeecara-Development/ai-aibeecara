@@ -167,7 +167,7 @@ async def chat_tts(input: TTSInput):
 @app.post("/chat/topic/")
 async def chat_topic(input: CustomTopicInput):
     try:
-        message = custom_topic_validation(client, input.selected_topic_name)
+        message = await custom_topic_validation(client, input.selected_topic_name)
         return {"validation": message}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
@@ -203,9 +203,9 @@ def translate_text(input: ChatInput):
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.post("/hint/")
-def hint_endpoint(input: ChatbotOutput):
+async def hint_endpoint(input: ChatbotOutput):
     try:
-        hint = hint_to_users(client, input.response)
+        hint = await hint_to_users(client, input.response)
         return {"hint": hint}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)

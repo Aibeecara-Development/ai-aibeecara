@@ -7,12 +7,12 @@ import soundfile as sf
 import tempfile
 import librosa
 import asyncio
-from deepgram import SpeakWebSocketEvents, SpeakWSOptions
 from typing import AsyncGenerator
 from deepgram import (
     DeepgramClient,
     SpeakWebSocketEvents,
     SpeakWSOptions,
+    SpeakOptions
 )
 
 load_dotenv()
@@ -182,3 +182,11 @@ def transform_speech(file_path, spoken_text, model="aura-2-amalthea-en" ):
         print(f"Invalid value encountered: {e}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+# filename = "output_api.mp3"
+# SPEAK_TEXT = {"text": """In the heart of every forest, a hidden world thrives among the towering trees. Trees,
+# those silent giants, are more than just passive observers of nature's drama; they are
+# active participants in an intricate dance of life."""}
+# options = SpeakOptions(model="aura-2-amalthea-en")
+# response = deepgram.speak.rest.v("1").save(filename, SPEAK_TEXT, options)
+# print(response.to_json(indent=4))
