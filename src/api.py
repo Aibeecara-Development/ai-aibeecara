@@ -7,7 +7,7 @@ from .chat_model.emotion_detection import detect_emotion
 from .audio_processing.transcriber import transcribe_audio_api
 from .chat_model.text_to_speech import generate_tts_wav_api
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import time
@@ -17,6 +17,7 @@ import asyncio
 from deep_translator import GoogleTranslator
 from .chat_model.scoring.score_model import (evaluate_pause, evaluate_repetition, evaluate_transcription)
 from .chat_model.scoring.vocab import evaluate_cefr_stats
+import json
 
 load_dotenv()
 app = FastAPI()
@@ -192,7 +193,7 @@ async def speaking_endpoint(input_data: SpeakingInput):
     Combined endpoint for speaking practice:
     1. Optionally transcribe audio from URL
     2. Generate chat response based on topic and history
-    3. Convert response to audio and return it
+    3. Convert response to audio and return both transcripts and audio as multipart response
     """
     print(f"Received speaking request: {input_data}")
     start_time = time.perf_counter()
@@ -256,6 +257,52 @@ async def speaking_endpoint(input_data: SpeakingInput):
         timings['text_to_speech'] = tts_time
         print(f"Text-to-speech conversion took: {tts_time:.3f} seconds")
 
+        # Step 5: Create multipart response with transcripts and audio
+        multipart_start = time.perf_counter()
+
+        # Prepare transcripts JSON
+        transcripts = {
+            "user_transcript": user_input,
+            "bot_transcript": response_text
+        }
+
+        # Read audio file
+        with open(wav_path, 'rb') as f:
+            audio_data = f.read()
+
+        # Create multipart response
+        boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
+
+        # Construct multipart body
+        parts = []
+
+        # Add transcripts part
+        transcripts_json = json.dumps(transcripts)
+        parts.append(
+            f'------WebKitFormBoundary7MA4YWxkTrZu0gW\r\n'
+            f'Content-Disposition: form-data; name="transcripts"\r\n'
+            f'Content-Type: application/json\r\n'
+            f'\r\n'
+            f'{transcripts_json}\r\n'
+        )
+
+        # Add audio part header
+        parts.append(
+            f'------WebKitFormBoundary7MA4YWxkTrZu0gW\r\n'
+            f'Content-Disposition: form-data; name="audio"; filename="speaking_response.wav"\r\n'
+            f'Content-Type: audio/wav\r\n'
+            f'\r\n'
+        )
+
+        # Combine text parts
+        text_content = ''.join(parts).encode('utf-8')
+
+        # Create final content with audio data and boundary end
+        content = text_content + audio_data + b'\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\r\n'
+
+        multipart_time = time.perf_counter() - multipart_start
+        timings['multipart_creation'] = multipart_time
+
         # Calculate total time
         total_time = time.perf_counter() - start_time
         timings['total'] = total_time
@@ -264,7 +311,13 @@ async def speaking_endpoint(input_data: SpeakingInput):
         print(f"Total request time: {total_time:.3f} seconds")
         print(f"Timing breakdown: {timings}")
 
-        return FileResponse(wav_path, media_type="audio/wav", filename="speaking_response.wav")
+        return Response(
+            content=content,
+            media_type=f"multipart/form-data; boundary={boundary}",
+            headers={
+                "Content-Type": f"multipart/form-data; boundary={boundary}"
+            }
+        )
 
     except Exception as e:
         total_time = time.perf_counter() - start_time
@@ -276,7 +329,7 @@ async def speaking_endpoint(input_data: SpeakingInput):
 @app.post("/chat/topic/")
 async def chat_topic(input: CustomTopicInput):
     try:
-        message = custom_topic_validation(client, input.selected_topic_name)
+        message = await custom_topic_validation(client, input.selected_topic_name)
         return {"validation": message}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)

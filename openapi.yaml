@@ -16,7 +16,7 @@ paths:
         - Transcribes audio input if provided via URL
         - Generates an appropriate chat response based on the topic and conversation history
         - Converts the response to speech with specified voice characteristics
-        - Returns the audio response as a WAV file
+        - Returns the audio response as a WAV file along with both user and bot transcripts
       operationId: speakingEndpoint
       tags:
         - Speaking
@@ -50,22 +50,27 @@ paths:
         '200':
           description: Successfully processed speaking request
           content:
-            audio/wav:
+            multipart/form-data:
               schema:
-                type: string
-                format: binary
-                description: Generated speech response as WAV audio file
+                type: object
+                properties:
+                  transcripts:
+                    $ref: '#/components/schemas/TranscriptResponse'
+                  audio:
+                    type: string
+                    format: binary
+                    description: Generated speech response as WAV audio file
+              encoding:
+                transcripts:
+                  contentType: application/json
+                audio:
+                  contentType: audio/wav
           headers:
-            Content-Disposition:
-              description: Attachment filename
-              schema:
-                type: string
-                example: 'attachment; filename="speaking_response.wav"'
             Content-Type:
-              description: Audio MIME type
+              description: Multipart form data MIME type
               schema:
                 type: string
-                example: 'audio/wav'
+                example: 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'
         '400':
           description: Bad request - Invalid input parameters
           content:
@@ -158,6 +163,20 @@ components:
           maximum: 2.0
           example: 1.0
           default: 1.0
+
+    TranscriptResponse:
+      type: object
+      required:
+        - bot_transcript
+      properties:
+        user_transcript:
+          type: string
+          description: Transcribed text from user's audio input (empty if no audio provided)
+          example: "Hello, I would like to practice speaking about travel planning."
+        bot_transcript:
+          type: string
+          description: Text that was converted to speech for the bot's response
+          example: "Great! Let's start with travel planning. What's your favorite destination you've visited?"
 
     ErrorResponse:
       type: object
