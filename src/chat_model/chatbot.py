@@ -325,7 +325,7 @@ Classify the following topic and respond with only BROAD or NARROW:
 Topic: {selected_topic_name}
 """
 
-    response = await client.models.generate_content(
+    response = client.models.generate_content(
         model="gemini-2.5-pro",
         contents=validation_prompt
     )
@@ -361,7 +361,7 @@ async def hint_to_users(client: genai.Client, chatbot_message: str) -> str:
         {chatbot_message}
         """
 
-    response = await client.models.generate_content(
+    response = client.models.generate_content(
         model="gemini-2.5-pro",
         contents=hint_prompt
     )

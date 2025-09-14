@@ -7,7 +7,7 @@ from chat_model.emotion_detection import detect_emotion
 from audio_processing.transcriber import transcribe_audio_api, transcription_task
 from chat_model.text_to_speech import generate_tts_wav_api, tts_stream
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 import time
 import requests
@@ -20,6 +20,7 @@ from deep_translator import GoogleTranslator
 from pronunciation_model.pronunciation_model import evaluate_pronunciation
 from chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
                                             evaluate_vocabulary, evaluate_vocabulary_cefr)
+from utils.utils import clean_text
 from chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
@@ -180,8 +181,11 @@ async def transcribe_endpoint(input_data: AudioURLInput):
 @app.post("/chat/tts/")
 async def chat_tts(input: TTSInput):
     try:
-        wav_path = generate_tts_wav_api(input.text, accent=input.accent, gender=input.gender, speed=input.speed)
-        return FileResponse(wav_path, media_type="audio/wav", filename="response.wav")
+        cleaned_text = clean_text(input.text)
+        return StreamingResponse(
+            generate_tts_wav_api(cleaned_text, input.accent, input.gender, input.speed),
+            media_type="audio/wav"
+        )
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
