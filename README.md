@@ -265,7 +265,42 @@ Provides hints for the user based on the last chatbot output.
 }
 ```
 
-### 11. `/conversation_stream/` (WebSocket)
+### 11. `/try_by_yourself/` (POST)
+**Description:**
+Updating the score of a certain aspect (grammar, vocabulary, pronunciation, pause, stutter) by replying with an audio.
+
+**Input:**
+
+```json
+{
+  "corrections": [
+    {"chat_bubble_id": 1, "score": 0.75},
+    {"chat_bubble_id": 2, "score": 0.85},
+    {"chat_bubble_id": 3, "score": 0.90}
+  ],
+  "aspect_score": {
+    "grammar_score": 0.80,
+    "vocabulary_score": 0.85,
+    "pronunciation_score": 0.70,
+    "fluency_score": 0.90
+  },
+  "aspect": "pronunciation",
+  "audio_url": "https://example.com/audio/sample.wav",
+  "chat_bubble_correction_id": 2
+}
+```
+
+**Output:**
+
+```json
+{
+   "new_score": 0.8, 
+   "new_aspect_mean": 0.79, 
+   "new_total_score": 0.89
+}
+```
+
+### 12. `/conversation_stream/` (WebSocket)
 
 **Description:**
 Streams conversation history and AI responses in real-time.
