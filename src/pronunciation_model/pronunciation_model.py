@@ -6,6 +6,11 @@ from transformers import pipeline
 import random
 import jiwer
 import textdistance
+import torch
+from src.pronunciation_model.ai_pronunciation_trainer_main.pronunciationTrainer import getTrainer
+import src.pronunciation_model.ai_pronunciation_trainer_main.WordMatching as wm
+import torchaudio
+
 
 # Load the model
 pipe = pipeline(model="vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
@@ -337,13 +342,42 @@ def tokenize_syllables(text, speed: float = 1.0):
 # results_df = pd.DataFrame(results)
 # results_df.to_csv("data/pronunciation_results.csv", index=False)
 # print("Results saved to data/pronunciation_results.csv")
+if __name__ == "__main__":
+    audio_path = "data/Recording (16).mp3"
+    audio, sr = torchaudio.load(audio_path)
+    if sr != 16000:
+        audio = torchaudio.transforms.Resample(sr, 16000)(audio)
+    if audio.shape[0] > 1:
+        audio = audio.mean(dim=0, keepdim=True)
 
-# input_text = """
-# In the heart of every forest, a hidden world thrives among the towering trees. Trees,
-# those silent giants, are more than just passive observers of nature's drama; they are
-# active participants in an intricate dance of life.
-# """
-#
+    input_text = """
+    In the heart of every forest, a hidden world thrives among the towering trees. Trees,
+    those silent giants, are more than just passive observers of nature's drama; they are
+    active participants in an intricate dance of life.
+    """
+
+    # 3. Initialize trainer
+    trainer = getTrainer('en')
+
+    # 4. Run evaluation
+    result = trainer.processAudioForGivenText(recordedAudio=audio, real_text=input_text)
+
+    # 5. Get highlights
+    highlights = []
+    for (real_word, transcribed_word) in result['real_and_transcribed_words']:
+        # Pad transcribed_word if needed
+        transcribed_word = transcribed_word.ljust(len(real_word), '-')
+        correct_letters = wm.getWhichLettersWereTranscribedCorrectly(real_word, list(transcribed_word))
+        highlight = wm.parseLetterErrorsToHTML(real_word, correct_letters)
+        highlights.append(highlight)
+
+    # 6. Print results
+    print("Score:", result['pronunciation_accuracy'])
+    print("Highlights:", highlights)
+    print("Predicted phonemes:", [ipa for (_, ipa) in result['real_and_transcribed_words_ipa']])
+    print("Ground truth phonemes:", [ipa for (ipa, _) in result['real_and_transcribed_words_ipa']])
+
+
 # tokens = tokenize_syllables(input_text)
 # sum = 0
 # for entry in tokens:
