@@ -372,10 +372,15 @@ if __name__ == "__main__":
         highlights.append(highlight)
 
     # 6. Print results
-    print("Score:", result['pronunciation_accuracy'])
-    print("Highlights:", highlights)
-    print("Predicted phonemes:", [ipa for (_, ipa) in result['real_and_transcribed_words_ipa']])
-    print("Ground truth phonemes:", [ipa for (ipa, _) in result['real_and_transcribed_words_ipa']])
+    output = {
+        "Score": result['pronunciation_accuracy'],
+        "Real words": [word for (word, _) in result['real_and_transcribed_words']],
+        "Transcribed words": [word for (_, word) in result['real_and_transcribed_words']],
+        "Highlights": highlights,
+        "Predicted phonemes": [ipa for (_, ipa) in result['real_and_transcribed_words_ipa']],
+        "Ground truth phonemes": [ipa for (ipa, _) in result['real_and_transcribed_words_ipa']]
+    }
+    print(output)
 
 
 # tokens = tokenize_syllables(input_text)
