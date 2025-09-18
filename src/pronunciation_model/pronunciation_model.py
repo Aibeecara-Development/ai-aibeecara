@@ -10,6 +10,7 @@ import torch
 from src.pronunciation_model.ai_pronunciation_trainer_main.pronunciationTrainer import getTrainer
 import src.pronunciation_model.ai_pronunciation_trainer_main.WordMatching as wm
 import torchaudio
+import json
 
 
 # Load the model
@@ -372,15 +373,27 @@ if __name__ == "__main__":
         highlights.append(highlight)
 
     # 6. Print results
+    words = []
+    real_words = [real for (real, _) in result['real_and_transcribed_words']]
+    transcribed_words = [trans for (_, trans) in result['real_and_transcribed_words']]
+    predicted_phonemes = [ipa for (_, ipa) in result['real_and_transcribed_words_ipa']]
+    ground_truth_phonemes = [ipa for (ipa, _) in result['real_and_transcribed_words_ipa']]
+
+    for i in range(len(real_words)):
+        words.append({
+            "Real words": real_words[i],
+            "Transcribed words": transcribed_words[i],
+            "Highlights": highlights[i] if i < len(highlights) else None,
+            "Predicted phonemes": predicted_phonemes[i] if i < len(predicted_phonemes) else None,
+            "Ground truth phonemes": ground_truth_phonemes[i] if i < len(ground_truth_phonemes) else None,
+            "Pronunciation result": real_words[i] == transcribed_words[i],
+        })
+
     output = {
-        "Score": result['pronunciation_accuracy'],
-        "Real words": [word for (word, _) in result['real_and_transcribed_words']],
-        "Transcribed words": [word for (_, word) in result['real_and_transcribed_words']],
-        "Highlights": highlights,
-        "Predicted phonemes": [ipa for (_, ipa) in result['real_and_transcribed_words_ipa']],
-        "Ground truth phonemes": [ipa for (ipa, _) in result['real_and_transcribed_words_ipa']]
+        "score": result['pronunciation_accuracy'],
+        "words": words
     }
-    print(output)
+    print(json.dumps(output, indent=4, ensure_ascii=False))
 
 
 # tokens = tokenize_syllables(input_text)
