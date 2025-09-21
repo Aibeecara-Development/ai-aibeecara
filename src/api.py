@@ -201,7 +201,8 @@ async def chat_topic(input: CustomTopicInput):
 @app.post("/chat/emotion/")
 async def chat_emotion(input: ChatInput):
     try:
-        emotion = await asyncio.to_thread(detect_emotion(input.user_input))
+        sentence = [input.user_input]
+        emotion = await asyncio.to_thread(detect_emotion(sentence))
         return {"emotion": emotion}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
