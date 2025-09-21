@@ -29,3 +29,4 @@ jobs:
           repository_name: aibeecara-ai
           aws_region: ap-southeast-3
           branch: ${{ github.ref_name }}
+          
