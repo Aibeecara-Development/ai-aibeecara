@@ -7,16 +7,20 @@ from chat_model.emotion_detection import detect_emotion
 from audio_processing.transcriber import transcribe_audio_api, transcription_task
 from chat_model.text_to_speech import generate_tts_wav_api, tts_stream
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 import time
 import requests
 from deepgram import DeepgramClient
 import asyncio
+from typing import List, Optional
+from statistics import mean
+from enum import Enum
 from deep_translator import GoogleTranslator
 from pronunciation_model.pronunciation_model import evaluate_pronunciation
 from chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
                                             evaluate_vocabulary, evaluate_vocabulary_cefr)
+from utils.utils import clean_text
 from chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
@@ -59,6 +63,30 @@ class CustomTopicInput(BaseModel):
 
 class ChatEmotion(BaseModel):
     model_output: str
+
+class CorrectionItem(BaseModel):
+    chat_bubble_id: int
+    score: float
+
+class CorrectionAspect(str, Enum):
+    grammar = "grammar"
+    fluency = "fluency"
+    vocabulary = "vocabulary"
+    pronunciation = "pronunciation"
+
+class AspectScore(BaseModel):
+    grammar_score: float
+    vocabulary_score: float
+    pronunciation_score: float
+    fluency_score: float
+
+class CorrectionScore(BaseModel):
+    corrections: List[CorrectionItem]
+    aspect_score: AspectScore
+    aspect: CorrectionAspect
+    audio_url: str
+    chat_bubble_correction_id: int
+
 
 def mock_stream_response(user_input):
     reply = f"{user_input}"
@@ -153,8 +181,11 @@ async def transcribe_endpoint(input_data: AudioURLInput):
 @app.post("/chat/tts/")
 async def chat_tts(input: TTSInput):
     try:
-        wav_path = generate_tts_wav_api(input.text, accent=input.accent, gender=input.gender, speed=input.speed)
-        return FileResponse(wav_path, media_type="audio/wav", filename="response.wav")
+        cleaned_text = clean_text(input.text)
+        return StreamingResponse(
+            generate_tts_wav_api(cleaned_text, input.accent, input.gender, input.speed),
+            media_type="audio/wav"
+        )
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
@@ -224,6 +255,62 @@ async def hint_endpoint(input: ChatbotOutput):
         return {"hint": hint}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+def update_score(input_data: CorrectionScore, new_score: float) -> tuple[float, Optional[float]]:
+    for item in input_data.corrections:
+        if item.chat_bubble_id == input_data.chat_bubble_correction_id:
+            if new_score > item.score:
+                item.score = new_score
+                new_aspect_mean = mean([c.score for c in input_data.corrections])
+                return item.score, new_aspect_mean
+            return item.score, None
+    raise ValueError(f"No correction found for chat_bubble_id={input_data.chat_bubble_correction_id}")
+
+@app.post("/try_by_yourself/")
+async def try_by_yourself(input_data: CorrectionScore):
+    try:
+        resp = requests.get(input_data.audio_url, timeout=30)
+        resp.raise_for_status()
+        audio_data = resp.content
+
+        # Transcribe
+        response, transcript = transcribe_audio_api(audio_data)
+
+        if input_data.aspect == CorrectionAspect.pronunciation:
+            pronunciation_score, wrong_words = evaluate_pronunciation(audio_data, transcript)
+            new_score, new_aspect_mean = update_score(input_data, pronunciation_score)
+            input_data.aspect_score.pronunciation_score = pronunciation_score
+        elif input_data.aspect == CorrectionAspect.grammar:
+            grammar_score, corrected_text, grammar_explanation = evaluate_transcription(transcript)
+            new_score, new_aspect_mean = update_score(input_data, grammar_score)
+            input_data.aspect_score.grammar_score = grammar_score
+        elif input_data.aspect == CorrectionAspect.vocabulary:
+            vocabulary_score = evaluate_vocabulary(transcript)
+            new_score, new_aspect_mean = update_score(input_data, vocabulary_score)
+            input_data.aspect_score.vocabulary_score = vocabulary_score
+        else:  # fluency
+            pause_score, pause_details = evaluate_pause(response)
+            stutter_score, stuttered_phrases = evaluate_stutter(response)
+            fluency_score = (pause_score + stutter_score) / 2.0
+            new_score, new_aspect_mean = update_score(input_data, fluency_score)
+            input_data.aspect_score.fluency_score = fluency_score
+
+        # Always recalc total score with updated aspect values
+        new_total_score = mean([
+            input_data.aspect_score.grammar_score,
+            input_data.aspect_score.vocabulary_score,
+            input_data.aspect_score.pronunciation_score,
+            input_data.aspect_score.fluency_score
+        ])
+
+        return {
+            "new_score": new_score,
+            "new_aspect_mean": new_aspect_mean,
+            "new_total_score": new_total_score
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
 
 # Don't forget to integrate the evaluate_cefr_stats, evaluate_transcription,
 # evaluate_pronunciation, evaluate_pause, and evaluate_stutter functions into

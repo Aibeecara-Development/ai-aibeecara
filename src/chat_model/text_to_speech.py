@@ -3,9 +3,7 @@ from dotenv import load_dotenv
 import wave
 import os
 import threading
-import soundfile as sf
-import tempfile
-import librosa
+import io
 import asyncio
 from typing import AsyncGenerator
 from deepgram import (
@@ -14,6 +12,8 @@ from deepgram import (
     SpeakWSOptions,
     SpeakOptions
 )
+from scipy.signal import resample_poly
+import numpy as np
 
 load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
@@ -38,7 +38,8 @@ async def tts_stream(text: str, deepgram_client) -> AsyncGenerator[bytes, None]:
     await dg_connection.start(SpeakWSOptions(
         model="aura-2-amalthea-en",
         encoding="linear16",
-        sample_rate=16000
+        sample_rate=16000,
+
     ))
 
     dg_connection.send_text(text)
@@ -60,69 +61,70 @@ def generate_tts_wav_api(
     accent: str = "american",
     gender: str = "feminine",
     speed: float = 1.0
-) -> str:
-    raw_output_path = tempfile.mktemp(suffix="_raw.wav")
-    final_output_path = tempfile.mktemp(suffix=".wav")
+):
+    def audio_stream():
+        buffer = io.BytesIO()
+        wav_writer = wave.open(buffer, "wb")
+        wav_writer.setnchannels(1)
+        wav_writer.setsampwidth(2)
+        wav_writer.setframerate(16000)
 
-    dg_connection = deepgram.speak.websocket.v("1")
+        done_event = threading.Event()
 
-    wav_writer = wave.open(raw_output_path, "wb")
-    wav_writer.setnchannels(1)
-    wav_writer.setsampwidth(2)
-    wav_writer.setframerate(16000)
+        # Callback for each audio chunk from Deepgram
+        def on_binary_data(self, data, **kwargs):
+            audio = np.frombuffer(data, dtype=np.int16)
 
-    # Event to signal when audio is done streaming
-    done_event = threading.Event()
+            if speed != 1.0:
+                # speed > 1.0 => faster, speed < 1.0 => slower
+                up = int(speed * 100)
+                down = 100
+                audio = resample_poly(audio, up, down)
 
-    def on_binary_data(self, data, **kwargs):
-        wav_writer.writeframes(data)  # writeframes is safer than writeframesraw
+            yield audio.tobytes()
 
-    def on_close(self, **kwargs):
-        done_event.set()  # Signal that audio is complete
+        # Callback when Deepgram signals end of stream
+        def on_close(**kwargs):
+            done_event.set()
 
-    dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
-    dg_connection.on(SpeakWebSocketEvents.Close, on_close)
-
-    # Select model based on accent & gender
-    model = "aura-2-amalthea-en"
-    if accent == "british" and gender == "feminine":
-        model = "aura-2-draco-en"
-    elif accent == "british" and gender == "masculine":
-        model = "aura-2-pandora-en"
-    elif accent == "american":
+        # Pick Deepgram model
         model = "aura-2-amalthea-en"
-    elif accent == "australian":
-        model = "aura-2-hyperion-en"
+        if accent == "british" and gender == "feminine":
+            model = "aura-2-draco-en"
+        elif accent == "british" and gender == "masculine":
+            model = "aura-2-pandora-en"
+        elif accent == "australian":
+            model = "aura-2-hyperion-en"
 
-    options = SpeakWSOptions(
-        model=model,
-        encoding="linear16",
-        sample_rate=16000,
-    )
+        # Connect to Deepgram
+        dg_connection = deepgram.speak.websocket.v("1")
+        dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
+        dg_connection.on(SpeakWebSocketEvents.Close, on_close)
 
-    if not dg_connection.start(options):
-        raise RuntimeError("Failed to start Deepgram connection")
+        options = SpeakWSOptions(
+            model=model,
+            encoding="linear16",
+            sample_rate=16000,
+        )
 
-    # Send text to TTS
-    dg_connection.send_text(text)
-    dg_connection.flush()
+        if not dg_connection.start(options):
+            raise RuntimeError("Failed to start Deepgram connection")
 
-    # Wait until stream finishes (max timeout depends on text length)
-    timeout = max(10.0, len(text) / 5)  # ~5 chars/sec as rough safe estimate
-    done_event.wait(timeout=timeout)
+        # Send input text
+        dg_connection.send_text(text)
+        dg_connection.flush()
 
-    # Clean up
-    dg_connection.finish()
-    wav_writer.close()
+        # Wait for completion
+        timeout = max(10.0, len(text) / 5)
+        done_event.wait(timeout=timeout)
 
-    # Adjust speed if needed
-    if speed != 1.0:
-        y, sr = librosa.load(raw_output_path, sr=16000)
-        y_fast = librosa.effects.time_stretch(y, rate=speed)
-        sf.write(final_output_path, y_fast, sr)
-        return final_output_path
+        dg_connection.finish()
+        wav_writer.close()
 
-    return raw_output_path
+        buffer.seek(0)
+        yield buffer.read()  # send any remaining buffered audio
+
+    return audio_stream()
 
 
 
