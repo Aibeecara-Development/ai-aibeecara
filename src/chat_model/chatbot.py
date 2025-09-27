@@ -3,7 +3,7 @@ from .data.dialogue_template import roleplay_topics
 from pydantic import BaseModel
 from google import genai
 from fastapi import WebSocket
-# from src.chat_model.scoring.score_model import evaluate_transcription
+# from chat_model.scoring.score_model import evaluate_transcription
 from typing import Dict, List, Tuple
 import os
 from dotenv import load_dotenv

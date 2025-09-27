@@ -1,7 +1,7 @@
 
 import pandas as pd
 import json
-import src.pronunciation_model.ai_pronunciation_trainer_main.RuleBasedModels as RuleBasedModels
+import pronunciation_model.ai_pronunciation_trainer_main.RuleBasedModels as RuleBasedModels
 import epitran
 import random
 import pickle

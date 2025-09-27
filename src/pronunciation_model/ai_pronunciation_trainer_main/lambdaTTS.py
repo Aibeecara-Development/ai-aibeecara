@@ -2,7 +2,7 @@
 import models
 import soundfile as sf
 import json
-import src.pronunciation_model.ai_pronunciation_trainer_main.AIModels as AIModels
+import pronunciation_model.ai_pronunciation_trainer_main.AIModels as AIModels
 #from flask import Response
 import utilsFileIO
 import os

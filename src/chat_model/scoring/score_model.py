@@ -6,7 +6,7 @@ import pyphen
 import os
 from dotenv import load_dotenv
 from google import genai
-from src.chat_model.chatbot import grammar_correction
+from chat_model.chatbot import grammar_correction
 
 # TODO: These models can be deployed on future APIs
 happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
