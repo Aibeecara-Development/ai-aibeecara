@@ -14,7 +14,7 @@ import json
 
 
 # Load the model
-pipe = pipeline(model="vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
+# pipe = pipeline(model="vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
 
 PHONEME_MAP = {
     "a": ["a", "ɑ", "æ", "ʌ", "ɒ"],              # open mouth vowels
@@ -33,11 +33,11 @@ def convert_mp3_to_wav(mp3_path):
     sound.export(wav_path, format="wav")
     return wav_path
 
-def pronunciation_to_phonemes(audio_file):
-    """Convert pronunciation text to phonemes using the pipeline."""
-    # Assuming pronunciation is a string of text
-    phoneme_output = pipe(audio_file, chunk_length_s=10, stride_length_s=(4, 2))
-    return phoneme_output['text']
+# def pronunciation_to_phonemes(audio_file):
+#     """Convert pronunciation text to phonemes using the pipeline."""
+#     # Assuming pronunciation is a string of text
+#     phoneme_output = pipe(audio_file, chunk_length_s=10, stride_length_s=(4, 2))
+#     return phoneme_output['text']
 
 def phonemize_text(text, language='en-us', preserve_punctuation=True):
     """Phonemize the input text into phonemes."""
@@ -112,18 +112,18 @@ def count_pronunciation_score(hypothesis, reference):
     else:
         return 0.40 + (actual_score - 0.30) * (0.60 / 0.40)
 
-def evaluate_pronunciation(input_audio, reference_text):
-    """Evaluate pronunciation by comparing audio to reference text."""
-    # Transcribe the audio to phonemes
-    hypothesis_phoneme = "".join(pronunciation_to_phonemes(input_audio).split())
-
-    # Phonemize the reference text
-    reference_phoneme = "".join(phonemize_text(reference_text, preserve_punctuation=False).split())
-
-    # Count the pronunciation score
-    score = count_pronunciation_score(hypothesis_phoneme, reference_phoneme)
-
-    return hypothesis_phoneme, reference_phoneme, score
+# def evaluate_pronunciation(input_audio, reference_text):
+#     """Evaluate pronunciation by comparing audio to reference text."""
+#     # Transcribe the audio to phonemes
+#     hypothesis_phoneme = "".join(pronunciation_to_phonemes(input_audio).split())
+#
+#     # Phonemize the reference text
+#     reference_phoneme = "".join(phonemize_text(reference_text, preserve_punctuation=False).split())
+#
+#     # Count the pronunciation score
+#     score = count_pronunciation_score(hypothesis_phoneme, reference_phoneme)
+#
+#     return hypothesis_phoneme, reference_phoneme, score
 
 def categorize_phoneme(phoneme: str) -> str:
     """Map a phoneme (syllable string) to a mouth movement category."""
@@ -343,25 +343,18 @@ def tokenize_syllables(text, speed: float = 1.0):
 # results_df = pd.DataFrame(results)
 # results_df.to_csv("data/pronunciation_results.csv", index=False)
 # print("Results saved to data/pronunciation_results.csv")
-if __name__ == "__main__":
-    audio_path = "data/Recording (16).mp3"
-    audio, sr = torchaudio.load(audio_path)
+def evaluate_pronunciation(input_audio, reference_text):
+    audio, sr = torchaudio.load(input_audio)
     if sr != 16000:
         audio = torchaudio.transforms.Resample(sr, 16000)(audio)
     if audio.shape[0] > 1:
         audio = audio.mean(dim=0, keepdim=True)
 
-    input_text = """
-    In the heart of every forest, a hidden world thrives among the towering trees. Trees,
-    those silent giants, are more than just passive observers of nature's drama; they are
-    active participants in an intricate dance of life.
-    """
-
     # 3. Initialize trainer
     trainer = getTrainer('en')
 
     # 4. Run evaluation
-    result = trainer.processAudioForGivenText(recordedAudio=audio, real_text=input_text)
+    result = trainer.processAudioForGivenText(recordedAudio=audio, real_text=reference_text)
 
     # 5. Get highlights
     highlights = []
@@ -393,7 +386,7 @@ if __name__ == "__main__":
         "score": result['pronunciation_accuracy'],
         "words": words
     }
-    print(json.dumps(output, indent=4, ensure_ascii=False))
+    return output
 
 
 # tokens = tokenize_syllables(input_text)

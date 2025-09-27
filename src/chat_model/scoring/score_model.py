@@ -43,9 +43,9 @@ def evaluate_vocabulary(transcription):
     print(f"Vocabulary score: {mtld_score:.2f}")
     return mtld_score
 
-def evaluate_vocabulary_cefr(transcription):
+def evaluate_vocabulary_cefr(transcription: str) -> str:
     """Evaluate the vocabulary of the transcription based on CEFR levels."""
-    cefr_prediction = cefr_classifier(transcription)
+    cefr_prediction = cefr_classifier(transcription)  # returns "A1"..."C2"
     print(f"CEFR vocabulary score: {cefr_prediction}")
     return cefr_prediction
 

@@ -29,7 +29,7 @@ sad_category = [
 
 def detect_emotion(sentence: [str]):
     results = emotion_classifier(sentence)
-    print(results)
+    # print(results)
     emotion = results[0][0]['label']
     if emotion in confusion_category:
         return "confusion"

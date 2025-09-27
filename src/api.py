@@ -67,6 +67,7 @@ class ChatEmotion(BaseModel):
 class CorrectionItem(BaseModel):
     chat_bubble_id: int
     score: float
+    transcript: str = ""
 
 class CorrectionAspect(str, Enum):
     grammar = "grammar"
@@ -76,7 +77,7 @@ class CorrectionAspect(str, Enum):
 
 class AspectScore(BaseModel):
     grammar_score: float
-    vocabulary_score: float
+    vocabulary_score: str
     pronunciation_score: float
     fluency_score: float
 
@@ -278,7 +279,8 @@ async def try_by_yourself(input_data: CorrectionScore):
         response, transcript = transcribe_audio_api(audio_data)
 
         if input_data.aspect == CorrectionAspect.pronunciation:
-            pronunciation_score, wrong_words = evaluate_pronunciation(audio_data, transcript)
+            pronunciation_result = evaluate_pronunciation(audio_data, transcript)
+            pronunciation_score = pronunciation_result['score']
             new_score, new_aspect_mean = update_score(input_data, pronunciation_score)
             input_data.aspect_score.pronunciation_score = pronunciation_score
         elif input_data.aspect == CorrectionAspect.grammar:
@@ -286,9 +288,25 @@ async def try_by_yourself(input_data: CorrectionScore):
             new_score, new_aspect_mean = update_score(input_data, grammar_score)
             input_data.aspect_score.grammar_score = grammar_score
         elif input_data.aspect == CorrectionAspect.vocabulary:
-            vocabulary_score = evaluate_vocabulary(transcript)
-            new_score, new_aspect_mean = update_score(input_data, vocabulary_score)
+            updated_transcripts = []
+            for item in input_data.corrections:
+                if item.chat_bubble_id == input_data.chat_bubble_correction_id:
+                    # replace with the newly transcribed text
+                    item.transcript = transcript
+                # collect transcripts (fallback empty if not present yet)
+                updated_transcripts.append(getattr(item, "transcript", ""))
+
+            # Step 3: join all transcripts into one text
+            combined_transcript = " ".join(t for t in updated_transcripts if t.strip())
+
+            # Step 4: evaluate vocabulary level on the whole joined transcript
+            vocabulary_score = evaluate_vocabulary_cefr(combined_transcript)  # str: "A1"..."C2"
+
+            # Step 5: update aspect_score
             input_data.aspect_score.vocabulary_score = vocabulary_score
+
+            new_score = vocabulary_score
+            new_aspect_mean = vocabulary_score
         else:  # fluency
             pause_score, pause_details = evaluate_pause(response)
             stutter_score, stuttered_phrases = evaluate_stutter(response)
