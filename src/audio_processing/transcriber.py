@@ -10,21 +10,32 @@ deepgram_key = os.getenv('DEEPGRAM_KEY')
 deepgram = DeepgramClient(deepgram_key)
 
 async def transcription_task(ws, chat_queue, deepgram_client):
-    """
-    Streams audio from WebSocket to Deepgram transcription
-    and queues complete sentences to chat_queue.
-    """
     async with deepgram_client.listen.websocket.v("1",
                                                   model="nova-3",
                                                   smart_format=True,
-                                                  filler_words=True  # ✅ include filler words in streaming too
-                                                  ) as dg_ws:
+                                                  filler_words=True) as dg_ws:
 
         @dg_ws.on("transcript_received")
         async def handle_transcript(data):
             transcript_text = data["channel"]["alternatives"][0]["transcript"]
+
+            # Only push when sentence ends
             if transcript_text.strip().endswith((".", "?", "!")):
-                await chat_queue.put(transcript_text)
+                # --- run evaluations here ---
+                cefr_level = evaluate_cefr_stats(transcript_text)
+                grammar_score, corrected_text, grammar_explanation = evaluate_transcription(transcript_text)
+                pause_score, pause_details = evaluate_pause(data)
+                stutter_score, stuttered_phrases = evaluate_stutter(data)
+
+                eval_result = {
+                    "transcript": transcript_text,
+                    "vocabulary": cefr_level,
+                    "grammar": grammar_score,
+                    "fluency": (pause_score + stutter_score) / 2.0,
+                }
+
+                # Put both transcript & eval results into queue
+                await chat_queue.put(eval_result)
 
         try:
             while True:

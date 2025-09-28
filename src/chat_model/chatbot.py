@@ -83,11 +83,25 @@ async def chat_task(ws, chat_queue, client, tts_stream, input_data: ChatInput):
     Processes messages from chat_queue,
     streams Gemini responses, and sends TTS audio to WebSocket in real-time.
     Mimics chat_api_sync logic for topic/history handling.
+    THE FRONTEND STORES THE EVAL RESULTS.
     """
     while True:
-        user_text = await chat_queue.get()
-        if user_text is None:
+        eval_result = await chat_queue.get()
+        if eval_result is None:
             break
+
+        user_text = eval_result["transcript"]  # <-- use transcript
+        cefr_level = eval_result["vocabulary"]
+        grammar_score = eval_result["grammar"]
+        fluency_score = eval_result["fluency"]
+
+        # send eval results to frontend
+        await ws.send_json({
+            "type": "evaluation",
+            "grammar": grammar_score,
+            "vocabulary": cefr_level,
+            "fluency": fluency_score
+        })
 
         # --- Select topic ---
         selected_topic = next(
