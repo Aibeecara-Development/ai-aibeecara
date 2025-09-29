@@ -19,8 +19,9 @@ from enum import Enum
 from deep_translator import GoogleTranslator
 from .pronunciation_model.pronunciation_model import evaluate_pronunciation
 from .chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
-                                            evaluate_vocabulary_cefr)
+                                            evaluate_vocabulary_cefr, calculate_speech_rates)
 from .utils.utils import clean_text
+from .chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
 app = FastAPI()
@@ -96,7 +97,10 @@ def mock_stream_response(user_input):
 @app.post("/chat/")
 async def chat_endpoint(chat_input: ChatInput):
     response_text = await chat_api_sync(client, chat_input.model_dump())
-    return {"response": response_text}
+
+    return {
+        "response": response_text,
+    }
 
 @app.post("/chat/summary")
 async def summary_endpoint(chat_input: ChatInput):
@@ -152,28 +156,34 @@ async def websocket_summary_endpoint(websocket: WebSocket):
 @app.post("/transcribe/")
 async def transcribe_endpoint(input_data: AudioURLInput):
     try:
-        # Download audio file
+        # Download audio
         resp = requests.get(input_data.audio_url, timeout=30)
         resp.raise_for_status()
         audio_data = resp.content
 
-        # Transcribe
+        # Transcribe via Deepgram
         response, transcript = transcribe_audio_api(audio_data)
 
-        # Evaluate pause
-        pause_score, pause_details = evaluate_pause(response)
-
-        # Evaluate stutter
+        # Run evaluations
+        pause_score_dict = evaluate_pause(response)
         stutter_score, stuttered_phrases = evaluate_stutter(response)
+        speech_rate_dict = calculate_speech_rates(response)
+        pronunciation_score_dict = evaluate_pronunciation(audio_data, transcript)
+        evaluate_transcription_score, corrected_text, grammar_explanation = evaluate_transcription(transcript)
+        cefr_score_dict = evaluate_cefr_stats(transcript)
 
         return {
             "transcript": transcript,
-            "pause_score": pause_score,
-            "pause_details": pause_details,
+            "corrected_transcript": corrected_text,
+            "grammar_score": evaluate_transcription_score,
+            "grammar_explanation": grammar_explanation,
+            "pause_score": pause_score_dict,
             "stutter_score": stutter_score,
-            "stuttered_phrases": stuttered_phrases
+            "stuttered_phrases": stuttered_phrases,
+            "speech_rate": speech_rate_dict,
+            "pronunciation_score": pronunciation_score_dict,
+            "vocabulary_score": cefr_score_dict
         }
-
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 

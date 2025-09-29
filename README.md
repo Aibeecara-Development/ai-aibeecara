@@ -25,28 +25,6 @@ Make sure to increment the exchange_count in the request body for each new user 
 ## API Endpoints
 
 <!--
-### 1. `/chat/` (POST)
-
-**Description:**
-Stream AI-generated response based on selected roleplay topic and conversation history.
-
-**Input:**
-```json
-{
-  "selected_topic_name": "Daily Routine",
-  "user_input": "I usually wake up at 7am and brush my teeth.",
-  "history_log": [["user", "I wake up early"], ["bot", "Good job! What do you do after?"]],
-  "exchange_count": 1,
-  "tts_model": "aura-2-thalia-en"
-}
-```
-
-**Output:**
-```json
-{
-  "response": "That's a great start to your day! After brushing your teeth, what do you usually do next?"
-}
-```
 
 ### 2. `/ws/chat/` (WebSocket)
 
@@ -86,11 +64,34 @@ Generates a summary and grammar feedback after a conversation.
 
 **Output:**
 Textual summary and feedback sent as WebSocket text messages.
+ -->
+### 1. `/chat/` (POST)
+
+**Description:**
+Stream AI-generated response based on selected roleplay topic and conversation history.
+
+**Input:**
+```json
+{
+  "selected_topic_name": "Daily Routine",
+  "user_input": "I usually wake up at 7am and brush my teeth.",
+  "history_log": [["user", "I wake up early"], ["bot", "Good job! What do you do after?"]],
+  "exchange_count": 1,
+  "tts_model": "aura-2-thalia-en"
+}
+```
+
+**Output:**
+```json
+{
+  "response": "That's a great start to your day! After brushing your teeth, what do you usually do next?"
+}
+```
 
 ### 4. `/transcribe/` (POST)
 
 **Description:**
-Transcribes uploaded audio and evaluates for pauses and stutter.
+Transcribes uploaded audio and evaluates (ACCUMULATE IN FRONT-END SO THAT IT CAN BE AVERAGED IN THE END).
 
 **Input:**
 Form file upload (multipart/form-data) with key: file.
@@ -103,18 +104,73 @@ Form file upload (multipart/form-data) with key: file.
 **Output:**
 ```json
 {
-  "transcript": "I like to read books. I like to read books.",
-  "pause_score": 0.85,
-  "pause_details": [
-    {
-      "start_word": "books",
-      "end_word": "I",
-      "duration": 3.5
-    }
-  ],
-  "stutter_score": 0.75,
-  "stuttered_phrases": ["i like to read books"]
-}
+            "transcript": "This is the original transcribed text.",
+            "corrected_transcript": "This is the corrected transcribed text.",
+            "grammar_score": 0.97,
+            "grammar_explanation": """Explanation:
+            The verb 'go' does not agree with the subject 'he.' It should be 'goes.'
+            Tense Used:
+            Present simple tense, used for regular or habitual actions""",
+            "pause_score_dict": {
+                 "score": 0.88,
+                 "pause_between_words": [{'start_word': 'and', 'end_word': 'we', 'duration': 2.5600001000000003}, 
+                    {'start_word': 'that', 'end_word': 'to', 'duration': 1.8399999999999999}, ...],
+                 "pause_transcript": "I, uh, and… we…"
+             },
+            "stutter_score": 0.88,
+            "stuttered_phrases": ['uh', 'um', 'you know', 'like'],
+            "speech_rate": {
+                 "wpm": 67,
+                 "spm": 76
+             },
+            "pronunciation_score":  {
+             "score": 97.0,
+             "words": [
+                 {
+                     "Real words": "In",
+                     "Transcribed words": "In",
+                     "Highlights": "*I**n*",
+                     "Predicted phonemes": "ɪn",
+                     "Ground truth phonemes": "ɪn",
+                     "Pronunciation result": true
+                 },
+                 {
+                     "Real words": "the",
+                     "Transcribed words": "the",
+                     "Highlights": "*t**h**e*",
+                     "Predicted phonemes": "ðə",
+                     "Ground truth phonemes": "ðə",
+                     "Pronunciation result": true
+                 },
+            "vocabulary_score":
+               {
+                 "statistics": {
+                   "A1": 19,
+                   "A2": 4,
+                   "B1": 7,
+                   "B2": 1,
+                   "C1": 0,
+                   "C2": 1
+                 },
+                 "tokens": [
+                   {
+                     "word": "in",
+                     "lemma": "in",
+                     "pos": "IN",
+                     "level_score": 1.0,
+                     "cefr": "A1"
+                   },
+                   {
+                     "word": "the",
+                     "lemma": "the",
+                     "pos": "DT",
+                     "level_score": 1.0,
+                     "cefr": "A1"
+                   },
+                   ...
+                 ]
+               }
+        }
 ```
 
 ### 5. `/chat/tts/` (POST)
@@ -135,7 +191,6 @@ Generates a TTS `.wav` file from input text using Deepgram TTS with adjustable v
 
 **Output:**
 Returns `.wav` audio file response (`audio/wav`).
- -->
 
 ### 6. `/chat/topic/` (POST)
 
