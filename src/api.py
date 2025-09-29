@@ -1,11 +1,11 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-from chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation,
+from .chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation,
                                 chat_task, hint_to_users)
-from chat_model.emotion_detection import detect_emotion
-from audio_processing.transcriber import transcribe_audio_api, transcription_task
-from chat_model.text_to_speech import generate_tts_wav_api, tts_stream
+from .chat_model.emotion_detection import detect_emotion
+from .audio_processing.transcriber import transcribe_audio_api, transcription_task
+from .chat_model.text_to_speech import generate_tts_pcm_stream, tts_stream
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -17,17 +17,15 @@ from typing import List, Optional
 from statistics import mean
 from enum import Enum
 from deep_translator import GoogleTranslator
-from pronunciation_model.pronunciation_model import evaluate_pronunciation
-from chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
-                                            evaluate_vocabulary, evaluate_vocabulary_cefr)
-from utils.utils import clean_text
-from chat_model.scoring.vocab import evaluate_cefr_stats
+from .pronunciation_model.pronunciation_model import evaluate_pronunciation
+from .chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
+                                            evaluate_vocabulary_cefr)
+from .utils.utils import clean_text
 
 load_dotenv()
 app = FastAPI()
 gemini_key = os.getenv("GEMINI_KEY")
 client = genai.Client(api_key=gemini_key)
-load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
 deepgram_client = DeepgramClient(deepgram_key)
 
@@ -183,10 +181,9 @@ async def transcribe_endpoint(input_data: AudioURLInput):
 async def chat_tts(input: TTSInput):
     try:
         cleaned_text = clean_text(input.text)
-        return StreamingResponse(
-            generate_tts_wav_api(cleaned_text, input.accent, input.gender, input.speed),
-            media_type="audio/wav"
-        )
+        gen = generate_tts_pcm_stream(cleaned_text, input.accent, input.gender, input.speed)
+        # We return raw PCM; the frontend decodes/plays it via AudioWorklet.
+        return StreamingResponse(gen, media_type="application/octet-stream")
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
