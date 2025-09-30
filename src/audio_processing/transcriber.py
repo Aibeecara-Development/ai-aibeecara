@@ -1,8 +1,9 @@
 import os
 import json
-from deepgram import DeepgramClient, PrerecordedOptions, FileSource
+from deepgram import DeepgramClient, PrerecordedOptions, FileSource, TextSource
 from dotenv import load_dotenv
 import whisper
+import requests
 from whisper import transcribe
 
 load_dotenv()
@@ -45,14 +46,19 @@ async def transcription_task(ws, chat_queue, deepgram_client):
             pass
 
 
-def transcribe_audio_api(file_bytes: bytes):
+def transcribe_audio_api(url: str):
     """Transcribes audio using Deepgram and returns the response and transcript text."""
     try:
-        payload: FileSource = {"buffer": file_bytes}
-        options = PrerecordedOptions(model="nova-3", smart_format=True)
-        response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
+        AUDIO_URL = {
+            "url": url
+        }
+        options: PrerecordedOptions = PrerecordedOptions(
+            model="nova-3",
+            smart_format=True,
+        )
+        response = deepgram.listen.rest.v("1").transcribe_url(AUDIO_URL, options)
         transcript = response.to_dict()["results"]["channels"][0]["alternatives"][0]["transcript"]
-        return response, transcript
+        return response.to_dict(), transcript
     except Exception as e:
         raise RuntimeError(f"Deepgram transcription error: {e}")
 

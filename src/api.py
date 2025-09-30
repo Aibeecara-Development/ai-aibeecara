@@ -14,6 +14,7 @@ import requests
 import io
 from pydub import AudioSegment
 from deepgram import DeepgramClient
+import deepgram
 import asyncio
 from typing import List, Optional
 from statistics import mean
@@ -165,19 +166,19 @@ async def transcribe_endpoint(input_data: AudioURLInput):
         audio_data = io.BytesIO(resp.content)
 
         audio = AudioSegment.from_file(audio_data, format="wav")
-
-        wav_bytes = io.BytesIO()
-        audio.export(wav_bytes, format="wav")
-        wav_bytes.seek(0)  # reset pointer
+        #
+        # wav_bytes = io.BytesIO()
+        # audio.export(wav_bytes, format="wav")
+        # wav_bytes.seek(0)  # reset pointer
 
         # Transcribe via Deepgram
-        response, transcript = transcribe_audio_api(wav_bytes.getvalue())
+        response, transcript = transcribe_audio_api(input_data.audio_url)
 
         # Run evaluations
         pause_score_dict = evaluate_pause(response)
         stutter_score, stuttered_phrases = evaluate_stutter(response)
         speech_rate_dict = calculate_speech_rates(response)
-        pronunciation_score_dict = evaluate_pronunciation(audio_data, transcript)
+        pronunciation_score_dict = evaluate_pronunciation(audio, transcript)
         evaluate_transcription_score, corrected_text, grammar_explanation = evaluate_transcription(transcript)
         cefr_score_dict = evaluate_cefr_stats(transcript)
 
