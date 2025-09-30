@@ -16,14 +16,14 @@ from pydub import AudioSegment
 from deepgram import DeepgramClient
 import torchaudio
 import asyncio
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from statistics import mean
 from enum import Enum
 from deep_translator import GoogleTranslator
 from .pronunciation_model.pronunciation_model import evaluate_pronunciation
 from .chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
                                             evaluate_vocabulary_cefr, calculate_speech_rates)
-from .utils.utils import clean_text
+from .utils.utils import clean_text, serialize_waveform, deserialize_waveform
 from .chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
@@ -82,6 +82,11 @@ class AspectScore(BaseModel):
     vocabulary_score: str
     pronunciation_score: float
     fluency_score: float
+
+class TranscriptionResult(BaseModel):
+    response: Dict[str, Any]
+    transcript: str
+    waveform: str
 
 class CorrectionScore(BaseModel):
     corrections: List[CorrectionItem]
@@ -161,26 +166,38 @@ async def transcribe_endpoint(input_data: AudioURLInput):
     try:
         # Download audio
         resp = requests.get(input_data.audio_url, timeout=30)
-        print(resp.headers.get("Content-Type"))
         resp.raise_for_status()
         audio_data = io.BytesIO(resp.content)
 
+        # Convert to waveform
         audio = AudioSegment.from_file(audio_data, format="wav")
-        audio_data = io.BytesIO(resp.content)  # keep raw bytes
-        waveform, sr = torchaudio.load(audio_data)  # directly load into torch
+        audio_data = io.BytesIO(resp.content)
+        waveform, sr = torchaudio.load(audio_data)
 
-        # resample if needed
+        # Resample and mono
         if sr != 16000:
             waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
-        #
-        # wav_bytes = io.BytesIO()
-        # audio.export(wav_bytes, format="wav")
-        # wav_bytes.seek(0)  # reset pointer
 
-        # Transcribe via Deepgram
+        # Transcribe via Deepgram (your function)
         response, transcript = transcribe_audio_api(input_data.audio_url)
+
+        return {
+            "response": response,
+            "transcript": transcript,
+            "waveform": serialize_waveform(waveform)
+        }
+
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/evaluate_chat_bubble/")
+async def evaluate_endpoint(input_data: TranscriptionResult):
+    try:
+        response = input_data.response
+        transcript = input_data.transcript
+        waveform = deserialize_waveform(input_data.waveform)
 
         # Run evaluations
         start = time.time()
@@ -219,6 +236,7 @@ async def transcribe_endpoint(input_data: AudioURLInput):
             "pronunciation_score": pronunciation_score_dict,
             "vocabulary_score": cefr_score_dict
         }
+
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 

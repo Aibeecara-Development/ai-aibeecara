@@ -88,10 +88,32 @@ Stream AI-generated response based on selected roleplay topic and conversation h
 }
 ```
 
-### 4. `/transcribe/` (POST)
+### 3. `/transcribe/` (POST)
+**Description:**
+Returns transcription of audio URL using Deepgram ASR.
+
+**Input:**
+```json
+{
+  "audio_url": "<audio_url>"
+}
+```
+
+**Output:**
+```json
+{
+   "response": {...},
+  "transcript": "This is the original transcribed text.",
+   "waveform": "....."
+}
+```
+
+### 4. `/evaluate/` (POST)
 
 **Description:**
-Transcribes uploaded audio and evaluates (ACCUMULATE IN FRONT-END SO THAT IT CAN BE AVERAGED IN THE END).
+Evaluates current audio (ACCUMULATE IN FRONT-END SO THAT IT CAN BE AVERAGED IN THE END).
+
+### The response from `/transcribe/` endpoint acts as the input to this endpoint.
 
 **Input:**
 Form file upload (multipart/form-data) with key: file.
