@@ -11,15 +11,15 @@ message Start {
   string request_id = 1;
 }
 
-message UserTranscript {
-  string user_text = 1;
+message UserText {
+  string text = 1;
 }
 
-message BotResponse {
-  string bot_text = 1;
+message BotText {
+  string text = 1;
 }
 
-message TTSChunk {
+message BotAudio {
   // 16 kHz, 16-bit PCM mono frames
   bytes pcm16 = 1;
 }
@@ -36,17 +36,17 @@ message SpeakingRequest {
   repeated HistoryItem history_log = 3;   // role-based chat history
   string accent = 4;                      // e.g., "american"
   string gender = 5;                      // e.g., "feminine"
-  float  speed  = 6;                      // e.g., 1.0
+  float  speed = 6;                       // e.g., 1.0
 }
 
 message SpeakingEvent {
   oneof event {
-    Start         start      = 1;
-    UserTranscript transcript = 2;
-    BotResponse   bot        = 3;
-    TTSChunk      tts        = 4;
-    Done          done       = 5;
-    Error         error      = 6;
+    Start start = 1;
+    UserText user_text = 2;
+    BotText bot_text = 3;
+    BotAudio bot_audio = 4;
+    Done done = 5;
+    Error error = 6;
   }
 }
 

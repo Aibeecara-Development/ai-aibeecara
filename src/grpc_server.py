@@ -61,6 +61,9 @@ class AiServiceServicer(pbg.AiServiceServicer):
     async def _async_tts_chunks(
         self, text: str, accent: str, gender: str, speed: float
     ) -> AsyncGenerator[bytes, None]:
+        """
+        Bridges a sync generator (generate_tts_pcm_stream) into an async generator of PCM16 bytes.
+        """
         loop = asyncio.get_running_loop()
         q: "asyncio.Queue[bytes | None]" = asyncio.Queue()
 
@@ -79,11 +82,12 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 break
             yield item
 
-    # ==== Renamed streaming RPC: ProcessSpeaking ====
+    # ==== Streaming RPC: ProcessSpeaking (updated to new proto) ====
     async def ProcessSpeaking(
         self, request: pb.SpeakingRequest, context: grpc.aio.ServicerContext
     ) -> AsyncGenerator[pb.SpeakingEvent, None]:
         request_id = str(uuid.uuid4())
+
         # Start event
         yield pb.SpeakingEvent(start=pb.Start(request_id=request_id))
 
@@ -106,22 +110,23 @@ class AiServiceServicer(pbg.AiServiceServicer):
                     "initial": True,
                 }
                 bot_text = await chat_api_sync(self.genai_client, payload)
-                # Bot response
-                yield pb.SpeakingEvent(bot=pb.BotResponse(bot_text=bot_text))
+
+                # Bot response (new proto: BotText.text)
+                yield pb.SpeakingEvent(bot_text=pb.BotText(text=bot_text))
 
                 cleaned = clean_text(bot_text)
                 async for pcm in self._async_tts_chunks(cleaned, accent, gender, speed):
-                    yield pb.SpeakingEvent(tts=pb.TTSChunk(pcm16=pcm))
+                    # New proto: event 'bot_audio' with message BotAudio{ pcm16 }
+                    yield pb.SpeakingEvent(bot_audio=pb.BotAudio(pcm16=pcm))
 
                 yield pb.SpeakingEvent(done=pb.Done())
                 return
 
             # ---- FOLLOW-UP TURN (has audio): transcribe -> bot -> TTS ----
             dg_response, transcript = await self._to_thread(transcribe_audio_api, audio_url)
-            print("Transcription:", transcript)
 
-            # Return the user's transcript (NEW)
-            yield pb.SpeakingEvent(transcript=pb.UserTranscript(user_text=transcript))
+            # Return the user's transcript (new proto: UserText.text)
+            yield pb.SpeakingEvent(user_text=pb.UserText(text=transcript))
 
             payload = {
                 "selected_topic_name": topic,
@@ -131,16 +136,14 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 "tts_model": "aura-2-amalthea-en",
             }
             bot_text = await chat_api_sync(self.genai_client, payload)
-            print("Bot response:", bot_text)
+
             # Bot response
-            yield pb.SpeakingEvent(bot=pb.BotResponse(bot_text=bot_text))
+            yield pb.SpeakingEvent(bot_text=pb.BotText(text=bot_text))
 
             cleaned = clean_text(bot_text)
-            print("Cleaned response:", cleaned)
             async for pcm in self._async_tts_chunks(cleaned, accent, gender, speed):
-                yield pb.SpeakingEvent(tts=pb.TTSChunk(pcm16=pcm))
+                yield pb.SpeakingEvent(bot_audio=pb.BotAudio(pcm16=pcm))
 
-            print("Done")
             yield pb.SpeakingEvent(done=pb.Done())
 
         except Exception as e:
