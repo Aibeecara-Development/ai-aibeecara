@@ -14,7 +14,7 @@ import requests
 import io
 from pydub import AudioSegment
 from deepgram import DeepgramClient
-import deepgram
+import torchaudio
 import asyncio
 from typing import List, Optional
 from statistics import mean
@@ -166,6 +166,14 @@ async def transcribe_endpoint(input_data: AudioURLInput):
         audio_data = io.BytesIO(resp.content)
 
         audio = AudioSegment.from_file(audio_data, format="wav")
+        audio_data = io.BytesIO(resp.content)  # keep raw bytes
+        waveform, sr = torchaudio.load(audio_data)  # directly load into torch
+
+        # resample if needed
+        if sr != 16000:
+            waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
+        if waveform.shape[0] > 1:
+            waveform = waveform.mean(dim=0, keepdim=True)
         #
         # wav_bytes = io.BytesIO()
         # audio.export(wav_bytes, format="wav")
@@ -175,12 +183,29 @@ async def transcribe_endpoint(input_data: AudioURLInput):
         response, transcript = transcribe_audio_api(input_data.audio_url)
 
         # Run evaluations
+        start = time.time()
         pause_score_dict = evaluate_pause(response)
+        print(f"evaluate_pause took {time.time() - start:.4f} seconds")
+
+        start = time.time()
         stutter_score, stuttered_phrases = evaluate_stutter(response)
+        print(f"evaluate_stutter took {time.time() - start:.4f} seconds")
+
+        start = time.time()
         speech_rate_dict = calculate_speech_rates(response)
-        pronunciation_score_dict = evaluate_pronunciation(audio, transcript)
+        print(f"calculate_speech_rates took {time.time() - start:.4f} seconds")
+
+        start = time.time()
+        pronunciation_score_dict = evaluate_pronunciation(waveform, transcript)
+        print(f"evaluate_pronunciation took {time.time() - start:.4f} seconds")
+
+        start = time.time()
         evaluate_transcription_score, corrected_text, grammar_explanation = evaluate_transcription(transcript)
+        print(f"evaluate_transcription took {time.time() - start:.4f} seconds")
+
+        start = time.time()
         cefr_score_dict = evaluate_cefr_stats(transcript)
+        print(f"evaluate_cefr_stats took {time.time() - start:.4f} seconds")
 
         return {
             "transcript": transcript,

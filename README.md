@@ -399,7 +399,7 @@ Streams conversation history and AI responses in real-time.
 3. Run the FastAPI server:
    ```bash
    cd src
-   uvicorn src.api:app --reload
+   uvicorn api:app --reload
    ```
 
 # TTS Options Available:

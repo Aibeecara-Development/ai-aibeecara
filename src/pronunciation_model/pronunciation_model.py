@@ -344,17 +344,12 @@ def tokenize_syllables(text, speed: float = 1.0):
 # results_df.to_csv("data/pronunciation_results.csv", index=False)
 # print("Results saved to data/pronunciation_results.csv")
 def evaluate_pronunciation(input_audio, reference_text):
-    audio, sr = torchaudio.load(input_audio)
-    if sr != 16000:
-        audio = torchaudio.transforms.Resample(sr, 16000)(audio)
-    if audio.shape[0] > 1:
-        audio = audio.mean(dim=0, keepdim=True)
 
     # 3. Initialize trainer
     trainer = getTrainer('en')
 
     # 4. Run evaluation
-    result = trainer.processAudioForGivenText(recordedAudio=audio, real_text=reference_text)
+    result = trainer.processAudioForGivenText(recordedAudio=input_audio, real_text=reference_text)
 
     # 5. Get highlights
     highlights = []

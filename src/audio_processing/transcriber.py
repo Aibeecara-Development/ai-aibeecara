@@ -57,8 +57,8 @@ def transcribe_audio_api(url: str):
             smart_format=True,
         )
         response = deepgram.listen.rest.v("1").transcribe_url(AUDIO_URL, options)
-        transcript = response.to_dict()["results"]["channels"][0]["alternatives"][0]["transcript"]
-        return response.to_dict(), transcript
+        transcript = response["results"]["channels"][0]["alternatives"][0]["transcript"]
+        return response, transcript
     except Exception as e:
         raise RuntimeError(f"Deepgram transcription error: {e}")
 
