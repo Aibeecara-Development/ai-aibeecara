@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 import time
 import requests
+import io
+from pydub import AudioSegment
 from deepgram import DeepgramClient
 import asyncio
 from typing import List, Optional
@@ -158,11 +160,14 @@ async def transcribe_endpoint(input_data: AudioURLInput):
     try:
         # Download audio
         resp = requests.get(input_data.audio_url, timeout=30)
+        print(resp.headers.get("Content-Type"))
         resp.raise_for_status()
-        audio_data = resp.content
+        audio_data = io.BytesIO(resp.content)
+
+        audio = AudioSegment.from_file(audio_data, format="wav")
 
         # Transcribe via Deepgram
-        response, transcript = transcribe_audio_api(audio_data)
+        response, transcript = transcribe_audio_api(audio)
 
         # Run evaluations
         pause_score_dict = evaluate_pause(response)
