@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package ai_service;
+
+message HistoryItem {
+  string role = 1;  // "user" | "bot"
+  string text = 2;
+}
+
+message Start {
+  string request_id = 1;
+}
+
+message UserTranscript {
+  string user_text = 1;
+}
+
+message BotResponse {
+  string bot_text = 1;
+}
+
+message TTSChunk {
+  // 16 kHz, 16-bit PCM mono frames
+  bytes pcm16 = 1;
+}
+
+message Done {}
+
+message Error {
+  string message = 1;
+}
+
+message SpeakingRequest {
+  string topic = 1;                       // e.g., "General"
+  string user_audio_url = 2;              // empty string => first turn (no audio)
+  repeated HistoryItem history_log = 3;   // role-based chat history
+  string accent = 4;                      // e.g., "american"
+  string gender = 5;                      // e.g., "feminine"
+  float  speed  = 6;                      // e.g., 1.0
+}
+
+message SpeakingEvent {
+  oneof event {
+    Start         start      = 1;
+    UserTranscript transcript = 2;
+    BotResponse   bot        = 3;
+    TTSChunk      tts        = 4;
+    Done          done       = 5;
+    Error         error      = 6;
+  }
+}
+
+service AiService {
+  rpc ProcessSpeaking (SpeakingRequest) returns (stream SpeakingEvent);
+}
