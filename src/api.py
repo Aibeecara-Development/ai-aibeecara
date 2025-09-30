@@ -166,8 +166,12 @@ async def transcribe_endpoint(input_data: AudioURLInput):
 
         audio = AudioSegment.from_file(audio_data, format="wav")
 
+        wav_bytes = io.BytesIO()
+        audio.export(wav_bytes, format="wav")
+        wav_bytes.seek(0)  # reset pointer
+
         # Transcribe via Deepgram
-        response, transcript = transcribe_audio_api(audio)
+        response, transcript = transcribe_audio_api(wav_bytes.getvalue())
 
         # Run evaluations
         pause_score_dict = evaluate_pause(response)
