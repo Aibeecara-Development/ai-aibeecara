@@ -11,7 +11,7 @@ from src import ai_service_pb2 as pb
 from src import ai_service_pb2_grpc as pbg
 
 from google import genai
-from src.chat_model.chatbot import chat_api_sync
+from src.chat_model.chatbot import chat_api_sync, custom_topic_validation
 from src.audio_processing.transcriber import transcribe_audio_api
 from src.chat_model.text_to_speech import generate_tts_pcm_stream
 from src.utils.utils import clean_text
@@ -82,7 +82,6 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 break
             yield item
 
-    # ==== Streaming RPC: ProcessSpeaking (updated to new proto) ====
     async def ProcessSpeaking(
         self, request: pb.SpeakingRequest, context: grpc.aio.ServicerContext
     ) -> AsyncGenerator[pb.SpeakingEvent, None]:
@@ -103,8 +102,8 @@ class AiServiceServicer(pbg.AiServiceServicer):
             if audio_url == "":
                 payload = {
                     "selected_topic_name": topic,
-                    "user_input": "",              # no transcript
-                    "history_log": history_pairs,  # pairs for your model
+                    "user_input": "", # no transcript
+                    "history_log": history_pairs,
                     "exchange_count": len(history_pairs),
                     "tts_model": "aura-2-amalthea-en",
                     "initial": True,
@@ -150,6 +149,23 @@ class AiServiceServicer(pbg.AiServiceServicer):
             yield pb.SpeakingEvent(error=pb.Error(message=str(e)))
             import traceback
             traceback.print_exc()
+
+    async def ValidateTopic(
+        self, request: pb.TopicValidationRequest, context: grpc.aio.ServicerContext
+    ) -> pb.TopicValidationResponse:
+        """
+        Validates whether a topic is BROAD or NARROW.
+        """
+        try:
+            topic_name = request.topic_name or ""
+            if not topic_name.strip():
+                await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "topic_name is required")
+
+            validation_result = await custom_topic_validation(self.genai_client, topic_name)
+            return pb.TopicValidationResponse(validation=validation_result)
+
+        except Exception as e:
+            await context.abort(grpc.StatusCode.INTERNAL, f"Topic validation failed: {str(e)}")
 
 
 async def serve(host: str = "[::]:50051") -> None:

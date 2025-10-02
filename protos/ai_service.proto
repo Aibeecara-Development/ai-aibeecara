@@ -50,6 +50,15 @@ message SpeakingEvent {
   }
 }
 
+message TopicValidationRequest {
+  string topic_name = 1;
+}
+
+message TopicValidationResponse {
+  string validation = 1;  // "BROAD" or "NARROW"
+}
+
 service AiService {
   rpc ProcessSpeaking (SpeakingRequest) returns (stream SpeakingEvent);
+  rpc ValidateTopic (TopicValidationRequest) returns (TopicValidationResponse);
 }

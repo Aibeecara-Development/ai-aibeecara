@@ -39,12 +39,23 @@ class AiServiceStub(object):
                 request_serializer=ai__service__pb2.SpeakingRequest.SerializeToString,
                 response_deserializer=ai__service__pb2.SpeakingEvent.FromString,
                 _registered_method=True)
+        self.ValidateTopic = channel.unary_unary(
+                '/ai_service.AiService/ValidateTopic',
+                request_serializer=ai__service__pb2.TopicValidationRequest.SerializeToString,
+                response_deserializer=ai__service__pb2.TopicValidationResponse.FromString,
+                _registered_method=True)
 
 
 class AiServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def ProcessSpeaking(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ValidateTopic(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -57,6 +68,11 @@ def add_AiServiceServicer_to_server(servicer, server):
                     servicer.ProcessSpeaking,
                     request_deserializer=ai__service__pb2.SpeakingRequest.FromString,
                     response_serializer=ai__service__pb2.SpeakingEvent.SerializeToString,
+            ),
+            'ValidateTopic': grpc.unary_unary_rpc_method_handler(
+                    servicer.ValidateTopic,
+                    request_deserializer=ai__service__pb2.TopicValidationRequest.FromString,
+                    response_serializer=ai__service__pb2.TopicValidationResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -86,6 +102,33 @@ class AiService(object):
             '/ai_service.AiService/ProcessSpeaking',
             ai__service__pb2.SpeakingRequest.SerializeToString,
             ai__service__pb2.SpeakingEvent.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ValidateTopic(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ai_service.AiService/ValidateTopic',
+            ai__service__pb2.TopicValidationRequest.SerializeToString,
+            ai__service__pb2.TopicValidationResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\nai_service\")\n\x0bHistoryItem\x12\x0c\n\x04role\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\"\x1b\n\x05Start\x12\x12\n\nrequest_id\x18\x01 \x01(\t\"\x18\n\x08UserText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x17\n\x07\x42otText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x19\n\x08\x42otAudio\x12\r\n\x05pcm16\x18\x01 \x01(\x0c\"\x06\n\x04\x44one\"\x18\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x95\x01\n\x0fSpeakingRequest\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x16\n\x0euser_audio_url\x18\x02 \x01(\t\x12,\n\x0bhistory_log\x18\x03 \x03(\x0b\x32\x17.ai_service.HistoryItem\x12\x0e\n\x06\x61\x63\x63\x65nt\x18\x04 \x01(\t\x12\x0e\n\x06gender\x18\x05 \x01(\t\x12\r\n\x05speed\x18\x06 \x01(\x02\"\x81\x02\n\rSpeakingEvent\x12\"\n\x05start\x18\x01 \x01(\x0b\x32\x11.ai_service.StartH\x00\x12)\n\tuser_text\x18\x02 \x01(\x0b\x32\x14.ai_service.UserTextH\x00\x12\'\n\x08\x62ot_text\x18\x03 \x01(\x0b\x32\x13.ai_service.BotTextH\x00\x12)\n\tbot_audio\x18\x04 \x01(\x0b\x32\x14.ai_service.BotAudioH\x00\x12 \n\x04\x64one\x18\x05 \x01(\x0b\x32\x10.ai_service.DoneH\x00\x12\"\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x11.ai_service.ErrorH\x00\x42\x07\n\x05\x65vent2X\n\tAiService\x12K\n\x0fProcessSpeaking\x12\x1b.ai_service.SpeakingRequest\x1a\x19.ai_service.SpeakingEvent0\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\nai_service\")\n\x0bHistoryItem\x12\x0c\n\x04role\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\"\x1b\n\x05Start\x12\x12\n\nrequest_id\x18\x01 \x01(\t\"\x18\n\x08UserText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x17\n\x07\x42otText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x19\n\x08\x42otAudio\x12\r\n\x05pcm16\x18\x01 \x01(\x0c\"\x06\n\x04\x44one\"\x18\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x95\x01\n\x0fSpeakingRequest\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x16\n\x0euser_audio_url\x18\x02 \x01(\t\x12,\n\x0bhistory_log\x18\x03 \x03(\x0b\x32\x17.ai_service.HistoryItem\x12\x0e\n\x06\x61\x63\x63\x65nt\x18\x04 \x01(\t\x12\x0e\n\x06gender\x18\x05 \x01(\t\x12\r\n\x05speed\x18\x06 \x01(\x02\"\x81\x02\n\rSpeakingEvent\x12\"\n\x05start\x18\x01 \x01(\x0b\x32\x11.ai_service.StartH\x00\x12)\n\tuser_text\x18\x02 \x01(\x0b\x32\x14.ai_service.UserTextH\x00\x12\'\n\x08\x62ot_text\x18\x03 \x01(\x0b\x32\x13.ai_service.BotTextH\x00\x12)\n\tbot_audio\x18\x04 \x01(\x0b\x32\x14.ai_service.BotAudioH\x00\x12 \n\x04\x64one\x18\x05 \x01(\x0b\x32\x10.ai_service.DoneH\x00\x12\"\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x11.ai_service.ErrorH\x00\x42\x07\n\x05\x65vent\",\n\x16TopicValidationRequest\x12\x12\n\ntopic_name\x18\x01 \x01(\t\"-\n\x17TopicValidationResponse\x12\x12\n\nvalidation\x18\x01 \x01(\t2\xb2\x01\n\tAiService\x12K\n\x0fProcessSpeaking\x12\x1b.ai_service.SpeakingRequest\x1a\x19.ai_service.SpeakingEvent0\x01\x12X\n\rValidateTopic\x12\".ai_service.TopicValidationRequest\x1a#.ai_service.TopicValidationResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -49,6 +49,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SPEAKINGREQUEST']._serialized_end=366
   _globals['_SPEAKINGEVENT']._serialized_start=369
   _globals['_SPEAKINGEVENT']._serialized_end=626
-  _globals['_AISERVICE']._serialized_start=628
-  _globals['_AISERVICE']._serialized_end=716
+  _globals['_TOPICVALIDATIONREQUEST']._serialized_start=628
+  _globals['_TOPICVALIDATIONREQUEST']._serialized_end=672
+  _globals['_TOPICVALIDATIONRESPONSE']._serialized_start=674
+  _globals['_TOPICVALIDATIONRESPONSE']._serialized_end=719
+  _globals['_AISERVICE']._serialized_start=722
+  _globals['_AISERVICE']._serialized_end=900
 # @@protoc_insertion_point(module_scope)
