@@ -20,7 +20,6 @@ RUN useradd --system araceebia && mkdir /home/araceebia && chown araceebia:arace
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --chown=araceebia:araceebia . .
 
-WORKDIR /app/src
 USER araceebia
 EXPOSE 50051
-CMD ["python", "-m", "grpc_server"]
+CMD ["python", "-m", "src.grpc_server"]
