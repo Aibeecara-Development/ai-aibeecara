@@ -11,10 +11,10 @@ from src import ai_service_pb2 as pb
 from src import ai_service_pb2_grpc as pbg
 
 from google import genai
-from src.chat_model.chatbot import chat_api_sync, custom_topic_validation
-from src.audio_processing.transcriber import transcribe_audio_api
-from src.chat_model.text_to_speech import generate_tts_pcm_stream
-from src.utils.utils import clean_text
+from chat_model.chatbot import chat_api_sync, custom_topic_validation
+from audio_processing.transcriber import transcribe_audio_api
+from chat_model.text_to_speech import generate_tts_pcm_stream
+from utils.utils import clean_text
 
 
 def _collapse_history_pairs(history_items: List[pb.HistoryItem]) -> List[tuple[str, str]]:
