@@ -1,3 +1,4 @@
+import queue
 import time
 from dotenv import load_dotenv
 import wave
@@ -10,10 +11,10 @@ from deepgram import (
     DeepgramClient,
     SpeakWebSocketEvents,
     SpeakWSOptions,
-    SpeakOptions
 )
 from scipy.signal import resample_poly
 import numpy as np
+
 
 load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
@@ -126,6 +127,124 @@ def generate_tts_wav_api(
 
     return audio_stream()
 
+
+def generate_tts_pcm_stream(text: str, accent: str = "american", gender: str = "feminine", speed: float = 1.0):
+    """
+    Yields raw 16-bit little-endian PCM (mono, 16 kHz) bytes as they arrive.
+    """
+    import queue
+    import threading
+    import time
+    import numpy as np
+    from scipy.signal import resample_poly
+    # from deepgram import SpeakWebSocketEvents, SpeakWSOptions  # assumed available
+
+    SAMPLE_RATE = 16000
+    IDLE_GRACE_SECONDS = 3.0         # break if no audio arrives for this long
+    QUEUE_WAIT_TIMEOUT = 0.5         # how often we wake up to check idle condition
+
+    q: "queue.Queue[bytes | None]" = queue.Queue(maxsize=64)
+    done_event = threading.Event()
+    last_audio_ts = {"t": time.monotonic()}  # mutated inside callback
+    received_any_audio = {"v": False}
+
+    # Pick Deepgram voice/model
+    model = "aura-2-amalthea-en"
+    if accent == "british" and gender == "feminine":
+        model = "aura-2-draco-en"
+    elif accent == "british" and gender == "masculine":
+        model = "aura-2-pandora-en"
+    elif accent == "australian":
+        model = "aura-2-hyperion-en"
+
+    # Callback for Deepgram audio chunks
+    def on_binary_data(_, data: bytes, **kwargs):
+        # Incoming bytes are linear16
+        audio = np.frombuffer(data, dtype=np.int16)
+
+        # Apply speed change by resampling if requested
+        if speed and abs(speed - 1.0) > 1e-6:
+            up = max(1, int(round(speed * 100)))
+            down = 100
+            # NOTE: chunk-wise resampling can introduce tiny boundary artifacts;
+            # it's fine for small speed tweaks. For hi-fi, accumulate & resample.
+            audio = resample_poly(audio, up, down).astype(np.int16)
+
+        try:
+            q.put_nowait(audio.tobytes())
+            received_any_audio["v"] = True
+            last_audio_ts["t"] = time.monotonic()
+        except queue.Full:
+            # Drop frames to keep latency bounded (no-seek stream)
+            pass
+
+    def _signal_done():
+        if not done_event.is_set():
+            done_event.set()
+            try:
+                q.put_nowait(None)
+            except queue.Full:
+                pass
+
+    def on_close(**kwargs):
+        _signal_done()
+
+    def on_error(_, *a, **kw):
+        _signal_done()
+
+    # Start the Deepgram streaming TTS
+    dg_connection = deepgram.speak.websocket.v("1")
+    dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
+    dg_connection.on(SpeakWebSocketEvents.Close, on_close)
+    dg_connection.on(SpeakWebSocketEvents.Error, on_error)
+
+    options = SpeakWSOptions(
+        model=model,
+        encoding="linear16",
+        sample_rate=SAMPLE_RATE,
+    )
+
+    if not dg_connection.start(options):
+        raise RuntimeError("Failed to start Deepgram connection")
+
+    # Send text and flush (no premature finish here)
+    dg_connection.send_text(text)
+    dg_connection.flush()
+
+    # The generator that FastAPI will iterate
+    def iterator():
+        # Optional: short leading silence to prime the player
+        yield (np.zeros(int(0.05 * SAMPLE_RATE), dtype=np.int16)).tobytes()
+
+        while True:
+            try:
+                chunk = q.get(timeout=QUEUE_WAIT_TIMEOUT)
+            except queue.Empty:
+                # No chunk this tick; check for graceful exit conditions
+                if done_event.is_set():
+                    break
+                # If we've already received audio and it has been quiet long enough, exit
+                if received_any_audio["v"] and (time.monotonic() - last_audio_ts["t"] >= IDLE_GRACE_SECONDS):
+                    break
+                continue
+
+            if chunk is None:
+                break
+
+            if chunk:
+                yield chunk
+
+        # Best-effort close/finish after we've delivered everything
+        try:
+            # Some SDKs require finish() for cleanup; if it raises, ignore and close.
+            dg_connection.finish()
+        except Exception:
+            try:
+                dg_connection.close()
+            except Exception:
+                pass
+
+    return iterator()
 
 
 def transform_speech(file_path, spoken_text, model="aura-2-amalthea-en" ):

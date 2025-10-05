@@ -43,9 +43,9 @@ def evaluate_vocabulary(transcription):
     print(f"Vocabulary score: {mtld_score:.2f}")
     return mtld_score
 
-def evaluate_vocabulary_cefr(transcription):
+def evaluate_vocabulary_cefr(transcription: str) -> str:
     """Evaluate the vocabulary of the transcription based on CEFR levels."""
-    cefr_prediction = cefr_classifier(transcription)
+    cefr_prediction = cefr_classifier(transcription)  # returns "A1"..."C2"
     print(f"CEFR vocabulary score: {cefr_prediction}")
     return cefr_prediction
 
@@ -91,7 +91,7 @@ def evaluate_pause(deepgram_response):
     }
 
 def evaluate_stutter(deepgram_response):
-    words_list = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
+    words_list = deepgram_response["results"]["channels"][0]["alternatives"][0]["words"]
     words = [w["word"].lower() for w in words_list]
     count = 0
     i = 0
@@ -115,8 +115,8 @@ def evaluate_stutter(deepgram_response):
 
 def calculate_speech_rates(deepgram_response) -> dict:
     dic = pyphen.Pyphen(lang='en')
-    words_data = deepgram_response.to_dict()["results"]["channels"][0]["alternatives"][0]["words"]
-    duration = deepgram_response.to_dict()["metadata"]["duration"]
+    words_data = deepgram_response["results"]["channels"][0]["alternatives"][0]["words"]
+    duration = deepgram_response["metadata"]["duration"]
 
     # Extract words
     words = [w["word"] for w in words_data if w.get("word")]

@@ -1,33 +1,35 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-from chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation,
+from .chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize_conversation, custom_topic_validation,
                                 chat_task, hint_to_users)
-from chat_model.emotion_detection import detect_emotion
-from audio_processing.transcriber import transcribe_audio_api, transcription_task
-from chat_model.text_to_speech import generate_tts_wav_api, tts_stream
+from .chat_model.emotion_detection import detect_emotion
+from .audio_processing.transcriber import transcribe_audio_api, transcription_task
+from .chat_model.text_to_speech import generate_tts_pcm_stream, tts_stream
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 import time
 import requests
+import io
+from pydub import AudioSegment
 from deepgram import DeepgramClient
+import torchaudio
 import asyncio
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from statistics import mean
 from enum import Enum
 from deep_translator import GoogleTranslator
-from pronunciation_model.pronunciation_model import evaluate_pronunciation
-from chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
-                                            evaluate_vocabulary, evaluate_vocabulary_cefr)
-from utils.utils import clean_text
-from chat_model.scoring.vocab import evaluate_cefr_stats
+from .pronunciation_model.pronunciation_model import evaluate_pronunciation
+from .chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
+                                            evaluate_vocabulary_cefr, calculate_speech_rates)
+from .utils.utils import clean_text, serialize_waveform, deserialize_waveform
+from .chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
 app = FastAPI()
 gemini_key = os.getenv("GEMINI_KEY")
 client = genai.Client(api_key=gemini_key)
-load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
 deepgram_client = DeepgramClient(deepgram_key)
 
@@ -67,6 +69,7 @@ class ChatEmotion(BaseModel):
 class CorrectionItem(BaseModel):
     chat_bubble_id: int
     score: float
+    transcript: str = ""
 
 class CorrectionAspect(str, Enum):
     grammar = "grammar"
@@ -76,9 +79,14 @@ class CorrectionAspect(str, Enum):
 
 class AspectScore(BaseModel):
     grammar_score: float
-    vocabulary_score: float
+    vocabulary_score: str
     pronunciation_score: float
     fluency_score: float
+
+class TranscriptionResult(BaseModel):
+    response: Dict[str, Any]
+    transcript: str
+    waveform: str
 
 class CorrectionScore(BaseModel):
     corrections: List[CorrectionItem]
@@ -97,7 +105,10 @@ def mock_stream_response(user_input):
 @app.post("/chat/")
 async def chat_endpoint(chat_input: ChatInput):
     response_text = await chat_api_sync(client, chat_input.model_dump())
-    return {"response": response_text}
+
+    return {
+        "response": response_text,
+    }
 
 @app.post("/chat/summary")
 async def summary_endpoint(chat_input: ChatInput):
@@ -153,26 +164,77 @@ async def websocket_summary_endpoint(websocket: WebSocket):
 @app.post("/transcribe/")
 async def transcribe_endpoint(input_data: AudioURLInput):
     try:
-        # Download audio file
+        # Download audio
         resp = requests.get(input_data.audio_url, timeout=30)
         resp.raise_for_status()
-        audio_data = resp.content
+        audio_data = io.BytesIO(resp.content)
 
-        # Transcribe
-        response, transcript = transcribe_audio_api(audio_data)
+        # Convert to waveform
+        audio = AudioSegment.from_file(audio_data, format="wav")
+        audio_data = io.BytesIO(resp.content)
+        waveform, sr = torchaudio.load(audio_data)
 
-        # Evaluate pause
-        pause_score, pause_details = evaluate_pause(response)
+        # Resample and mono
+        if sr != 16000:
+            waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
+        if waveform.shape[0] > 1:
+            waveform = waveform.mean(dim=0, keepdim=True)
 
-        # Evaluate stutter
+        # Transcribe via Deepgram (your function)
+        response, transcript = transcribe_audio_api(input_data.audio_url)
+
+        return {
+            "response": response,
+            "transcript": transcript,
+            "waveform": serialize_waveform(waveform)
+        }
+
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/evaluate_chat_bubble/")
+async def evaluate_endpoint(input_data: TranscriptionResult):
+    try:
+        response = input_data.response
+        transcript = input_data.transcript
+        waveform = deserialize_waveform(input_data.waveform)
+
+        # Run evaluations
+        start = time.time()
+        pause_score_dict = evaluate_pause(response)
+        print(f"evaluate_pause took {time.time() - start:.4f} seconds")
+
+        start = time.time()
         stutter_score, stuttered_phrases = evaluate_stutter(response)
+        print(f"evaluate_stutter took {time.time() - start:.4f} seconds")
+
+        start = time.time()
+        speech_rate_dict = calculate_speech_rates(response)
+        print(f"calculate_speech_rates took {time.time() - start:.4f} seconds")
+
+        start = time.time()
+        pronunciation_score_dict = evaluate_pronunciation(waveform, transcript)
+        print(f"evaluate_pronunciation took {time.time() - start:.4f} seconds")
+
+        start = time.time()
+        evaluate_transcription_score, corrected_text, grammar_explanation = evaluate_transcription(transcript)
+        print(f"evaluate_transcription took {time.time() - start:.4f} seconds")
+
+        start = time.time()
+        cefr_score_dict = evaluate_cefr_stats(transcript)
+        print(f"evaluate_cefr_stats took {time.time() - start:.4f} seconds")
 
         return {
             "transcript": transcript,
-            "pause_score": pause_score,
-            "pause_details": pause_details,
+            "corrected_transcript": corrected_text,
+            "grammar_score": evaluate_transcription_score,
+            "grammar_explanation": grammar_explanation,
+            "pause_score": pause_score_dict,
             "stutter_score": stutter_score,
-            "stuttered_phrases": stuttered_phrases
+            "stuttered_phrases": stuttered_phrases,
+            "speech_rate": speech_rate_dict,
+            "pronunciation_score": pronunciation_score_dict,
+            "vocabulary_score": cefr_score_dict
         }
 
     except Exception as e:
@@ -182,10 +244,9 @@ async def transcribe_endpoint(input_data: AudioURLInput):
 async def chat_tts(input: TTSInput):
     try:
         cleaned_text = clean_text(input.text)
-        return StreamingResponse(
-            generate_tts_wav_api(cleaned_text, input.accent, input.gender, input.speed),
-            media_type="audio/wav"
-        )
+        gen = generate_tts_pcm_stream(cleaned_text, input.accent, input.gender, input.speed)
+        # We return raw PCM; the frontend decodes/plays it via AudioWorklet.
+        return StreamingResponse(gen, media_type="application/octet-stream")
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
@@ -278,7 +339,8 @@ async def try_by_yourself(input_data: CorrectionScore):
         response, transcript = transcribe_audio_api(audio_data)
 
         if input_data.aspect == CorrectionAspect.pronunciation:
-            pronunciation_score, wrong_words = evaluate_pronunciation(audio_data, transcript)
+            pronunciation_result = evaluate_pronunciation(audio_data, transcript)
+            pronunciation_score = pronunciation_result['score']
             new_score, new_aspect_mean = update_score(input_data, pronunciation_score)
             input_data.aspect_score.pronunciation_score = pronunciation_score
         elif input_data.aspect == CorrectionAspect.grammar:
@@ -286,9 +348,25 @@ async def try_by_yourself(input_data: CorrectionScore):
             new_score, new_aspect_mean = update_score(input_data, grammar_score)
             input_data.aspect_score.grammar_score = grammar_score
         elif input_data.aspect == CorrectionAspect.vocabulary:
-            vocabulary_score = evaluate_vocabulary(transcript)
-            new_score, new_aspect_mean = update_score(input_data, vocabulary_score)
+            updated_transcripts = []
+            for item in input_data.corrections:
+                if item.chat_bubble_id == input_data.chat_bubble_correction_id:
+                    # replace with the newly transcribed text
+                    item.transcript = transcript
+                # collect transcripts (fallback empty if not present yet)
+                updated_transcripts.append(getattr(item, "transcript", ""))
+
+            # Step 3: join all transcripts into one text
+            combined_transcript = " ".join(t for t in updated_transcripts if t.strip())
+
+            # Step 4: evaluate vocabulary level on the whole joined transcript
+            vocabulary_score = evaluate_vocabulary_cefr(combined_transcript)  # str: "A1"..."C2"
+
+            # Step 5: update aspect_score
             input_data.aspect_score.vocabulary_score = vocabulary_score
+
+            new_score = vocabulary_score
+            new_aspect_mean = vocabulary_score
         else:  # fluency
             pause_score, pause_details = evaluate_pause(response)
             stutter_score, stuttered_phrases = evaluate_stutter(response)

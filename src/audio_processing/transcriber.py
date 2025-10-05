@@ -1,8 +1,9 @@
 import os
 import json
-from deepgram import DeepgramClient, PrerecordedOptions, FileSource
+from deepgram import DeepgramClient, PrerecordedOptions, FileSource, TextSource
 from dotenv import load_dotenv
 import whisper
+import requests
 from whisper import transcribe
 
 load_dotenv()
@@ -10,21 +11,32 @@ deepgram_key = os.getenv('DEEPGRAM_KEY')
 deepgram = DeepgramClient(deepgram_key)
 
 async def transcription_task(ws, chat_queue, deepgram_client):
-    """
-    Streams audio from WebSocket to Deepgram transcription
-    and queues complete sentences to chat_queue.
-    """
     async with deepgram_client.listen.websocket.v("1",
                                                   model="nova-3",
                                                   smart_format=True,
-                                                  filler_words=True  # ✅ include filler words in streaming too
-                                                  ) as dg_ws:
+                                                  filler_words=True) as dg_ws:
 
         @dg_ws.on("transcript_received")
         async def handle_transcript(data):
             transcript_text = data["channel"]["alternatives"][0]["transcript"]
+
+            # Only push when sentence ends
             if transcript_text.strip().endswith((".", "?", "!")):
-                await chat_queue.put(transcript_text)
+                # --- run evaluations here ---
+                cefr_level = evaluate_cefr_stats(transcript_text)
+                grammar_score, corrected_text, grammar_explanation = evaluate_transcription(transcript_text)
+                pause_score, pause_details = evaluate_pause(data)
+                stutter_score, stuttered_phrases = evaluate_stutter(data)
+
+                eval_result = {
+                    "transcript": transcript_text,
+                    "vocabulary": cefr_level,
+                    "grammar": grammar_score,
+                    "fluency": (pause_score + stutter_score) / 2.0,
+                }
+
+                # Put both transcript & eval results into queue
+                await chat_queue.put(eval_result)
 
         try:
             while True:
@@ -34,13 +46,18 @@ async def transcription_task(ws, chat_queue, deepgram_client):
             pass
 
 
-def transcribe_audio_api(file_bytes: bytes):
+def transcribe_audio_api(url: str):
     """Transcribes audio using Deepgram and returns the response and transcript text."""
     try:
-        payload: FileSource = {"buffer": file_bytes}
-        options = PrerecordedOptions(model="nova-3", smart_format=True)
-        response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
-        transcript = response.to_dict()["results"]["channels"][0]["alternatives"][0]["transcript"]
+        AUDIO_URL = {
+            "url": url
+        }
+        options: PrerecordedOptions = PrerecordedOptions(
+            model="nova-3",
+            smart_format=True,
+        )
+        response = deepgram.listen.rest.v("1").transcribe_url(AUDIO_URL, options)
+        transcript = response["results"]["channels"][0]["alternatives"][0]["transcript"]
         return response, transcript
     except Exception as e:
         raise RuntimeError(f"Deepgram transcription error: {e}")
