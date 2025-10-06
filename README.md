@@ -129,10 +129,8 @@ Form file upload (multipart/form-data) with key: file.
             "transcript": "This is the original transcribed text.",
             "corrected_transcript": "This is the corrected transcribed text.",
             "grammar_score": 0.97,
-            "grammar_explanation": """Explanation:
-            The verb 'go' does not agree with the subject 'he.' It should be 'goes.'
-            Tense Used:
-            Present simple tense, used for regular or habitual actions""",
+            "grammar_explanation": "The verb 'go' does not agree with the subject 'he.' It should be 'goes.'",
+            "tense_used": "Present simple tense",
             "pause_score_dict": {
                  "score": 0.88,
                  "pause_between_words": [{'start_word': 'and', 'end_word': 'we', 'duration': 2.5600001000000003}, 

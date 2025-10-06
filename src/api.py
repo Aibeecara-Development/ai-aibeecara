@@ -217,7 +217,8 @@ async def evaluate_endpoint(input_data: TranscriptionResult):
         print(f"evaluate_pronunciation took {time.time() - start:.4f} seconds")
 
         start = time.time()
-        evaluate_transcription_score, corrected_text, grammar_explanation = evaluate_transcription(transcript)
+        evaluate_transcription_score, corrected_text, grammar_explanation, tense_used = evaluate_transcription(
+            transcript)
         print(f"evaluate_transcription took {time.time() - start:.4f} seconds")
 
         start = time.time()
@@ -229,6 +230,7 @@ async def evaluate_endpoint(input_data: TranscriptionResult):
             "corrected_transcript": corrected_text,
             "grammar_score": evaluate_transcription_score,
             "grammar_explanation": grammar_explanation,
+            "tense_used": tense_used,
             "pause_score": pause_score_dict,
             "stutter_score": stutter_score,
             "stuttered_phrases": stuttered_phrases,

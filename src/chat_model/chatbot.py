@@ -7,6 +7,8 @@ from fastapi import WebSocket
 from typing import Dict, List, Tuple
 import os
 from dotenv import load_dotenv
+import re
+from typing import Tuple
 import time, random
 # from ..pronunciation_model.pronunciation_model import g2p_from_user_history, transcribe_phonemes, score_pronunciation
 
@@ -382,7 +384,7 @@ async def hint_to_users(client: genai.Client, chatbot_message: str) -> str:
 
     return response.text.strip()
 
-def grammar_correction(client: genai.Client, incorrect_transcript: str) -> str:
+def grammar_correction(client: genai.Client, incorrect_transcript: str) -> Tuple[str, str]:
     prompt = f"""
         You are a grammar correction assistant. 
         Follow the format strictly:
@@ -418,7 +420,16 @@ def grammar_correction(client: genai.Client, incorrect_transcript: str) -> str:
         contents=prompt
     )
 
-    return response.text.strip()
+    text = response.text.strip()
+
+    # Use regex to extract the two sections
+    explanation_match = re.search(r"[Ee]xplanation[:：]?\s*(.*?)\s*[Tt]ense [Uu]sed[:：]?", text, re.DOTALL)
+    tense_match = re.search(r"[Tt]ense [Uu]sed[:：]?\s*(.*)", text, re.DOTALL)
+
+    explanation = explanation_match.group(1).strip() if explanation_match else ""
+    tense_used = tense_match.group(1).strip() if tense_match else ""
+
+    return explanation, tense_used
 
 # e.g. selected_topic_name = "Daily Routine", "Travel", "Work", "Hobbies and Interests"
 
