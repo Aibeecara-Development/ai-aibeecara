@@ -29,9 +29,9 @@ def evaluate_transcription(transcription):
 
     transcription_score = 1 - wer_score
 
-    grammar_explanation = grammar_correction(client, transcription)
+    grammar_explanation, tense_used = grammar_correction(client, transcription)
 
-    return transcription_score, corrected_text, grammar_explanation
+    return transcription_score, corrected_text, grammar_explanation, tense_used
 
 def evaluate_vocabulary(transcription):
     lex = LexicalRichness(transcription)

@@ -11,10 +11,16 @@ from src import ai_service_pb2 as pb
 from src import ai_service_pb2_grpc as pbg
 
 from google import genai
-from src.chat_model.chatbot import chat_api_sync, custom_topic_validation
+from src.chat_model.chatbot import (
+    chat_api_sync,
+    custom_topic_validation,
+    hint_to_users,
+)
 from src.audio_processing.transcriber import transcribe_audio_api
 from src.chat_model.text_to_speech import generate_tts_pcm_stream
 from src.utils.utils import clean_text
+
+from deep_translator import GoogleTranslator
 
 
 def _collapse_history_pairs(history_items: List[pb.HistoryItem]) -> List[tuple[str, str]]:
@@ -82,6 +88,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 break
             yield item
 
+    # Speaking (server-stream)
     async def ProcessSpeaking(
         self, request: pb.SpeakingRequest, context: grpc.aio.ServicerContext
     ) -> AsyncGenerator[pb.SpeakingEvent, None]:
@@ -115,7 +122,6 @@ class AiServiceServicer(pbg.AiServiceServicer):
 
                 cleaned = clean_text(bot_text)
                 async for pcm in self._async_tts_chunks(cleaned, accent, gender, speed):
-                    # New proto: event 'bot_audio' with message BotAudio{ pcm16 }
                     yield pb.SpeakingEvent(bot_audio=pb.BotAudio(pcm16=pcm))
 
                 yield pb.SpeakingEvent(done=pb.Done())
@@ -150,6 +156,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
             import traceback
             traceback.print_exc()
 
+    # Topic validation
     async def ValidateTopic(
         self, request: pb.TopicValidationRequest, context: grpc.aio.ServicerContext
     ) -> pb.TopicValidationResponse:
@@ -157,15 +164,55 @@ class AiServiceServicer(pbg.AiServiceServicer):
         Validates whether a topic is BROAD or NARROW.
         """
         try:
-            topic_name = request.topic_name or ""
-            if not topic_name.strip():
+            topic_name = (request.topic_name or "").strip()
+            if not topic_name:
                 await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "topic_name is required")
 
             validation_result = await custom_topic_validation(self.genai_client, topic_name)
             return pb.TopicValidationResponse(validation=validation_result)
 
+        except grpc.RpcError:
+            raise  # keep original status
         except Exception as e:
             await context.abort(grpc.StatusCode.INTERNAL, f"Topic validation failed: {str(e)}")
+
+    # Translation
+    async def TranslateText(
+        self, request: pb.TranslateRequest, context: grpc.aio.ServicerContext
+    ) -> pb.TranslateResponse:
+        text = (request.text or "").strip()
+        if not text:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "text is required")
+
+        try:
+            # deep_translator is sync; run off the event loop
+            def _translate() -> str:
+                return GoogleTranslator(source="en", target="id").translate(text)
+
+            translated = await self._to_thread(_translate)
+            return pb.TranslateResponse(translated_text=translated)
+
+        except grpc.RpcError:
+            raise
+        except Exception as e:
+            await context.abort(grpc.StatusCode.INTERNAL, f"Translation failed: {str(e)}")
+
+    # Hint
+    async def GenerateHint(
+        self, request: pb.HintRequest, context: grpc.aio.ServicerContext
+    ) -> pb.HintResponse:
+        response_text = (request.response_text or "").strip()
+        if not response_text:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "response_text is required")
+
+        try:
+            hint = await hint_to_users(self.genai_client, response_text)
+            return pb.HintResponse(hint=hint)
+
+        except grpc.RpcError:
+            raise
+        except Exception as e:
+            await context.abort(grpc.StatusCode.INTERNAL, f"Hint generation failed: {str(e)}")
 
 
 async def serve(host: str = "[::]:50051") -> None:

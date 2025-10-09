@@ -26,7 +26,8 @@ if _version_not_supported:
 
 
 class AiServiceStub(object):
-    """Missing associated documentation comment in .proto file."""
+    """Service
+    """
 
     def __init__(self, channel):
         """Constructor.
@@ -44,10 +45,21 @@ class AiServiceStub(object):
                 request_serializer=ai__service__pb2.TopicValidationRequest.SerializeToString,
                 response_deserializer=ai__service__pb2.TopicValidationResponse.FromString,
                 _registered_method=True)
+        self.TranslateText = channel.unary_unary(
+                '/ai_service.AiService/TranslateText',
+                request_serializer=ai__service__pb2.TranslateRequest.SerializeToString,
+                response_deserializer=ai__service__pb2.TranslateResponse.FromString,
+                _registered_method=True)
+        self.GenerateHint = channel.unary_unary(
+                '/ai_service.AiService/GenerateHint',
+                request_serializer=ai__service__pb2.HintRequest.SerializeToString,
+                response_deserializer=ai__service__pb2.HintResponse.FromString,
+                _registered_method=True)
 
 
 class AiServiceServicer(object):
-    """Missing associated documentation comment in .proto file."""
+    """Service
+    """
 
     def ProcessSpeaking(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -56,6 +68,18 @@ class AiServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ValidateTopic(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def TranslateText(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GenerateHint(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -74,6 +98,16 @@ def add_AiServiceServicer_to_server(servicer, server):
                     request_deserializer=ai__service__pb2.TopicValidationRequest.FromString,
                     response_serializer=ai__service__pb2.TopicValidationResponse.SerializeToString,
             ),
+            'TranslateText': grpc.unary_unary_rpc_method_handler(
+                    servicer.TranslateText,
+                    request_deserializer=ai__service__pb2.TranslateRequest.FromString,
+                    response_serializer=ai__service__pb2.TranslateResponse.SerializeToString,
+            ),
+            'GenerateHint': grpc.unary_unary_rpc_method_handler(
+                    servicer.GenerateHint,
+                    request_deserializer=ai__service__pb2.HintRequest.FromString,
+                    response_serializer=ai__service__pb2.HintResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'ai_service.AiService', rpc_method_handlers)
@@ -83,7 +117,8 @@ def add_AiServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class AiService(object):
-    """Missing associated documentation comment in .proto file."""
+    """Service
+    """
 
     @staticmethod
     def ProcessSpeaking(request,
@@ -129,6 +164,60 @@ class AiService(object):
             '/ai_service.AiService/ValidateTopic',
             ai__service__pb2.TopicValidationRequest.SerializeToString,
             ai__service__pb2.TopicValidationResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def TranslateText(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ai_service.AiService/TranslateText',
+            ai__service__pb2.TranslateRequest.SerializeToString,
+            ai__service__pb2.TranslateResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GenerateHint(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ai_service.AiService/GenerateHint',
+            ai__service__pb2.HintRequest.SerializeToString,
+            ai__service__pb2.HintResponse.FromString,
             options,
             channel_credentials,
             insecure,
