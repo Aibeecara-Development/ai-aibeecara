@@ -1,9 +1,22 @@
 import spacy
 import sqlite3
-import lemminflect
 import os
 import json
 from spacy.util import is_package
+import nltk
+from phonemizer import phonemize
+
+def ensure_wordnet_downloaded():
+    try:
+        nltk.data.find("corpora/wordnet")
+        nltk.data.find("corpora/omw-1.4")
+        print("WordNet already downloaded ✅")
+    except LookupError:
+        print("Downloading WordNet resources...")
+        nltk.download("wordnet")
+        nltk.download("omw-1.4")
+
+ensure_wordnet_downloaded()
 
 def ensure_spacy_model(model_name: str = "en_core_web_sm"):
     try:
@@ -22,7 +35,11 @@ ensure_spacy_model("en_core_web_sm")
 
 NLP = spacy.load("en_core_web_sm", exclude = ['parser', 'ner'])
 
-DATABASE_FILENAME = '../data/word_cefr_minified.db'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE_FILENAME = os.path.join(BASE_DIR, "..", "..", "data", "word_cefr_minified.db")
+
+# Normalize the path
+DATABASE_FILENAME = os.path.normpath(DATABASE_FILENAME)
 
 conn = sqlite3.connect(DATABASE_FILENAME)
 cursor = conn.cursor()
@@ -58,7 +75,7 @@ def custom_tokenize_text(text: str) -> list[tuple[str, str, str]]:
     for token in doc:
         word = token.text.lower().strip()
         word_pos = token.tag_
-        proposed_lemma = token._.lemma().lower()
+        proposed_lemma = token.lemma_.lower()
 
         abbreviation_form = ABBREVIATION_MAPPING.get(word)
         if abbreviation_form:
@@ -167,33 +184,14 @@ input_text = """
 In the heart of every forest, a hidden world thrives among the towering trees. Trees, 
 those silent giants, are more than just passive observers of nature's drama; they are 
 active participants in an intricate dance of life.
-
-Did you know that trees communicate with each other? It's not through words or gestures 
-like ours, but rather through a complex network of fungi that connect their roots 
-underground. This network, often called the "wood wide web," allows trees to share 
-nutrients, water, and even warnings about potential threats.
-
-But trees are not just generous benefactors; they are also masters of adaptation. Take 
-the mighty sequoias, for example, towering giants that have stood the test of time for 
-thousands of years. These giants have evolved thick, fire-resistant bark to withstand 
-the frequent wildfires of their native California.
-
-And speaking of longevity, did you know that some trees have been around for centuries, 
-witnessing history unfold? The ancient bristlecone pines of the American West, for 
-instance, can live for over 5,000 years, making them some of the oldest living organisms 
-on Earth.
-
-So the next time you find yourself wandering through a forest, take a moment to appreciate 
-the remarkable world of trees. They may seem like silent spectators, but their lives are 
-full of fascinating stories waiting to be discovered.
 """
 
 # tokens = custom_tokenize_text(input_text)
 # level_tokens = get_levels_tokens(tokens)
-
+#
 # print("Text length:", len(input_text))
 # print("Total tokens:", len(tokens))
-
+#
 # counter = 0
 # print(f'{"WORD".ljust(26)}\t{"LEMMA".ljust(26)}\tPOS\tLEVEL\tCEFR')
 # print('-' * 85)
@@ -206,6 +204,83 @@ full of fascinating stories waiting to be discovered.
 #         counter += 1
 #         if counter >= 200:
 #             break
+
+def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> list[dict]:
+    """Fetch synonyms of a word, assign CEFR levels, WordNet example sentences, and definitions."""
+    from nltk.corpus import wordnet as wn
+
+    # Map POS tag to WordNet POS
+    pos_map = {
+        "NOUN": wn.NOUN,
+        "VERB": wn.VERB,
+        "ADJ": wn.ADJ,
+        "ADV": wn.ADV
+    }
+    wn_pos = pos_map.get(pos.upper(), wn.NOUN)
+
+    synonyms = {}
+    for synset in wn.synsets(word, pos=wn_pos):
+        for lemma in synset.lemmas():
+            synonym = lemma.name().replace("_", " ")
+            if synonym.lower() == word.lower():
+                continue
+
+            # Collect only examples that *contain the synonym*
+            valid_examples = []
+            for ex in synset.examples():
+                if word.lower() in ex.lower():
+                    new_ex = ex.lower().replace(word.lower(), synonym)
+                    if synonym.lower() in new_ex:
+                        valid_examples.append(new_ex)
+
+            # Only keep synonym if there’s at least one valid example
+            if valid_examples:
+                synonyms[synonym] = {
+                    "examples": valid_examples,
+                    "definition": synset.definition()
+                }
+                # print(f"Found synonym: {synonym} for word: {word}")
+                # print(f"Examples: {valid_examples}")
+                # print(f"Definition: {synset.definition()}")
+
+    # If no synonyms found → return early
+    if not synonyms:
+        return []
+
+    # Convert to token structure
+    synonym_tokens = [(syn, syn, pos) for syn in synonyms.keys()]
+    if not synonym_tokens:  # safeguard before DB
+        return []
+
+    # Get CEFR levels for synonyms
+    level_tokens = get_levels_tokens_func(synonym_tokens)
+
+    results = []
+    for syn, lemma, pos_tag, level in level_tokens:
+        data = synonyms.get(syn, {})
+        examples = data.get("examples", [])
+        definition = data.get("definition", "No definition available.")
+        example_sentence = examples[0] if examples else f"No example available for '{syn}'."
+
+        phonemes = phonemize(
+            syn,
+            language='en-us',
+            backend='espeak',
+            strip=True,
+            preserve_punctuation=True,
+        )
+
+        results.append({
+            "synonym": syn,
+            "pos": pos_tag,
+            "pronunciation": phonemes,
+            "definition": definition,
+            "level_score": round(level, 2),
+            "cefr": DIFFICULTY_MAPPING_REVERSE.get(round(level), "NA"),
+            "example_sentence": example_sentence,
+        })
+
+    return results
 
 
 def evaluate_cefr_stats(input_text: str) -> dict:
@@ -222,19 +297,29 @@ def evaluate_cefr_stats(input_text: str) -> dict:
         results["statistics"][DIFFICULTY_MAPPING_REVERSE.get(i)] = difficulty_levels_count_unique[i - 1]
 
     # --- Token details ---
-    counter = 0
+    synonym_counter = 0  # count how many words got synonyms
     for token in level_tokens:
         word, lemma, pos, level = token
         cefr = DIFFICULTY_MAPPING_REVERSE.get(round(level))
+
         if pos != '_SP':
-            results["tokens"].append({
+            token_entry = {
                 "word": word,
                 "lemma": lemma,
                 "pos": pos,
                 "level_score": round(level, 2),
                 "cefr": cefr
-            })
+            }
 
-            counter += 1
+            # only add synonyms if POS = JJ and limit to 5 words
+            if (pos == "VBG" or pos == "VBN" or pos == "NNS" or pos == "NN") and synonym_counter < 5:
+                token_entry["synonyms"] = get_synonyms_with_levels(word, pos, get_levels_tokens)
+                synonym_counter += 1
+
+            results["tokens"].append(token_entry)
 
     return results
+
+# # Only run on this directory only
+# cefr_stats = evaluate_cefr_stats(input_text)
+# print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))

@@ -3,12 +3,20 @@ from .data.dialogue_template import roleplay_topics
 from pydantic import BaseModel
 from google import genai
 from fastapi import WebSocket
-from chat_model.scoring.score_model import evaluate_transcription
-from typing import Generator, Dict, List, Tuple
+# from chat_model.scoring.score_model import evaluate_transcription
+from typing import Dict, List, Tuple
+import os
+from dotenv import load_dotenv
+import re
+from typing import Tuple
+import time, random
 # from ..pronunciation_model.pronunciation_model import g2p_from_user_history, transcribe_phonemes, score_pronunciation
 
-# TODO: Update the chat_stream function for the API so that it yields score
+# TODO:
+#  - Update the chat_stream function for the API so that it yields score
 #  of the evaluation transcription model like the generate_chatbot function.
+#  - Integrate the build_contents and safe_generate into the chat_task function to minimize overloading error.
+#  - Make it so that the pronunciation evaluation is done while the chat with the user is ongoing.
 
 prompt = """
 You are a friendly and engaging expert at teaching English language to all users above 13 years old. Your task is to:
@@ -30,8 +38,13 @@ You are a friendly and engaging expert at teaching English language to all users
 
     For your next response, only use the most recent user message and your previous response as context. Do not use the entire or some of the conversation history to generate the next response.
 
-    Afterwards, conclude the conversation with a friendly goodbye, encouraging the user to continue practicing their English skills.
+    Afterwards, if the user wants to conclude, conclude the conversation with a friendly goodbye, encouraging the 
+    user to continue practicing their English skills.
 """
+
+load_dotenv()
+gemini_key = os.getenv("GEMINI_KEY")
+client = genai.Client(api_key=gemini_key)
 
 class ChatInput(BaseModel):
     selected_topic_name: str
@@ -40,16 +53,57 @@ class ChatInput(BaseModel):
     exchange_count: int
     tts_model: str = "aura-2-amalthea-en"
 
+def build_contents(history_log):
+    contents = []
+    for role, msg in history_log:
+        contents.append(
+            types.Content(
+                role="user" if role == "user" else "model",
+                parts=[types.Part.from_text(text=msg)]
+            )
+        )
+    return contents
+
+def safe_generate(client, model_name, contents, config, retries=5):
+    for attempt in range(retries):
+        try:
+            return client.models.generate_content_stream(
+                model=model_name,
+                contents=contents,
+                config=config
+            )
+        except Exception as e:
+            if "503" in str(e) and attempt < retries - 1:
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                print(f"\n⚠️ Model overloaded. Retrying in {wait_time:.1f}s...\n")
+                time.sleep(wait_time)
+            else:
+                raise
+
 async def chat_task(ws, chat_queue, client, tts_stream, input_data: ChatInput):
     """
     Processes messages from chat_queue,
     streams Gemini responses, and sends TTS audio to WebSocket in real-time.
     Mimics chat_api_sync logic for topic/history handling.
+    THE FRONTEND STORES THE EVAL RESULTS.
     """
     while True:
-        user_text = await chat_queue.get()
-        if user_text is None:
+        eval_result = await chat_queue.get()
+        if eval_result is None:
             break
+
+        user_text = eval_result["transcript"]  # <-- use transcript
+        cefr_level = eval_result["vocabulary"]
+        grammar_score = eval_result["grammar"]
+        fluency_score = eval_result["fluency"]
+
+        # send eval results to frontend
+        await ws.send_json({
+            "type": "evaluation",
+            "grammar": grammar_score,
+            "vocabulary": cefr_level,
+            "fluency": fluency_score
+        })
 
         # --- Select topic ---
         selected_topic = next(
@@ -262,8 +316,9 @@ async def chat_api_sync(client: genai.Client, input_data: dict) -> str:
 
     return last_bot_response
 
-def custom_topic_validation(client: genai.Client, selected_topic_name: str) -> str:
-    prompt = f"""
+async def custom_topic_validation(client: genai.Client, selected_topic_name: str) -> str:
+
+    validation_prompt = f"""
 You are a classifier that determines if a given topic is a BROAD, conversation-worthy topic 
 or a NARROW, object-specific topic.
 
@@ -288,14 +343,98 @@ Topic: {selected_topic_name}
 
     response = client.models.generate_content(
         model="gemini-2.5-pro",
-        contents=prompt
+        contents=validation_prompt
     )
 
     return response.text.strip()
 
+async def hint_to_users(client: genai.Client, chatbot_message: str) -> str:
+    hint_prompt = f"""
+        You are helping learners practice English conversation.
+        Given a chatbot’s last message, generate a hint for the learner that includes:
+        
+        Example you can say – a short, natural sentence they could reply with.
+        
+        Context – explain briefly why this response works and how it keeps the conversation going.
+        
+        Keep the format clean and consistent like this:
+        
+        Example you can say
+        I’d love to try it with cheese and mushrooms.
+        
+        Context
+        This works because it adds a fun twist to the conversation by suggesting flavors. It also invites the other person to share more about their food preferences.
+        
+        Another Example
+        
+        Example you can say
+        That sounds exciting! Have you done it before?
+        
+        Context
+        This works because it shows enthusiasm while also asking a follow-up question, encouraging a deeper conversation.
+        
+        Generate example you can say and context for the following chatbot message:
+        {chatbot_message}
+        """
+
+    response = client.models.generate_content(
+        model="gemini-2.5-pro",
+        contents=hint_prompt
+    )
+
+    return response.text.strip()
+
+def grammar_correction(client: genai.Client, incorrect_transcript: str) -> Tuple[str, str]:
+    prompt = f"""
+        You are a grammar correction assistant. 
+        Follow the format strictly:
+        
+        Explanation:
+            Explain why the grammar is wrong in no more than 50 words.
+        
+        Tense Used:
+            Briefly describe the tense used in the corrected version in no more than 50 words.
+        
+        Here are examples:
+        
+        Text: "He go to school every day."
+        Explanation:
+            The verb "go" does not agree with the subject "he." It should be "goes."
+        Tense Used:
+            Present simple tense, used for regular or habitual actions.
+        
+        Text: "Yesterday, she is playing tennis with her friend."
+        Explanation:
+            "Is playing" is incorrect with "yesterday." It should be "was playing."
+        Tense Used:
+            Past continuous tense, used for ongoing actions in the past.
+        
+        Now do the same for this text:
+        
+        Text: "{incorrect_transcript}"
+        Explanation:
+    """
+
+    response = client.models.generate_content(
+        model="gemini-2.5-pro",
+        contents=prompt
+    )
+
+    text = response.text.strip()
+
+    # Use regex to extract the two sections
+    explanation_match = re.search(r"[Ee]xplanation[:：]?\s*(.*?)\s*[Tt]ense [Uu]sed[:：]?", text, re.DOTALL)
+    tense_match = re.search(r"[Tt]ense [Uu]sed[:：]?\s*(.*)", text, re.DOTALL)
+
+    explanation = explanation_match.group(1).strip() if explanation_match else ""
+    tense_used = tense_match.group(1).strip() if tense_match else ""
+
+    return explanation, tense_used
+
 # e.g. selected_topic_name = "Daily Routine", "Travel", "Work", "Hobbies and Interests"
 
-def generate_chatbot(client, selected_topic_name, model):
+def generate_chatbot(client, selected_topic_name, model="gemini-2.5-pro"):
+
     model_name = "gemini-2.5-pro"
 
     selected_topic = next(
@@ -347,6 +486,7 @@ def generate_chatbot(client, selected_topic_name, model):
     #                  model=model)
 
     while True:
+        print(f"Exchange count: {exchange_count}")
         user_input = input("\n🧑 You: ")
         if user_input.strip().lower() == "exit":
             print("👋 Goodbye!")
@@ -354,6 +494,7 @@ def generate_chatbot(client, selected_topic_name, model):
 
         exchange_count += 1
         history_log.append(("user", user_input))
+        contents = build_contents(history_log)
 
         contents = [
             types.Content(role="model", parts=[types.Part.from_text(text=last_bot_response)]),
@@ -363,15 +504,12 @@ def generate_chatbot(client, selected_topic_name, model):
         try:
             print("\n🤖 Gemini: ", end="", flush=True)
             last_bot_response = ""
-            for chunk in client.models.generate_content_stream(
-                    model=model_name,
-                    contents=contents,
-                    config=generate_content_config
-            ):
+            for chunk in safe_generate(client, model_name, contents, generate_content_config):
                 if chunk.text:
                     print(chunk.text, end="", flush=True)
                     last_bot_response += chunk.text
             print()
+            history_log.append(("bot", last_bot_response))
         except Exception as e:
             print(f"\n❌ Error: {e}")
             continue
@@ -381,62 +519,63 @@ def generate_chatbot(client, selected_topic_name, model):
 
         history_log.append(("bot", last_bot_response))
 
+
         # Summarize after 7 exchanges (user+bot = 14 lines)
-        if exchange_count >= 3:
-            print("\n📚 Gemini is summarizing your progress so far...\n")
-
-            # Build full conversation history as summary prompt
-            summary_input = ""
-            for role, message in history_log:
-                summary_input += f"{role.capitalize()}: {message}\n"
-
-            summary_prompt = f"""
-You are an English tutor. The following is a conversation between you and a student. Based on the full conversation history below, summarize the session and give feedback on the user's English language skills. 
-First, say thank you to the user for the conversation and summarize the main points discussed.
-Highlight their strengths, point out areas for improvement, and suggest what they can focus on next.
-
-Also ask if they have any questions about what was discussed, and end the session with a friendly goodbye encouraging them to keep practicing.
-
-Conversation history:
-{summary_input}
-            """
-
-            try:
-                summary_contents = [
-                    types.Content(
-                        role="user",
-                        parts=[types.Part.from_text(text=summary_prompt.strip())]
-                    )
-                ]
-
-                print("🤖 Gemini: ", end="", flush=True)
-                for chunk in client.models.generate_content_stream(
-                        model=model_name,
-                        contents=summary_contents,
-                        config=generate_content_config
-                ):
-                    if chunk.text:
-                        print(chunk.text, end="", flush=True)
-                print("\n👋 Conversation ended.\n")
-
-                user_message = ""
-                user_message_array = []
-                for role, message in history_log:
-                    if role == "user":
-                        user_message_array.append(message)
-
-                for message in user_message_array[-(exchange_count - 1):]:
-                    user_message += message + " "
-
-                # Evaluate transcription
-                score = evaluate_transcription(user_message)
-
-                print(f"📊 Your grammar score: {score * 100:.2f}%")
-
-            except Exception as e:
-                print(f"\n❌ Error during summary: {e}")
-
-            break
+#         if exchange_count >= 3:
+#             print("\n📚 Gemini is summarizing your progress so far...\n")
+#
+#             # Build full conversation history as summary prompt
+#             summary_input = ""
+#             for role, message in history_log:
+#                 summary_input += f"{role.capitalize()}: {message}\n"
+#
+#             summary_prompt = f"""
+# You are an English tutor. The following is a conversation between you and a student. Based on the full conversation history below, summarize the session and give feedback on the user's English language skills.
+# First, say thank you to the user for the conversation and summarize the main points discussed.
+# Highlight their strengths, point out areas for improvement, and suggest what they can focus on next.
+#
+# Also ask if they have any questions about what was discussed, and end the session with a friendly goodbye encouraging them to keep practicing.
+#
+# Conversation history:
+# {summary_input}
+#             """
+#
+#             try:
+#                 summary_contents = [
+#                     types.Content(
+#                         role="user",
+#                         parts=[types.Part.from_text(text=summary_prompt.strip())]
+#                     )
+#                 ]
+#
+#                 print("🤖 Gemini: ", end="", flush=True)
+#                 for chunk in client.models.generate_content_stream(
+#                         model=model_name,
+#                         contents=summary_contents,
+#                         config=generate_content_config
+#                 ):
+#                     if chunk.text:
+#                         print(chunk.text, end="", flush=True)
+#                 print("\n👋 Conversation ended.\n")
+#
+#                 user_message = ""
+#                 user_message_array = []
+#                 for role, message in history_log:
+#                     if role == "user":
+#                         user_message_array.append(message)
+#
+#                 for message in user_message_array[-(exchange_count - 1):]:
+#                     user_message += message + " "
+#
+#                 # Evaluate transcription
+#                 score = evaluate_transcription(user_message)
+#
+#                 print(f"📊 Your grammar score: {score * 100:.2f}%")
+#
+#             except Exception as e:
+#                 print(f"\n❌ Error during summary: {e}")
+#
+#             break
 
 # if __name__ == "__main__":
-#     generate_chatbot(client)
+#     generate_chatbot(client, "School Subjects")

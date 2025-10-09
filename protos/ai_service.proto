@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package ai_service;
+
+// Conversation messages
+message HistoryItem {
+  string role = 1;  // "user" | "bot"
+  string text = 2;
+}
+
+message Start {
+  string request_id = 1;
+}
+
+message UserText {
+  string text = 1;
+}
+
+message BotText {
+  string text = 1;
+}
+
+message BotAudio {
+  // 16 kHz, 16-bit PCM mono frames
+  bytes pcm16 = 1;
+}
+
+message Done {}
+
+message Error {
+  string message = 1;
+}
+
+// Speaking (server-streaming)
+message SpeakingRequest {
+  string topic = 1;                       // e.g., "General"
+  string user_audio_url = 2;              // empty string => first turn (no audio)
+  repeated HistoryItem history_log = 3;   // role-based chat history
+  string accent = 4;                      // e.g., "american"
+  string gender = 5;                      // e.g., "feminine"
+  float  speed = 6;                       // e.g., 1.0
+}
+
+message SpeakingEvent {
+  oneof event {
+    Start    start     = 1;
+    UserText user_text = 2;  // transcript back to client
+    BotText  bot_text  = 3;  // model reply text
+    BotAudio bot_audio = 4;  // PCM16 chunks
+    Done     done      = 5;
+    Error    error     = 6;
+  }
+}
+
+// Topic validation
+message TopicValidationRequest {
+  string topic_name = 1;
+}
+
+message TopicValidationResponse {
+  string validation = 1;  // "BROAD" | "NARROW"
+}
+
+// Translation
+message TranslateRequest {
+  string text        = 1;  // source text
+}
+
+message TranslateResponse {
+  string translated_text = 1;
+}
+
+// Hint
+message HintRequest {
+  string response_text = 1;  // the bot's response for which to generate hint(s)
+}
+
+message HintResponse {
+  string hint = 1;
+}
+
+// Service
+service AiService {
+  rpc ProcessSpeaking (SpeakingRequest) returns (stream SpeakingEvent);
+  rpc ValidateTopic   (TopicValidationRequest) returns (TopicValidationResponse);
+  rpc TranslateText (TranslateRequest) returns (TranslateResponse);
+  rpc GenerateHint  (HintRequest)      returns (HintResponse);
+}

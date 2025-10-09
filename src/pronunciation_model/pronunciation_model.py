@@ -1,15 +1,31 @@
-import whisperx
-from g2p_en import G2p
-import subprocess
-import os
-import sys
 from pydub import AudioSegment
 from phonemizer import phonemize
+from nltk.tokenize import SyllableTokenizer
+from nltk.tokenize import word_tokenize
 from transformers import pipeline
+import random
 import jiwer
+import textdistance
+import torch
+from pronunciation_model.ai_pronunciation_trainer_main.pronunciationTrainer import getTrainer
+import pronunciation_model.ai_pronunciation_trainer_main.WordMatching as wm
+import torchaudio
+import json
+
 
 # Load the model
-pipe = pipeline(model="vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
+# pipe = pipeline(model="vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
+
+PHONEME_MAP = {
+    "a": ["a", "ɑ", "æ", "ʌ", "ɒ"],              # open mouth vowels
+    "fv": ["f", "v"],                            # teeth on lip
+    "ie": ["i", "ɪ", "e", "ɛ", "j"],             # smile vowels + /j/
+    "l": ["l"],                                  # tongue up
+    "mb": ["m", "b", "p"],                       # closed lips
+    "o": ["o", "ɔ", "u", "ʊ"],                   # round lips
+    "th": ["θ", "ð"],                            # tongue between teeth
+    "neutral": [".", ",", "?", "!"]              # punctuation
+}
 
 def convert_mp3_to_wav(mp3_path):
     sound = AudioSegment.from_file(mp3_path, format="mp3")
@@ -17,22 +33,67 @@ def convert_mp3_to_wav(mp3_path):
     sound.export(wav_path, format="wav")
     return wav_path
 
-def pronunciation_to_phonemes(audio_file):
-    """Convert pronunciation text to phonemes using the pipeline."""
-    # Assuming pronunciation is a string of text
-    phoneme_output = pipe(audio_file, chunk_length_s=10, stride_length_s=(4, 2))
-    return phoneme_output['text']
+# def pronunciation_to_phonemes(audio_file):
+#     """Convert pronunciation text to phonemes using the pipeline."""
+#     # Assuming pronunciation is a string of text
+#     phoneme_output = pipe(audio_file, chunk_length_s=10, stride_length_s=(4, 2))
+#     return phoneme_output['text']
 
-def phonemize_text(text, language='en-us'):
+def phonemize_text(text, language='en-us', preserve_punctuation=True):
     """Phonemize the input text into phonemes."""
     phonemes = phonemize(
         text,
         language=language,
         backend='espeak',
         strip=True,
-        preserve_punctuation=True,
+        preserve_punctuation=preserve_punctuation,
     )
     return phonemes
+
+def get_word_phonemes(text: str) -> list[tuple[str, str]]:
+    """
+    Split transcript into words and get phonemes for each word.
+    Returns list of (word, phoneme_string).
+    """
+    words = text.split()
+    phonemes = phonemize_text(text, language="en-us", preserve_punctuation=False).split()
+    return list(zip(words, phonemes))
+
+def highlight_wrong_words(hypothesis_phonemes: str, reference_phonemes: str, reference_text: str, top_k: int = 3) -> list[dict]:
+    """
+    Highlight up to top_k words with the worst phoneme mismatch between
+    hypothesis and reference.
+    """
+
+    # Split reference into word-level phonemes
+    ref_words = get_word_phonemes(reference_text)  # [(word, phoneme_str), ...]
+
+    # Now, split hypothesis phonemes proportionally across words (since it's one long string)
+    hyp_phonemes = hypothesis_phonemes.strip()
+    total_len = sum(len(p) for _, p in ref_words)
+
+    hyp_word_phons = []
+    idx = 0
+    for word, ref_phon in ref_words:
+        share = max(1, int(len(hyp_phonemes) * (len(ref_phon) / total_len)))
+        hyp_word_phons.append((word, hyp_phonemes[idx:idx + share]))
+        idx += share
+
+    # Compare word by word
+    results = []
+    for (ref_word, ref_phon), (hyp_word, hyp_phon) in zip(ref_words, hyp_word_phons):
+        dist = textdistance.levenshtein.normalized_distance(ref_phon, hyp_phon)
+        results.append({
+            "reference_word": ref_word,
+            "hypothesis_word": hyp_word,
+            "ref_phonemes": ref_phon,
+            "hyp_phonemes": hyp_phon,
+            "error_score": round(dist, 3)
+        })
+
+    # Sort and return worst offenders
+    results = sorted(results, key=lambda x: x["error_score"], reverse=True)[:top_k]
+    return results
 
 def count_pronunciation_score(hypothesis, reference):
     # Convert to lower case for case-insensitive comparison
@@ -42,7 +103,80 @@ def count_pronunciation_score(hypothesis, reference):
     # Calculate the phoneme error rate
     per_score = jiwer.cer(reference, hypothesis)
 
-    return 1 - per_score
+    actual_score = 1 - per_score
+
+    if actual_score < 0.30:
+        return 0.40
+    elif actual_score >= 0.70:
+        return 1.0
+    else:
+        return 0.40 + (actual_score - 0.30) * (0.60 / 0.40)
+
+# def evaluate_pronunciation(input_audio, reference_text):
+#     """Evaluate pronunciation by comparing audio to reference text."""
+#     # Transcribe the audio to phonemes
+#     hypothesis_phoneme = "".join(pronunciation_to_phonemes(input_audio).split())
+#
+#     # Phonemize the reference text
+#     reference_phoneme = "".join(phonemize_text(reference_text, preserve_punctuation=False).split())
+#
+#     # Count the pronunciation score
+#     score = count_pronunciation_score(hypothesis_phoneme, reference_phoneme)
+#
+#     return hypothesis_phoneme, reference_phoneme, score
+
+def categorize_phoneme(phoneme: str) -> str:
+    """Map a phoneme (syllable string) to a mouth movement category."""
+    # Look inside the string for any matching symbol
+    for category, phon_list in PHONEME_MAP.items():
+        for symbol in phon_list:
+            if symbol in phoneme:  # substring match
+                return category
+    return "neutral"
+
+def tokenize_syllables(text, speed: float = 1.0):
+    """Tokenize the input text into syllables with adjustable speed multiplier."""
+    ssp = SyllableTokenizer()
+    words = word_tokenize(text)
+    syllables_in_sentence = [ssp.tokenize(word) for word in words]
+    result = []
+    current_time = 0.476 * speed  # initial break scaled
+
+    syllable_arr = []
+
+    for group in syllables_in_sentence:
+        for syllable in group:
+            syllable_arr.append(syllable)
+
+    phonemes = phonemize_text(syllable_arr)
+
+    for syll in phonemes:
+        # Handle punctuation directly
+        if syll in [".", "?", "!"]:
+            duration = 0.7
+            category = "neutral"
+        elif syll == ",":
+            duration = 0.3
+            category = "neutral"
+        else:
+            if phonemes:
+                category = categorize_phoneme(syll)
+            else:
+                category = "neutral"
+            duration = random.uniform(0.172, 0.240)
+
+        duration *= speed
+
+        result.append({
+            "syllable": syll,
+            "category": category,
+            "start_time": round(current_time, 3),
+            "duration": round(duration, 3),
+            "end_time": round(current_time + duration, 3)
+        })
+        current_time += duration
+
+    return result
 
 # def evaluate_pronunciation(input_audio, reference_text):
 #     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -143,17 +277,116 @@ def count_pronunciation_score(hypothesis, reference):
 #     return round((matched / total) * 100, 2) if total > 0 else 0.0
 
 
-if __name__ == "__main__":
-    # Example usage
-    input_audio = "data/2025_07_08_14_09_18.mp3"
-    hypothesis_phoneme = pronunciation_to_phonemes(input_audio)
-    print("Audio pronunciation to phonemes:")
-    print(hypothesis_phoneme)
-    reference_text = "and we want to highlight those and bring that to where we can have a supportive system in place so nutrient recycling our nutrients back on to the land to rejuvenate the soils that have been depleted by plantation agriculture over a long period of time"
-    reference_phoneme = phonemize_text(reference_text)
-    print("Phonemized reference text:")
-    print(reference_phoneme)
-    print("Counting phoneme error rate:")
-    print(count_pronunciation_score(hypothesis_phoneme, reference_phoneme))
-    # result = evaluate_pronunciation(input_audio, reference_text)
-    # print(result)
+# df = pd.read_csv("data/speech_emotions.csv")
+#
+# # Pick 15 random rows
+# samples = df
+#
+# scores = []
+# results = []
+# count = 1
+#
+# for _, row in samples.iterrows():
+#     set_id = row["set_id"]
+#     reference_text = row["text"]
+#
+#     # Path to the folder containing wav files
+#     folder_path = os.path.join("files", str(set_id))
+#
+#     # Get all wav files in the folder
+#     wav_files = [f for f in os.listdir(folder_path) if f.endswith(".wav")]
+#
+#     if not wav_files:
+#         print(f"No .wav files found in folder: {folder_path}")
+#         continue
+#
+#     # Pick a random wav file
+#     wav_file = random.choice(wav_files)
+#     wav_path = os.path.join(folder_path, wav_file)
+#     print(f"Processing file {count}: {wav_path}")
+#
+#     # Hypothesis phonemes from audio
+#     hypothesis_phoneme = pronunciation_to_phonemes(wav_path)
+#     hypothesis_phoneme = "".join(hypothesis_phoneme.split())
+#     print(f"Reference text {count}: {reference_text}")
+#     print(f"Hypothesis phoneme {count}: {hypothesis_phoneme}")
+#
+#     # Reference phonemes from text
+#     reference_phoneme = phonemize_text(reference_text, preserve_punctuation=False)
+#     reference_phoneme = "".join(reference_phoneme.split())
+#     print(f"Reference phoneme {count}: {reference_phoneme}")
+#
+#     # Pronunciation score
+#     score = round(count_pronunciation_score(hypothesis_phoneme, reference_phoneme), 4)
+#     scores.append(score)
+#     print(f"Pronunciation score {count}: {score}\n")
+#     print("-----------------------------------\n")
+#
+#     # Save results for Excel
+#     results.append({
+#         "wav_path": wav_path,
+#         "reference_text": reference_text,
+#         "hypothesis_phoneme": hypothesis_phoneme,
+#         "reference_phoneme": reference_phoneme,
+#         "pronunciation_score": score
+#     })
+#
+#     count += 1
+#
+# # Mean score
+# mean_score = round(np.mean(scores), 4) if scores else None
+#
+# print("Pronunciation scores:", scores)
+# print("Mean pronunciation score:", mean_score)
+#
+# # Save to CSV
+# results_df = pd.DataFrame(results)
+# results_df.to_csv("data/pronunciation_results.csv", index=False)
+# print("Results saved to data/pronunciation_results.csv")
+def evaluate_pronunciation(input_audio, reference_text):
+
+    # 3. Initialize trainer
+    trainer = getTrainer('en')
+
+    # 4. Run evaluation
+    result = trainer.processAudioForGivenText(recordedAudio=input_audio, real_text=reference_text)
+
+    # 5. Get highlights
+    highlights = []
+    for (real_word, transcribed_word) in result['real_and_transcribed_words']:
+        # Pad transcribed_word if needed
+        transcribed_word = transcribed_word.ljust(len(real_word), '-')
+        correct_letters = wm.getWhichLettersWereTranscribedCorrectly(real_word, list(transcribed_word))
+        highlight = wm.parseLetterErrorsToHTML(real_word, correct_letters)
+        highlights.append(highlight)
+
+    # 6. Print results
+    words = []
+    real_words = [real for (real, _) in result['real_and_transcribed_words']]
+    transcribed_words = [trans for (_, trans) in result['real_and_transcribed_words']]
+    predicted_phonemes = [ipa for (_, ipa) in result['real_and_transcribed_words_ipa']]
+    ground_truth_phonemes = [ipa for (ipa, _) in result['real_and_transcribed_words_ipa']]
+
+    for i in range(len(real_words)):
+        words.append({
+            "Real words": real_words[i],
+            "Transcribed words": transcribed_words[i],
+            "Highlights": highlights[i] if i < len(highlights) else None,
+            "Predicted phonemes": predicted_phonemes[i] if i < len(predicted_phonemes) else None,
+            "Ground truth phonemes": ground_truth_phonemes[i] if i < len(ground_truth_phonemes) else None,
+            "Pronunciation result": real_words[i] == transcribed_words[i],
+        })
+
+    output = {
+        "score": result['pronunciation_accuracy'],
+        "words": words
+    }
+    return output
+
+
+# tokens = tokenize_syllables(input_text)
+# sum = 0
+# for entry in tokens:
+#     print(entry)
+#     sum += entry["duration"]
+# print(f"Total duration: {sum} seconds")

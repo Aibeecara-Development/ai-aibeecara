@@ -1,19 +1,20 @@
+import queue
 import time
 from dotenv import load_dotenv
 import wave
 import os
 import threading
-import soundfile as sf
-import tempfile
-import librosa
+import io
 import asyncio
-from deepgram import SpeakWebSocketEvents, SpeakWSOptions
 from typing import AsyncGenerator
 from deepgram import (
     DeepgramClient,
     SpeakWebSocketEvents,
     SpeakWSOptions,
 )
+from scipy.signal import resample_poly
+import numpy as np
+
 
 load_dotenv()
 deepgram_key = os.getenv('DEEPGRAM_KEY')
@@ -38,7 +39,8 @@ async def tts_stream(text: str, deepgram_client) -> AsyncGenerator[bytes, None]:
     await dg_connection.start(SpeakWSOptions(
         model="aura-2-amalthea-en",
         encoding="linear16",
-        sample_rate=16000
+        sample_rate=16000,
+
     ))
 
     dg_connection.send_text(text)
@@ -60,70 +62,189 @@ def generate_tts_wav_api(
     accent: str = "american",
     gender: str = "feminine",
     speed: float = 1.0
-) -> str:
-    raw_output_path = tempfile.mktemp(suffix="_raw.wav")
-    final_output_path = tempfile.mktemp(suffix=".wav")
+):
+    def audio_stream():
+        buffer = io.BytesIO()
+        wav_writer = wave.open(buffer, "wb")
+        wav_writer.setnchannels(1)
+        wav_writer.setsampwidth(2)
+        wav_writer.setframerate(16000)
 
-    dg_connection = deepgram.speak.websocket.v("1")
+        done_event = threading.Event()
 
-    wav_writer = wave.open(raw_output_path, "wb")
-    wav_writer.setnchannels(1)
-    wav_writer.setsampwidth(2)
-    wav_writer.setframerate(16000)
+        # Callback for each audio chunk from Deepgram
+        def on_binary_data(self, data, **kwargs):
+            audio = np.frombuffer(data, dtype=np.int16)
 
-    # Event to signal when audio is done streaming
+            if speed != 1.0:
+                # speed > 1.0 => faster, speed < 1.0 => slower
+                up = int(speed * 100)
+                down = 100
+                audio = resample_poly(audio, up, down)
+
+            yield audio.tobytes()
+
+        # Callback when Deepgram signals end of stream
+        def on_close(**kwargs):
+            done_event.set()
+
+        # Pick Deepgram model
+        model = "aura-2-amalthea-en"
+        if accent == "british" and gender == "feminine":
+            model = "aura-2-draco-en"
+        elif accent == "british" and gender == "masculine":
+            model = "aura-2-pandora-en"
+        elif accent == "australian":
+            model = "aura-2-hyperion-en"
+
+        # Connect to Deepgram
+        dg_connection = deepgram.speak.websocket.v("1")
+        dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
+        dg_connection.on(SpeakWebSocketEvents.Close, on_close)
+
+        options = SpeakWSOptions(
+            model=model,
+            encoding="linear16",
+            sample_rate=16000,
+        )
+
+        if not dg_connection.start(options):
+            raise RuntimeError("Failed to start Deepgram connection")
+
+        # Send input text
+        dg_connection.send_text(text)
+        dg_connection.flush()
+
+        # Wait for completion
+        timeout = max(10.0, len(text) / 5)
+        done_event.wait(timeout=timeout)
+
+        dg_connection.finish()
+        wav_writer.close()
+
+        buffer.seek(0)
+        yield buffer.read()  # send any remaining buffered audio
+
+    return audio_stream()
+
+
+def generate_tts_pcm_stream(text: str, accent: str = "american", gender: str = "feminine", speed: float = 1.0):
+    """
+    Yields raw 16-bit little-endian PCM (mono, 16 kHz) bytes as they arrive.
+    """
+    import queue
+    import threading
+    import time
+    import numpy as np
+    from scipy.signal import resample_poly
+    # from deepgram import SpeakWebSocketEvents, SpeakWSOptions  # assumed available
+
+    SAMPLE_RATE = 16000
+    IDLE_GRACE_SECONDS = 3.0         # break if no audio arrives for this long
+    QUEUE_WAIT_TIMEOUT = 0.5         # how often we wake up to check idle condition
+
+    q: "queue.Queue[bytes | None]" = queue.Queue(maxsize=64)
     done_event = threading.Event()
+    last_audio_ts = {"t": time.monotonic()}  # mutated inside callback
+    received_any_audio = {"v": False}
 
-    def on_binary_data(self, data, **kwargs):
-        wav_writer.writeframes(data)  # writeframes is safer than writeframesraw
-
-    def on_close(self, **kwargs):
-        done_event.set()  # Signal that audio is complete
-
-    dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
-    dg_connection.on(SpeakWebSocketEvents.Close, on_close)
-
-    # Select model based on accent & gender
+    # Pick Deepgram voice/model
     model = "aura-2-amalthea-en"
     if accent == "british" and gender == "feminine":
         model = "aura-2-draco-en"
     elif accent == "british" and gender == "masculine":
         model = "aura-2-pandora-en"
-    elif accent == "american" and gender == "feminine":
-        model = "aura-2-amalthea-en"
-    elif accent == "american" and gender == "masculine":
-        model = "aura-2-apollo-en"
+    elif accent == "australian":
+        model = "aura-2-hyperion-en"
+
+    # Callback for Deepgram audio chunks
+    def on_binary_data(_, data: bytes, **kwargs):
+        # Incoming bytes are linear16
+        audio = np.frombuffer(data, dtype=np.int16)
+
+        # Apply speed change by resampling if requested
+        if speed and abs(speed - 1.0) > 1e-6:
+            up = max(1, int(round(speed * 100)))
+            down = 100
+            # NOTE: chunk-wise resampling can introduce tiny boundary artifacts;
+            # it's fine for small speed tweaks. For hi-fi, accumulate & resample.
+            audio = resample_poly(audio, up, down).astype(np.int16)
+
+        try:
+            q.put_nowait(audio.tobytes())
+            received_any_audio["v"] = True
+            last_audio_ts["t"] = time.monotonic()
+        except queue.Full:
+            # Drop frames to keep latency bounded (no-seek stream)
+            pass
+
+    def _signal_done():
+        if not done_event.is_set():
+            done_event.set()
+            try:
+                q.put_nowait(None)
+            except queue.Full:
+                pass
+
+    def on_close(**kwargs):
+        _signal_done()
+
+    def on_error(_, *a, **kw):
+        _signal_done()
+
+    # Start the Deepgram streaming TTS
+    dg_connection = deepgram.speak.websocket.v("1")
+    dg_connection.on(SpeakWebSocketEvents.AudioData, on_binary_data)
+    dg_connection.on(SpeakWebSocketEvents.Close, on_close)
+    dg_connection.on(SpeakWebSocketEvents.Error, on_error)
 
     options = SpeakWSOptions(
         model=model,
         encoding="linear16",
-        sample_rate=16000,
+        sample_rate=SAMPLE_RATE,
     )
 
     if not dg_connection.start(options):
         raise RuntimeError("Failed to start Deepgram connection")
 
-    # Send text to TTS
+    # Send text and flush (no premature finish here)
     dg_connection.send_text(text)
     dg_connection.flush()
 
-    # Wait until stream finishes (max timeout depends on text length)
-    timeout = max(10.0, len(text) / 5)  # ~5 chars/sec as rough safe estimate
-    done_event.wait(timeout=timeout)
+    # The generator that FastAPI will iterate
+    def iterator():
+        # Optional: short leading silence to prime the player
+        yield (np.zeros(int(0.05 * SAMPLE_RATE), dtype=np.int16)).tobytes()
 
-    # Clean up
-    dg_connection.finish()
-    wav_writer.close()
+        while True:
+            try:
+                chunk = q.get(timeout=QUEUE_WAIT_TIMEOUT)
+            except queue.Empty:
+                # No chunk this tick; check for graceful exit conditions
+                if done_event.is_set():
+                    break
+                # If we've already received audio and it has been quiet long enough, exit
+                if received_any_audio["v"] and (time.monotonic() - last_audio_ts["t"] >= IDLE_GRACE_SECONDS):
+                    break
+                continue
 
-    # Adjust speed if needed
-    if speed != 1.0:
-        y, sr = librosa.load(raw_output_path, sr=16000)
-        y_fast = librosa.effects.time_stretch(y, rate=speed)
-        sf.write(final_output_path, y_fast, sr)
-        return final_output_path
+            if chunk is None:
+                break
 
-    return raw_output_path
+            if chunk:
+                yield chunk
 
+        # Best-effort close/finish after we've delivered everything
+        try:
+            # Some SDKs require finish() for cleanup; if it raises, ignore and close.
+            dg_connection.finish()
+        except Exception:
+            try:
+                dg_connection.close()
+            except Exception:
+                pass
+
+    return iterator()
 
 
 def transform_speech(file_path, spoken_text, model="aura-2-amalthea-en" ):
@@ -182,3 +303,11 @@ def transform_speech(file_path, spoken_text, model="aura-2-amalthea-en" ):
         print(f"Invalid value encountered: {e}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+# filename = "output_api.mp3"
+# SPEAK_TEXT = {"text": """In the heart of every forest, a hidden world thrives among the towering trees. Trees,
+# those silent giants, are more than just passive observers of nature's drama; they are
+# active participants in an intricate dance of life."""}
+# options = SpeakOptions(model="aura-2-amalthea-en")
+# response = deepgram.speak.rest.v("1").save(filename, SPEAK_TEXT, options)
+# print(response.to_json(indent=4))
