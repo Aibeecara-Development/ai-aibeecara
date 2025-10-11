@@ -1,11 +1,14 @@
 from transformers import pipeline
 import json
+import requests
 
-emotion_classifier = pipeline(
-    task="text-classification",
-    model="SamLowe/roberta-base-go_emotions",
-    top_k=None
-)
+BASE_URL = "https://farrel-dr-aibeecara-models-2.hf.space"
+
+# emotion_classifier = pipeline(
+#     task="text-classification",
+#     model="SamLowe/roberta-base-go_emotions",
+#     top_k=None
+# )
 
 confusion_category = [
     "confusion"
@@ -27,10 +30,11 @@ sad_category = [
     "realization", "remorse", "sadness"
 ]
 
-def detect_emotion(sentence: [str]):
-    results = emotion_classifier(sentence)
+def detect_emotion(sentence: str):
+    data = {"text": sentence}
+    results = requests.post(f"{BASE_URL}/emotion-classifier", json=data).json()
     # print(results)
-    emotion = results[0][0]['label']
+    emotion = results['text']
     if emotion in confusion_category:
         return "confusion"
     elif emotion in happy_category:
@@ -42,30 +46,30 @@ def detect_emotion(sentence: [str]):
     else:
         return "No emotion detected"
 
-if __name__ == "__main__":
-    sentences = [
-        "I'm sorry I don't understand. Can you repeat that again?"
-    ]
-    model_outputs = emotion_classifier(sentences)
-    sentence_emotions = []
-    for i, output in enumerate(model_outputs):
-        sentence_emotion = {
-            "sentence": sentences[i].replace('\n', ' ')
-        }
-        emotion = output[0]['label']
-        score = output[0]['score']
-        sentence_emotion['emotion'] = emotion
-        sentence_emotion['confidence_score'] = score
-        if emotion in confusion_category:
-            sentence_emotion['emotion_category'] = "confusion"
-        elif emotion in happy_category:
-            sentence_emotion['emotion_category'] = "happy"
-        elif emotion in calm_category:
-            sentence_emotion['emotion_category'] = "calm"
-        elif emotion in sad_category:
-            sentence_emotion['emotion_category'] = "sad"
-        else:
-            sentence_emotion['emotion_category'] = "No emotion detected"
-        sentence_emotions.append(sentence_emotion)
-    print(json.dumps(sentence_emotions, indent=2, ensure_ascii=False))
+# if __name__ == "__main__":
+#     sentences = [
+#         "I'm sorry I don't understand. Can you repeat that again?"
+#     ]
+#     model_outputs = emotion_classifier(sentences)
+#     sentence_emotions = []
+#     for i, output in enumerate(model_outputs):
+#         sentence_emotion = {
+#             "sentence": sentences[i].replace('\n', ' ')
+#         }
+#         emotion = output[0]['label']
+#         score = output[0]['score']
+#         sentence_emotion['emotion'] = emotion
+#         sentence_emotion['confidence_score'] = score
+#         if emotion in confusion_category:
+#             sentence_emotion['emotion_category'] = "confusion"
+#         elif emotion in happy_category:
+#             sentence_emotion['emotion_category'] = "happy"
+#         elif emotion in calm_category:
+#             sentence_emotion['emotion_category'] = "calm"
+#         elif emotion in sad_category:
+#             sentence_emotion['emotion_category'] = "sad"
+#         else:
+#             sentence_emotion['emotion_category'] = "No emotion detected"
+#         sentence_emotions.append(sentence_emotion)
+#     print(json.dumps(sentence_emotions, indent=2, ensure_ascii=False))
 

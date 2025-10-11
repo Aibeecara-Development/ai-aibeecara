@@ -3,14 +3,18 @@ from happytransformer import HappyTextToText, TTSettings
 from lexicalrichness import LexicalRichness
 from transformers import pipeline
 import pyphen
+import ast
 import os
 from dotenv import load_dotenv
 from google import genai
 from src.chat_model.chatbot import grammar_correction
+import requests
+
+BASE_URL = "https://farrel-dr-aibeecara-models-2.hf.space"
 
 # TODO: These models can be deployed on future APIs
-happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
-cefr_classifier = pipeline("text-classification", model="AbdulSami/bert-base-cased-cefr")
+# happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
+# cefr_classifier = pipeline("text-classification", model="AbdulSami/bert-base-cased-cefr")
 
 load_dotenv()
 gemini_key = os.getenv("GEMINI_KEY")
@@ -18,10 +22,11 @@ client = genai.Client(api_key=gemini_key)
 
 def evaluate_transcription(transcription):
     """Evaluate the transcription for grammar issues."""
-    args = TTSettings(num_beams=5, min_length=1)
+    # args = TTSettings(num_beams=5, min_length=1)
 
     # Add the prefix "grammar: " before each input
-    result = happy_tt.generate_text(f"grammar: {transcription}.", args=args)
+    data = {"text": transcription}
+    result = requests.post(f"{BASE_URL}/grammar-correct", json=data).json()['text']
 
     wer_score = wer(result.text, transcription)
 
@@ -45,9 +50,12 @@ def evaluate_vocabulary(transcription):
 
 def evaluate_vocabulary_cefr(transcription: str) -> str:
     """Evaluate the vocabulary of the transcription based on CEFR levels."""
-    cefr_prediction = cefr_classifier(transcription)  # returns "A1"..."C2"
-    print(f"CEFR vocabulary score: {cefr_prediction}")
-    return cefr_prediction
+    data = {"text": transcription}
+    result = requests.post(f"{BASE_URL}/cefr-vocab", json=data).json()['text']  # returns "A1"..."C2"
+    parsed = ast.literal_eval(result)
+    label = parsed[0]["label"]
+    print(f"CEFR vocabulary score: {label}")
+    return label
 
 def evaluate_pause(deepgram_response):
     data = deepgram_response["results"]["channels"][0]["alternatives"][0]
@@ -141,8 +149,8 @@ def calculate_speech_rates(deepgram_response) -> dict:
         "spm": int(spm),
     }
 
-# if __name__ == "__main__":
-#     evaluate_transcription("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")
+if __name__ == "__main__":
+    evaluate_vocabulary_cefr("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")
 
 
 
