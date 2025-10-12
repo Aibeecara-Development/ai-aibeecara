@@ -320,6 +320,7 @@ def evaluate_cefr_stats(input_text: str) -> dict:
 
     return results
 
-# # Only run on this directory only
-# cefr_stats = evaluate_cefr_stats(input_text)
-# print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))
+# Only run on this directory only
+# if __name__ == "__main__":
+#     cefr_stats = evaluate_cefr_stats(input_text)
+#     print(json.dumps(cefr_stats, indent=4, ensure_ascii=False))
