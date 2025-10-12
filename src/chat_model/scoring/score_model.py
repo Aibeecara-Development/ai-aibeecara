@@ -10,7 +10,10 @@ from google import genai
 from src.chat_model.chatbot import grammar_correction
 import requests
 
-BASE_URL = "https://farrel-dr-aibeecara-models-2.hf.space"
+BASE_URL = os.getenv("EVALUATION_BASE_URL")
+
+if not BASE_URL:
+    raise ValueError("EVALUATION_BASE_URL environment variable not set.")
 
 # TODO: These models can be deployed on future APIs
 # happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
