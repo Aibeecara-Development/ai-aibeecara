@@ -6,11 +6,11 @@ from typing import AsyncGenerator, List
 
 from dotenv import load_dotenv
 import grpc
+from deep_translator import GoogleTranslator
+from google import genai
 
 from src import ai_service_pb2 as pb
 from src import ai_service_pb2_grpc as pbg
-
-from google import genai
 from src.chat_model.chatbot import (
     chat_api_sync,
     custom_topic_validation,
@@ -19,8 +19,7 @@ from src.chat_model.chatbot import (
 from src.audio_processing.transcriber import transcribe_audio_api
 from src.chat_model.text_to_speech import generate_tts_pcm_stream
 from src.utils.utils import clean_text
-
-from deep_translator import GoogleTranslator
+from src.chat_model.scoring.score_model import evaluate_transcription
 
 
 def _collapse_history_pairs(history_items: List[pb.HistoryItem]) -> List[tuple[str, str]]:
@@ -213,6 +212,38 @@ class AiServiceServicer(pbg.AiServiceServicer):
             raise
         except Exception as e:
             await context.abort(grpc.StatusCode.INTERNAL, f"Hint generation failed: {str(e)}")
+
+    async def EvaluateGrammar(
+        self, request: pb.EvaluateGrammarRequest, context: grpc.aio.ServicerContext
+    ) -> pb.EvaluateGrammarResponse:
+        transcript = (request.transcript or "").strip()
+        if not transcript:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "transcript is required")
+
+        try:
+            # evaluate_transcription is sync; run it off the event loop
+            def _run_eval():
+                return evaluate_transcription(transcript)
+
+            (
+                evaluate_transcription_score,
+                corrected_text,
+                grammar_explanation,
+                tense_used,
+            ) = await self._to_thread(_run_eval)
+
+            return pb.EvaluateGrammarResponse(
+                score=float(evaluate_transcription_score),
+                corrected_transcript=corrected_text or "",
+                explanation=grammar_explanation or "",
+                tense_used=tense_used or "",
+            )
+        except grpc.RpcError:
+            raise
+        except Exception as e:
+            await context.abort(
+                grpc.StatusCode.INTERNAL, f"Evaluate grammar failed: {str(e)}"
+            )
 
 
 async def serve(host: str = "[::]:50051") -> None:

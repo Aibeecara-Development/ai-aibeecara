@@ -63,7 +63,7 @@ message TopicValidationResponse {
 
 // Translation
 message TranslateRequest {
-  string text        = 1;  // source text
+  string text = 1;  // source text
 }
 
 message TranslateResponse {
@@ -79,10 +79,22 @@ message HintResponse {
   string hint = 1;
 }
 
+message EvaluateGrammarRequest {
+  string transcript = 1;
+}
+
+message EvaluateGrammarResponse {
+  float  score = 1;                // evaluate_transcription_score
+  string corrected_transcript = 2; // corrected_text
+  string explanation = 3;          // grammar_explanation
+  string tense_used = 4;           // tense_used
+}
+
 // Service
 service AiService {
-  rpc ProcessSpeaking (SpeakingRequest) returns (stream SpeakingEvent);
-  rpc ValidateTopic   (TopicValidationRequest) returns (TopicValidationResponse);
-  rpc TranslateText (TranslateRequest) returns (TranslateResponse);
-  rpc GenerateHint  (HintRequest)      returns (HintResponse);
+  rpc ProcessSpeaking   (SpeakingRequest)         returns (stream SpeakingEvent);
+  rpc ValidateTopic     (TopicValidationRequest)  returns (TopicValidationResponse);
+  rpc TranslateText     (TranslateRequest)        returns (TranslateResponse);
+  rpc GenerateHint      (HintRequest)             returns (HintResponse);
+  rpc EvaluateGrammar   (EvaluateGrammarRequest)  returns (EvaluateGrammarResponse);
 }
