@@ -18,7 +18,6 @@ from src.chat_model.chatbot import (
 )
 from src.audio_processing.transcriber import transcribe_audio_api
 from src.chat_model.text_to_speech import generate_tts_pcm_stream
-from src.utils.utils import clean_text
 from src.chat_model.scoring.score_model import evaluate_transcription
 
 
@@ -119,8 +118,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 # Bot response (new proto: BotText.text)
                 yield pb.SpeakingEvent(bot_text=pb.BotText(text=bot_text))
 
-                cleaned = clean_text(bot_text)
-                async for pcm in self._async_tts_chunks(cleaned, accent, gender, speed):
+                async for pcm in self._async_tts_chunks(bot_text, accent, gender, speed):
                     yield pb.SpeakingEvent(bot_audio=pb.BotAudio(pcm16=pcm))
 
                 yield pb.SpeakingEvent(done=pb.Done())
@@ -144,8 +142,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
             # Bot response
             yield pb.SpeakingEvent(bot_text=pb.BotText(text=bot_text))
 
-            cleaned = clean_text(bot_text)
-            async for pcm in self._async_tts_chunks(cleaned, accent, gender, speed):
+            async for pcm in self._async_tts_chunks(bot_text, accent, gender, speed):
                 yield pb.SpeakingEvent(bot_audio=pb.BotAudio(pcm16=pcm))
 
             yield pb.SpeakingEvent(done=pb.Done())
