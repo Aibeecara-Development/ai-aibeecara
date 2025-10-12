@@ -17,7 +17,10 @@ from src.chat_model.chatbot import (
     hint_to_users,
 )
 from src.audio_processing.transcriber import transcribe_audio_api
-from src.chat_model.text_to_speech import generate_tts_pcm_stream
+from src.chat_model.text_to_speech import (
+    generate_tts_pcm_stream,
+    generate_tts_wav,
+)
 from src.chat_model.scoring.score_model import evaluate_transcription
 
 
@@ -107,7 +110,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
             if audio_url == "":
                 payload = {
                     "selected_topic_name": topic,
-                    "user_input": "", # no transcript
+                    "user_input": "",  # no transcript
                     "history_log": history_pairs,
                     "exchange_count": len(history_pairs),
                     "tts_model": "aura-2-amalthea-en",
@@ -213,12 +216,21 @@ class AiServiceServicer(pbg.AiServiceServicer):
     async def EvaluateGrammar(
         self, request: pb.EvaluateGrammarRequest, context: grpc.aio.ServicerContext
     ) -> pb.EvaluateGrammarResponse:
+        """
+        1) evaluate_transcription (score, corrected_text, explanation, tense)
+        2) generate_tts_wav(corrected_text or original)
+        If ANY step fails, abort the RPC (no partial success).
+        """
         transcript = (request.transcript or "").strip()
         if not transcript:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "transcript is required")
 
+        # If proto later adds accent/gender, use them; otherwise default.
+        accent = request.tts_accent or "american"
+        gender = request.tts_gender or "feminine"
+
         try:
-            # evaluate_transcription is sync; run it off the event loop
+            # Step 1: Grammar evaluation
             def _run_eval():
                 return evaluate_transcription(transcript)
 
@@ -229,19 +241,28 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 tense_used,
             ) = await self._to_thread(_run_eval)
 
-            return pb.EvaluateGrammarResponse(
-                score=float(evaluate_transcription_score),
-                corrected_transcript=corrected_text or "",
-                explanation=grammar_explanation or "",
-                tense_used=tense_used or "",
+            # Step 2: TTS
+            corrected_audio_bytes = await self._to_thread(
+                generate_tts_wav, corrected_text, accent, gender
             )
+
+            # Success only if both steps succeeded
+            return pb.EvaluateGrammarResponse(
+                score=evaluate_transcription_score,
+                corrected_transcript=corrected_text,
+                explanation=grammar_explanation,
+                tense_used=tense_used,
+                corrected_audio=corrected_audio_bytes,
+            )
+
         except grpc.RpcError:
+            # Preserve any upstream gRPC status
             raise
         except Exception as e:
+            # ONE ERROR => ALL ERROR (abort the entire RPC)
             await context.abort(
                 grpc.StatusCode.INTERNAL, f"Evaluate grammar failed: {str(e)}"
             )
-
 
 async def serve(host: str = "[::]:50051") -> None:
     server = grpc.aio.server(options=[
