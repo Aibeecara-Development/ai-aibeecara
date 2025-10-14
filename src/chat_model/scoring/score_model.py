@@ -10,7 +10,10 @@ from google import genai
 from src.chat_model.chatbot import grammar_correction
 import requests
 
-BASE_URL = "https://farrel-dr-aibeecara-models-2.hf.space"
+BASE_URL = os.getenv("EVALUATION_BASE_URL")
+
+if not BASE_URL:
+    raise ValueError("EVALUATION_BASE_URL environment variable not set.")
 
 # TODO: These models can be deployed on future APIs
 # happy_tt = HappyTextToText("T5", "vennify/t5-base-grammar-correction")
@@ -28,9 +31,9 @@ def evaluate_transcription(transcription):
     data = {"text": transcription}
     result = requests.post(f"{BASE_URL}/grammar-correct", json=data).json()['text']
 
-    wer_score = wer(result.text, transcription)
+    wer_score = wer(result, transcription)
 
-    corrected_text = result.text
+    corrected_text = result
 
     transcription_score = 1 - wer_score
 
@@ -151,6 +154,3 @@ def calculate_speech_rates(deepgram_response) -> dict:
 
 if __name__ == "__main__":
     evaluate_vocabulary_cefr("It was a real nice day today. Can I have you’re coat? We should contact they’re friend.")
-
-
-

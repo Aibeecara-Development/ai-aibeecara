@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package ai_service;
 
+// Conversation messages
 message HistoryItem {
   string role = 1;  // "user" | "bot"
   string text = 2;
@@ -30,6 +31,7 @@ message Error {
   string message = 1;
 }
 
+// Speaking (server-streaming)
 message SpeakingRequest {
   string topic = 1;                       // e.g., "General"
   string user_audio_url = 2;              // empty string => first turn (no audio)
@@ -41,24 +43,62 @@ message SpeakingRequest {
 
 message SpeakingEvent {
   oneof event {
-    Start start = 1;
-    UserText user_text = 2;
-    BotText bot_text = 3;
-    BotAudio bot_audio = 4;
-    Done done = 5;
-    Error error = 6;
+    Start    start     = 1;
+    UserText user_text = 2;  // transcript back to client
+    BotText  bot_text  = 3;  // model reply text
+    BotAudio bot_audio = 4;  // PCM16 chunks
+    Done     done      = 5;
+    Error    error     = 6;
   }
 }
 
+// Topic validation
 message TopicValidationRequest {
   string topic_name = 1;
 }
 
 message TopicValidationResponse {
-  string validation = 1;  // "BROAD" or "NARROW"
+  string validation = 1;  // "BROAD" | "NARROW"
 }
 
+// Translation
+message TranslateRequest {
+  string text = 1;  // source text
+}
+
+message TranslateResponse {
+  string translated_text = 1;
+}
+
+// Hint
+message HintRequest {
+  string response_text = 1;  // the bot's response for which to generate hint(s)
+}
+
+message HintResponse {
+  string hint = 1;
+}
+
+// Grammar evaluation
+message EvaluateGrammarRequest {
+  string transcript = 1;
+  string tts_accent = 2;  // e.g., "american"
+  string tts_gender = 3;  // e.g., "feminine"
+}
+
+message EvaluateGrammarResponse {
+  float  score                = 1;
+  string corrected_transcript = 2;
+  string explanation          = 3;
+  string tense_used           = 4;
+  bytes  corrected_audio      = 5;
+}
+
+// Service
 service AiService {
-  rpc ProcessSpeaking (SpeakingRequest) returns (stream SpeakingEvent);
-  rpc ValidateTopic (TopicValidationRequest) returns (TopicValidationResponse);
+  rpc ProcessSpeaking   (SpeakingRequest)         returns (stream SpeakingEvent);
+  rpc ValidateTopic     (TopicValidationRequest)  returns (TopicValidationResponse);
+  rpc TranslateText     (TranslateRequest)        returns (TranslateResponse);
+  rpc GenerateHint      (HintRequest)             returns (HintResponse);
+  rpc EvaluateGrammar   (EvaluateGrammarRequest)  returns (EvaluateGrammarResponse);
 }
