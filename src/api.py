@@ -5,9 +5,9 @@ from .chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize
                                 chat_task, hint_to_users)
 from .chat_model.emotion_detection import detect_emotion
 from .audio_processing.transcriber import transcribe_audio_api, transcription_task
-from .chat_model.text_to_speech import generate_tts_pcm_stream, tts_stream
+from .chat_model.text_to_speech import generate_tts_pcm_stream, tts_stream, generate_tts_wav
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse, Response
 from pydantic import BaseModel
 import time
 import requests
@@ -23,7 +23,7 @@ from deep_translator import GoogleTranslator
 from .pronunciation_model.pronunciation_model import evaluate_pronunciation
 from .chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
                                             evaluate_vocabulary_cefr, calculate_speech_rates)
-from .utils.utils import clean_text, serialize_waveform, deserialize_waveform
+from .utils.utils import serialize_waveform, deserialize_waveform
 from .chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
@@ -45,6 +45,11 @@ class TTSInput(BaseModel):
     accent: str = "american"
     gender: str = "feminine"
     speed: float = 1.0
+
+class TTSWavInput(BaseModel):
+    text: str
+    accent: str = "american"   # e.g., american | british | australian
+    gender: str = "feminine"   # e.g., feminine | masculine
 
 class AudioURLInput(BaseModel):
     audio_url: str
@@ -245,8 +250,7 @@ async def evaluate_endpoint(input_data: TranscriptionResult):
 @app.post("/chat/tts/")
 async def chat_tts(input: TTSInput):
     try:
-        cleaned_text = clean_text(input.text)
-        gen = generate_tts_pcm_stream(cleaned_text, input.accent, input.gender, input.speed)
+        gen = generate_tts_pcm_stream(input.text, input.accent, input.gender, input.speed)
         # We return raw PCM; the frontend decodes/plays it via AudioWorklet.
         return StreamingResponse(gen, media_type="application/octet-stream")
     except Exception as e:
@@ -264,7 +268,7 @@ async def chat_topic(input: CustomTopicInput):
 @app.post("/chat/emotion/")
 async def chat_emotion(input: ChatInput):
     try:
-        sentence = [input.user_input]
+        sentence = input.user_input
         emotion = await asyncio.to_thread(detect_emotion(sentence))
         return {"emotion": emotion}
     except Exception as e:
@@ -409,6 +413,3 @@ async def conversation_stream(ws: WebSocket, input: ChatInput):
     )
 
     await chat_queue.put(None)
-
-
-

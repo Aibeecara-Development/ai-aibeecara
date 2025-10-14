@@ -181,12 +181,30 @@ Form file upload (multipart/form-data) with key: file.
                      "cefr": "A1"
                    },
                    {
-                     "word": "the",
-                     "lemma": "the",
-                     "pos": "DT",
+                     "word": "world",
+                     "lemma": "world",
+                     "pos": "NN",
                      "level_score": 1.0,
-                     "cefr": "A1"
-                   },
+                     "cefr": "A1",
+                     "synonyms": [
+                         {
+                             "synonym": "domain",
+                             "pos": "NN",
+                             "pronunciation": "dəmeɪn",
+                             "definition": "people in general; especially a distinctive group of people with some shared interest",
+                             "level_score": 2.72,
+                             "cefr": "B1",
+                             "example_sentence": "the western domain"
+                         },
+                         {
+                             "synonym": "reality",
+                             "pos": "NN",
+                             "pronunciation": "ɹɪælᵻɾi",
+                             "definition": "all of your experiences that determine how things appear to you",
+                             "level_score": 3.0,
+                             "cefr": "B1",
+                             "example_sentence": "his reality was shattered"
+                         },
                    ...
                  ]
                }
