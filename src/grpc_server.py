@@ -23,6 +23,8 @@ from src.chat_model.text_to_speech import (
 )
 from src.chat_model.scoring.score_model import evaluate_transcription
 
+from deep_translator import GoogleTranslator
+
 
 def _collapse_history_pairs(history_items: List[pb.HistoryItem]) -> List[tuple[str, str]]:
     """

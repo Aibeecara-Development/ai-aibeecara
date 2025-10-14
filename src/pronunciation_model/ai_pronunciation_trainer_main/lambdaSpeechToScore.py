@@ -2,8 +2,8 @@
 import torch
 import json
 import os
-import src.pronunciation_model.ai_pronunciation_trainer_main.WordMatching as wm
-import src.pronunciation_model.ai_pronunciation_trainer_main.pronunciationTrainer as pronunciationTrainer
+import pronunciation_model.ai_pronunciation_trainer_main.WordMatching as wm
+import pronunciation_model.ai_pronunciation_trainer_main.pronunciationTrainer as pronunciationTrainer
 import base64
 import time
 import audioread
