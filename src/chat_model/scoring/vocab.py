@@ -298,11 +298,14 @@ def evaluate_cefr_stats(input_text: str) -> dict:
 
     # --- Token details ---
     synonym_counter = 0  # count how many words got synonyms
+    from nltk.corpus import wordnet as wn
+
     for token in level_tokens:
         word, lemma, pos, level = token
         cefr = DIFFICULTY_MAPPING_REVERSE.get(round(level))
 
         if pos != '_SP':
+            # 🔹 Base token info
             token_entry = {
                 "word": word,
                 "lemma": lemma,
@@ -311,8 +314,44 @@ def evaluate_cefr_stats(input_text: str) -> dict:
                 "cefr": cefr
             }
 
-            # only add synonyms if POS = JJ and limit to 5 words
-            if (pos == "VBG" or pos == "VBN" or pos == "NNS" or pos == "NN") and synonym_counter < 5:
+            # 🔹 Add pronunciation (phonemes)
+            try:
+                phonemes = phonemize(
+                    word,
+                    language='en-us',
+                    backend='espeak',
+                    strip=True,
+                    preserve_punctuation=True,
+                )
+            except Exception as e:
+                phonemes = "N/A"
+
+            token_entry["pronunciation"] = phonemes
+
+            # 🔹 Get WordNet definition & example sentence (if available)
+            pos_map = {
+                "NOUN": wn.NOUN,
+                "VERB": wn.VERB,
+                "ADJ": wn.ADJ,
+                "ADV": wn.ADV
+            }
+            wn_pos = pos_map.get(pos.upper(), wn.NOUN)
+
+            synsets = wn.synsets(word, pos=wn_pos)
+            if synsets:
+                best_synset = synsets[0]
+                definition = best_synset.definition()
+                examples = best_synset.examples()
+                example_sentence = examples[0] if examples else f"No example available for '{word}'."
+            else:
+                definition = "No definition available."
+                example_sentence = f"No example available for '{word}'."
+
+            token_entry["definition"] = definition
+            token_entry["example_sentence"] = example_sentence
+
+            # 🔹 Only add synonyms if POS = JJ or NN/VBN/VBG and limit to 5
+            if (pos in ["VBG", "VBN", "NNS", "NN"]) and synonym_counter < 5:
                 token_entry["synonyms"] = get_synonyms_with_levels(word, pos, get_levels_tokens)
                 synonym_counter += 1
 
