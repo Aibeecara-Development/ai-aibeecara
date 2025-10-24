@@ -63,9 +63,16 @@ class AiServiceServicer(pbg.AiServiceServicer):
         if not gemini_key:
             raise RuntimeError("GEMINI_KEY missing in .env")
         self.genai_client = genai.Client(api_key=gemini_key)
+        # Limit concurrent TTS requests to avoid rate limiting
+        self.tts_semaphore = asyncio.Semaphore(5)  # Max 5 concurrent TTS requests
 
     async def _to_thread(self, fn, *args, **kwargs):
         return await asyncio.to_thread(fn, *args, **kwargs)
+
+    async def _rate_limited_tts(self, text: str, accent: str, gender: str) -> bytes:
+        """Generate TTS with rate limiting to avoid API 429 errors."""
+        async with self.tts_semaphore:
+            return await self._to_thread(generate_tts_wav, text, accent, gender)
 
     async def _async_tts_chunks(
         self, text: str, accent: str, gender: str, speed: float
@@ -271,7 +278,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
     ) -> pb.EvaluateVocabularyResponse:
         """
         1) evaluate_cefr_stats (statistics, tokens with synonyms)
-        2) generate_tts_wav for each example sentence
+        2) generate_tts_wav for each example sentence (in parallel)
         If ANY step fails, abort the RPC (no partial success).
         """
         transcript = (request.transcript or "").strip()
@@ -288,18 +295,79 @@ class AiServiceServicer(pbg.AiServiceServicer):
 
             cefr_data = await self._to_thread(_run_vocab_eval)
 
-            # Step 2: Build response with TTS for example sentences
+            # Step 2: Build response with TTS for example sentences (PARALLEL)
             statistics = cefr_data.get("statistics", {})
             tokens_data = cefr_data.get("tokens", [])
 
+            # Collect all TTS tasks to run in parallel
+            tts_tasks = []
+            tts_metadata = []  # Track which task belongs to which token/synonym
+
+            for token_idx, token_data in enumerate(tokens_data):
+                # Original word's example sentence
+                example_sentence = token_data.get("example_sentence", "")
+                if example_sentence:
+                    tts_tasks.append(
+                        self._rate_limited_tts(example_sentence, accent, gender)
+                    )
+                    tts_metadata.append({
+                        "token_idx": token_idx,
+                        "is_synonym": False,
+                        "syn_idx": None
+                    })
+                else:
+                    tts_tasks.append(asyncio.sleep(0, result=b""))  # placeholder
+                    tts_metadata.append({
+                        "token_idx": token_idx,
+                        "is_synonym": False,
+                        "syn_idx": None
+                    })
+
+                # Synonyms' example sentences
+                synonyms_list = token_data.get("synonyms", [])
+                for syn_idx, syn_data in enumerate(synonyms_list):
+                    syn_example = syn_data.get("example_sentence", "")
+                    if syn_example:
+                        tts_tasks.append(
+                            self._rate_limited_tts(syn_example, accent, gender)
+                        )
+                        tts_metadata.append({
+                            "token_idx": token_idx,
+                            "is_synonym": True,
+                            "syn_idx": syn_idx
+                        })
+                    else:
+                        tts_tasks.append(asyncio.sleep(0, result=b""))  # placeholder
+                        tts_metadata.append({
+                            "token_idx": token_idx,
+                            "is_synonym": True,
+                            "syn_idx": syn_idx
+                        })
+
+            # Run all TTS tasks in parallel (rate-limited by semaphore)
+            tts_results = await asyncio.gather(*tts_tasks)
+
+            # Build the response structure with the TTS results
+            # First, create a mapping of results back to tokens
+            result_map = {}
+            for metadata, audio_bytes in zip(tts_metadata, tts_results):
+                token_idx = metadata["token_idx"]
+                if token_idx not in result_map:
+                    result_map[token_idx] = {
+                        "original_audio": None,
+                        "synonym_audios": {}
+                    }
+
+                if metadata["is_synonym"]:
+                    result_map[token_idx]["synonym_audios"][metadata["syn_idx"]] = audio_bytes
+                else:
+                    result_map[token_idx]["original_audio"] = audio_bytes
+
             # Convert tokens to protobuf format
             vocab_tokens = []
-            for token_data in tokens_data:
-                # Generate TTS for original word's example sentence
+            for token_idx, token_data in enumerate(tokens_data):
                 example_sentence = token_data.get("example_sentence", "")
-                example_audio = await self._to_thread(
-                    generate_tts_wav, example_sentence, accent, gender
-                ) if example_sentence else b""
+                example_audio = result_map[token_idx]["original_audio"]
 
                 # Build original entry
                 original_entry = pb.VocabularyEntry(
@@ -314,11 +382,9 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 # Process synonyms if they exist
                 synonym_entries = []
                 synonyms_list = token_data.get("synonyms", [])
-                for syn_data in synonyms_list:
+                for syn_idx, syn_data in enumerate(synonyms_list):
                     syn_example = syn_data.get("example_sentence", "")
-                    syn_audio = await self._to_thread(
-                        generate_tts_wav, syn_example, accent, gender
-                    ) if syn_example else b""
+                    syn_audio = result_map[token_idx]["synonym_audios"].get(syn_idx, b"")
 
                     synonym_entry = pb.VocabularyEntry(
                         word=syn_data.get("synonym", ""),
