@@ -1,11 +1,11 @@
 import unittest
 
-import src.pronunciation_model.ai_pronunciation_trainer_main.ModelInterfaces as ModelInterfaces
-import src.pronunciation_model.ai_pronunciation_trainer_main.lambdaGetSample as lambdaGetSample
-import src.pronunciation_model.ai_pronunciation_trainer_main.RuleBasedModels as RuleBasedModels
+import pronunciation_model.ai_pronunciation_trainer_main.ModelInterfaces as ModelInterfaces
+import pronunciation_model.ai_pronunciation_trainer_main.lambdaGetSample as lambdaGetSample
+import pronunciation_model.ai_pronunciation_trainer_main.RuleBasedModels as RuleBasedModels
 import epitran
 import json
-import src.pronunciation_model.ai_pronunciation_trainer_main.pronunciationTrainer as pronunciationTrainer
+import pronunciation_model.ai_pronunciation_trainer_main.pronunciationTrainer as pronunciationTrainer
 
 
 def test_category(category: int, threshold_min: int, threshold_max: int):
