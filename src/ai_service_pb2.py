@@ -24,13 +24,15 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\nai_service\")\n\x0bHistoryItem\x12\x0c\n\x04role\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\"\x1b\n\x05Start\x12\x12\n\nrequest_id\x18\x01 \x01(\t\"\x18\n\x08UserText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x17\n\x07\x42otText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x19\n\x08\x42otAudio\x12\r\n\x05pcm16\x18\x01 \x01(\x0c\"\x06\n\x04\x44one\"\x18\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x95\x01\n\x0fSpeakingRequest\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x16\n\x0euser_audio_url\x18\x02 \x01(\t\x12,\n\x0bhistory_log\x18\x03 \x03(\x0b\x32\x17.ai_service.HistoryItem\x12\x0e\n\x06\x61\x63\x63\x65nt\x18\x04 \x01(\t\x12\x0e\n\x06gender\x18\x05 \x01(\t\x12\r\n\x05speed\x18\x06 \x01(\x02\"\x81\x02\n\rSpeakingEvent\x12\"\n\x05start\x18\x01 \x01(\x0b\x32\x11.ai_service.StartH\x00\x12)\n\tuser_text\x18\x02 \x01(\x0b\x32\x14.ai_service.UserTextH\x00\x12\'\n\x08\x62ot_text\x18\x03 \x01(\x0b\x32\x13.ai_service.BotTextH\x00\x12)\n\tbot_audio\x18\x04 \x01(\x0b\x32\x14.ai_service.BotAudioH\x00\x12 \n\x04\x64one\x18\x05 \x01(\x0b\x32\x10.ai_service.DoneH\x00\x12\"\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x11.ai_service.ErrorH\x00\x42\x07\n\x05\x65vent\",\n\x16TopicValidationRequest\x12\x12\n\ntopic_name\x18\x01 \x01(\t\"-\n\x17TopicValidationResponse\x12\x12\n\nvalidation\x18\x01 \x01(\t\" \n\x10TranslateRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\",\n\x11TranslateResponse\x12\x17\n\x0ftranslated_text\x18\x01 \x01(\t\"$\n\x0bHintRequest\x12\x15\n\rresponse_text\x18\x01 \x01(\t\"\x1c\n\x0cHintResponse\x12\x0c\n\x04hint\x18\x01 \x01(\t\"T\n\x16\x45valuateGrammarRequest\x12\x12\n\ntranscript\x18\x01 \x01(\t\x12\x12\n\ntts_accent\x18\x02 \x01(\t\x12\x12\n\ntts_gender\x18\x03 \x01(\t\"\x88\x01\n\x17\x45valuateGrammarResponse\x12\r\n\x05score\x18\x01 \x01(\x02\x12\x1c\n\x14\x63orrected_transcript\x18\x02 \x01(\t\x12\x13\n\x0b\x65xplanation\x18\x03 \x01(\t\x12\x12\n\ntense_used\x18\x04 \x01(\t\x12\x17\n\x0f\x63orrected_audio\x18\x05 \x01(\x0c\x32\x9f\x03\n\tAiService\x12K\n\x0fProcessSpeaking\x12\x1b.ai_service.SpeakingRequest\x1a\x19.ai_service.SpeakingEvent0\x01\x12X\n\rValidateTopic\x12\".ai_service.TopicValidationRequest\x1a#.ai_service.TopicValidationResponse\x12L\n\rTranslateText\x12\x1c.ai_service.TranslateRequest\x1a\x1d.ai_service.TranslateResponse\x12\x41\n\x0cGenerateHint\x12\x17.ai_service.HintRequest\x1a\x18.ai_service.HintResponse\x12Z\n\x0f\x45valuateGrammar\x12\".ai_service.EvaluateGrammarRequest\x1a#.ai_service.EvaluateGrammarResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\nai_service\")\n\x0bHistoryItem\x12\x0c\n\x04role\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\"\x1b\n\x05Start\x12\x12\n\nrequest_id\x18\x01 \x01(\t\"\x18\n\x08UserText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x17\n\x07\x42otText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x19\n\x08\x42otAudio\x12\r\n\x05pcm16\x18\x01 \x01(\x0c\"\x06\n\x04\x44one\"\x18\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x95\x01\n\x0fSpeakingRequest\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x16\n\x0euser_audio_url\x18\x02 \x01(\t\x12,\n\x0bhistory_log\x18\x03 \x03(\x0b\x32\x17.ai_service.HistoryItem\x12\x0e\n\x06\x61\x63\x63\x65nt\x18\x04 \x01(\t\x12\x0e\n\x06gender\x18\x05 \x01(\t\x12\r\n\x05speed\x18\x06 \x01(\x02\"\x81\x02\n\rSpeakingEvent\x12\"\n\x05start\x18\x01 \x01(\x0b\x32\x11.ai_service.StartH\x00\x12)\n\tuser_text\x18\x02 \x01(\x0b\x32\x14.ai_service.UserTextH\x00\x12\'\n\x08\x62ot_text\x18\x03 \x01(\x0b\x32\x13.ai_service.BotTextH\x00\x12)\n\tbot_audio\x18\x04 \x01(\x0b\x32\x14.ai_service.BotAudioH\x00\x12 \n\x04\x64one\x18\x05 \x01(\x0b\x32\x10.ai_service.DoneH\x00\x12\"\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x11.ai_service.ErrorH\x00\x42\x07\n\x05\x65vent\",\n\x16TopicValidationRequest\x12\x12\n\ntopic_name\x18\x01 \x01(\t\"-\n\x17TopicValidationResponse\x12\x12\n\nvalidation\x18\x01 \x01(\t\" \n\x10TranslateRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\",\n\x11TranslateResponse\x12\x17\n\x0ftranslated_text\x18\x01 \x01(\t\"$\n\x0bHintRequest\x12\x15\n\rresponse_text\x18\x01 \x01(\t\"\x1c\n\x0cHintResponse\x12\x0c\n\x04hint\x18\x01 \x01(\t\"W\n\x19\x45valuateTranscriptRequest\x12\x12\n\ntranscript\x18\x01 \x01(\t\x12\x12\n\ntts_accent\x18\x02 \x01(\t\x12\x12\n\ntts_gender\x18\x03 \x01(\t\"\x88\x01\n\x17\x45valuateGrammarResponse\x12\r\n\x05score\x18\x01 \x01(\x02\x12\x1c\n\x14\x63orrected_transcript\x18\x02 \x01(\t\x12\x13\n\x0b\x65xplanation\x18\x03 \x01(\t\x12\x12\n\ntense_used\x18\x04 \x01(\t\x12\x17\n\x0f\x63orrected_audio\x18\x05 \x01(\x0c\"\x9d\x01\n\x0fVocabularyEntry\x12\x0c\n\x04word\x18\x01 \x01(\t\x12\x0c\n\x04\x63\x65\x66r\x18\x02 \x01(\t\x12\x15\n\rpronunciation\x18\x03 \x01(\t\x12\x12\n\ndefinition\x18\x04 \x01(\t\x12#\n\x1b\x65xample_sentence_transcript\x18\x05 \x01(\t\x12\x1e\n\x16\x65xample_sentence_audio\x18\x06 \x01(\x0c\"o\n\x0fVocabularyToken\x12-\n\x08original\x18\x01 \x01(\x0b\x32\x1b.ai_service.VocabularyEntry\x12-\n\x08synonyms\x18\x02 \x03(\x0b\x32\x1b.ai_service.VocabularyEntry\"\xc8\x01\n\x1a\x45valuateVocabularyResponse\x12J\n\nstatistics\x18\x01 \x03(\x0b\x32\x36.ai_service.EvaluateVocabularyResponse.StatisticsEntry\x12+\n\x06tokens\x18\x02 \x03(\x0b\x32\x1b.ai_service.VocabularyToken\x1a\x31\n\x0fStatisticsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\x32\x87\x04\n\tAiService\x12K\n\x0fProcessSpeaking\x12\x1b.ai_service.SpeakingRequest\x1a\x19.ai_service.SpeakingEvent0\x01\x12X\n\rValidateTopic\x12\".ai_service.TopicValidationRequest\x1a#.ai_service.TopicValidationResponse\x12L\n\rTranslateText\x12\x1c.ai_service.TranslateRequest\x1a\x1d.ai_service.TranslateResponse\x12\x41\n\x0cGenerateHint\x12\x17.ai_service.HintRequest\x1a\x18.ai_service.HintResponse\x12]\n\x0f\x45valuateGrammar\x12%.ai_service.EvaluateTranscriptRequest\x1a#.ai_service.EvaluateGrammarResponse\x12\x63\n\x12\x45valuateVocabulary\x12%.ai_service.EvaluateTranscriptRequest\x1a&.ai_service.EvaluateVocabularyResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ai_service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
+  _globals['_EVALUATEVOCABULARYRESPONSE_STATISTICSENTRY']._loaded_options = None
+  _globals['_EVALUATEVOCABULARYRESPONSE_STATISTICSENTRY']._serialized_options = b'8\001'
   _globals['_HISTORYITEM']._serialized_start=32
   _globals['_HISTORYITEM']._serialized_end=73
   _globals['_START']._serialized_start=75
@@ -61,10 +63,18 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_HINTREQUEST']._serialized_end=837
   _globals['_HINTRESPONSE']._serialized_start=839
   _globals['_HINTRESPONSE']._serialized_end=867
-  _globals['_EVALUATEGRAMMARREQUEST']._serialized_start=869
-  _globals['_EVALUATEGRAMMARREQUEST']._serialized_end=953
-  _globals['_EVALUATEGRAMMARRESPONSE']._serialized_start=956
-  _globals['_EVALUATEGRAMMARRESPONSE']._serialized_end=1092
-  _globals['_AISERVICE']._serialized_start=1095
-  _globals['_AISERVICE']._serialized_end=1510
+  _globals['_EVALUATETRANSCRIPTREQUEST']._serialized_start=869
+  _globals['_EVALUATETRANSCRIPTREQUEST']._serialized_end=956
+  _globals['_EVALUATEGRAMMARRESPONSE']._serialized_start=959
+  _globals['_EVALUATEGRAMMARRESPONSE']._serialized_end=1095
+  _globals['_VOCABULARYENTRY']._serialized_start=1098
+  _globals['_VOCABULARYENTRY']._serialized_end=1255
+  _globals['_VOCABULARYTOKEN']._serialized_start=1257
+  _globals['_VOCABULARYTOKEN']._serialized_end=1368
+  _globals['_EVALUATEVOCABULARYRESPONSE']._serialized_start=1371
+  _globals['_EVALUATEVOCABULARYRESPONSE']._serialized_end=1571
+  _globals['_EVALUATEVOCABULARYRESPONSE_STATISTICSENTRY']._serialized_start=1522
+  _globals['_EVALUATEVOCABULARYRESPONSE_STATISTICSENTRY']._serialized_end=1571
+  _globals['_AISERVICE']._serialized_start=1574
+  _globals['_AISERVICE']._serialized_end=2093
 # @@protoc_insertion_point(module_scope)

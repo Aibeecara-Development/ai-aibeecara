@@ -216,7 +216,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
             await context.abort(grpc.StatusCode.INTERNAL, f"Hint generation failed: {str(e)}")
 
     async def EvaluateGrammar(
-        self, request: pb.EvaluateGrammarRequest, context: grpc.aio.ServicerContext
+        self, request: pb.EvaluateTranscriptRequest, context: grpc.aio.ServicerContext
     ) -> pb.EvaluateGrammarResponse:
         """
         1) evaluate_transcription (score, corrected_text, explanation, tense)
