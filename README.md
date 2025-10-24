@@ -178,7 +178,11 @@ Form file upload (multipart/form-data) with key: file.
                      "lemma": "in",
                      "pos": "IN",
                      "level_score": 1.0,
-                     "cefr": "A1"
+                     "cefr": "A1", 
+                      "pronunciation": "dəmeɪn",
+                      "definition": "people in general; especially a distinctive group of people with some shared interest",
+                      "example_sentence": "The forest was full of wildlife."
+
                    },
                    {
                      "word": "world",
@@ -186,6 +190,10 @@ Form file upload (multipart/form-data) with key: file.
                      "pos": "NN",
                      "level_score": 1.0,
                      "cefr": "A1",
+                      "pronunciation": "dəmeɪn",
+                      "definition": "people in general; especially a distinctive group of people with some shared interest",
+                      "example_sentence": "The forest was full of wildlife.",
+
                      "synonyms": [
                          {
                              "synonym": "domain",
