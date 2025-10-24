@@ -6,7 +6,6 @@ from typing import AsyncGenerator, List
 
 from dotenv import load_dotenv
 import grpc
-from deep_translator import GoogleTranslator
 from google import genai
 
 from src import ai_service_pb2 as pb
@@ -22,6 +21,7 @@ from src.chat_model.text_to_speech import (
     generate_tts_wav,
 )
 from src.chat_model.scoring.score_model import evaluate_transcription
+from src.chat_model.scoring.vocab import evaluate_cefr_stats
 
 from deep_translator import GoogleTranslator
 
@@ -264,6 +264,88 @@ class AiServiceServicer(pbg.AiServiceServicer):
             # ONE ERROR => ALL ERROR (abort the entire RPC)
             await context.abort(
                 grpc.StatusCode.INTERNAL, f"Evaluate grammar failed: {str(e)}"
+            )
+
+    async def EvaluateVocabulary(
+        self, request: pb.EvaluateTranscriptRequest, context: grpc.aio.ServicerContext
+    ) -> pb.EvaluateVocabularyResponse:
+        """
+        1) evaluate_cefr_stats (statistics, tokens with synonyms)
+        2) generate_tts_wav for each example sentence
+        If ANY step fails, abort the RPC (no partial success).
+        """
+        transcript = (request.transcript or "").strip()
+        if not transcript:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "transcript is required")
+
+        accent = request.tts_accent or "american"
+        gender = request.tts_gender or "feminine"
+
+        try:
+            # Step 1: Vocabulary evaluation
+            def _run_vocab_eval():
+                return evaluate_cefr_stats(transcript)
+
+            cefr_data = await self._to_thread(_run_vocab_eval)
+
+            # Step 2: Build response with TTS for example sentences
+            statistics = cefr_data.get("statistics", {})
+            tokens_data = cefr_data.get("tokens", [])
+
+            # Convert tokens to protobuf format
+            vocab_tokens = []
+            for token_data in tokens_data:
+                # Generate TTS for original word's example sentence
+                example_sentence = token_data.get("example_sentence", "")
+                example_audio = await self._to_thread(
+                    generate_tts_wav, example_sentence, accent, gender
+                ) if example_sentence else b""
+
+                # Build original entry
+                original_entry = pb.VocabularyEntry(
+                    word=token_data.get("word", ""),
+                    cefr=token_data.get("cefr", "NA"),
+                    pronunciation=token_data.get("pronunciation", ""),
+                    definition=token_data.get("definition", ""),
+                    example_sentence_transcript=example_sentence,
+                    example_sentence_audio=example_audio,
+                )
+
+                # Process synonyms if they exist
+                synonym_entries = []
+                synonyms_list = token_data.get("synonyms", [])
+                for syn_data in synonyms_list:
+                    syn_example = syn_data.get("example_sentence", "")
+                    syn_audio = await self._to_thread(
+                        generate_tts_wav, syn_example, accent, gender
+                    ) if syn_example else b""
+
+                    synonym_entry = pb.VocabularyEntry(
+                        word=syn_data.get("synonym", ""),
+                        cefr=syn_data.get("cefr", "NA"),
+                        pronunciation=syn_data.get("pronunciation", ""),
+                        definition=syn_data.get("definition", ""),
+                        example_sentence_transcript=syn_example,
+                        example_sentence_audio=syn_audio,
+                    )
+                    synonym_entries.append(synonym_entry)
+
+                vocab_token = pb.VocabularyToken(
+                    original=original_entry,
+                    synonyms=synonym_entries,
+                )
+                vocab_tokens.append(vocab_token)
+
+            return pb.EvaluateVocabularyResponse(
+                statistics=statistics,
+                tokens=vocab_tokens,
+            )
+
+        except grpc.RpcError:
+            raise
+        except Exception as e:
+            await context.abort(
+                grpc.StatusCode.INTERNAL, f"Evaluate vocabulary failed: {str(e)}"
             )
 
 async def serve(host: str = "[::]:50051") -> None:

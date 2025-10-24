@@ -41,7 +41,7 @@ DATABASE_FILENAME = os.path.join(BASE_DIR, "..", "..", "data", "word_cefr_minifi
 # Normalize the path
 DATABASE_FILENAME = os.path.normpath(DATABASE_FILENAME)
 
-conn = sqlite3.connect(DATABASE_FILENAME)
+conn = sqlite3.connect(DATABASE_FILENAME, check_same_thread=False)
 cursor = conn.cursor()
 
 ABBREVIATION_MAPPING = {
