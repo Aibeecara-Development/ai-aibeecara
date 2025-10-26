@@ -259,8 +259,8 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
     for syn, lemma, pos_tag, level in level_tokens:
         data = synonyms.get(syn, {})
         examples = data.get("examples", [])
-        definition = data.get("definition", None)
-        example_sentence = examples[0] if examples else None
+        definition = data.get("definition", "No definition available.") # FIXME: dari PRD field ini tidak boleh kosong
+        example_sentence = examples[0] if examples else f"No example available for '{syn}'." # FIXME: dari PRD field ini tidak boleh kosong
 
         phonemes = phonemize(
             syn,
