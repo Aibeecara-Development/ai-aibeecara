@@ -259,8 +259,8 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
     for syn, lemma, pos_tag, level in level_tokens:
         data = synonyms.get(syn, {})
         examples = data.get("examples", [])
-        definition = data.get("definition", "No definition available.")
-        example_sentence = examples[0] if examples else f"No example available for '{syn}'."
+        definition = data.get("definition", None)
+        example_sentence = examples[0] if examples else None
 
         phonemes = phonemize(
             syn,
@@ -342,10 +342,10 @@ def evaluate_cefr_stats(input_text: str) -> dict:
                 best_synset = synsets[0]
                 definition = best_synset.definition()
                 examples = best_synset.examples()
-                example_sentence = examples[0] if examples else f"No example available for '{word}'."
+                example_sentence = examples[0] if examples else None
             else:
-                definition = "No definition available."
-                example_sentence = f"No example available for '{word}'."
+                definition = None
+                example_sentence = None
 
             token_entry["definition"] = definition
             token_entry["example_sentence"] = example_sentence
