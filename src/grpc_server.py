@@ -64,7 +64,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
             raise RuntimeError("GEMINI_KEY missing in .env")
         self.genai_client = genai.Client(api_key=gemini_key)
         # Limit concurrent TTS requests to avoid rate limiting
-        self.tts_semaphore = asyncio.Semaphore(5)  # Max 5 concurrent TTS requests
+        self.tts_semaphore = asyncio.Semaphore(2)  # Max concurrent TTS requests
 
     async def _to_thread(self, fn, *args, **kwargs):
         return await asyncio.to_thread(fn, *args, **kwargs)
