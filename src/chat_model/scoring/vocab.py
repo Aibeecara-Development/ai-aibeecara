@@ -4,7 +4,10 @@ import os
 import json
 from spacy.util import is_package
 import nltk
+import requests
 from phonemizer import phonemize
+
+BASE_URL = "https://farrel-dr-aibeecara-models-2.hf.space"
 
 def ensure_wordnet_downloaded():
     try:
@@ -67,6 +70,10 @@ DIFFICULTY_MAPPING_REVERSE = {
 def is_punctuation(word: str) -> bool:
     return not word and not any(char.isalpha() for char in word)
 
+def sentence_example(word: str):
+    data = {"text": word}
+    result = requests.post(f"{BASE_URL}/grammar-correct", json=data).json()['text']
+    return result
 
 def custom_tokenize_text(text: str) -> list[tuple[str, str, str]]:
     text = text.replace("’", "'")
@@ -260,7 +267,7 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
         data = synonyms.get(syn, {})
         examples = data.get("examples", [])
         definition = data.get("definition", None)
-        example_sentence = examples[0] if examples else None
+        example_sentence = examples[0] if examples else sentence_example(syn)
 
         phonemes = phonemize(
             syn,
@@ -342,10 +349,10 @@ def evaluate_cefr_stats(input_text: str) -> dict:
                 best_synset = synsets[0]
                 definition = best_synset.definition()
                 examples = best_synset.examples()
-                example_sentence = examples[0] if examples else None
+                example_sentence = examples[0] if examples else sentence_example(word)
             else:
                 definition = None
-                example_sentence = None
+                example_sentence = sentence_example(word)
 
             token_entry["definition"] = definition
             token_entry["example_sentence"] = example_sentence
