@@ -44,7 +44,7 @@ DATABASE_FILENAME = os.path.join(BASE_DIR, "..", "..", "data", "word_cefr_minifi
 # Normalize the path
 DATABASE_FILENAME = os.path.normpath(DATABASE_FILENAME)
 
-conn = sqlite3.connect(DATABASE_FILENAME)
+conn = sqlite3.connect(DATABASE_FILENAME, check_same_thread=False)
 cursor = conn.cursor()
 
 ABBREVIATION_MAPPING = {
@@ -266,7 +266,7 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
     for syn, lemma, pos_tag, level in level_tokens:
         data = synonyms.get(syn, {})
         examples = data.get("examples", [])
-        definition = data.get("definition", None)
+        definition = data.get("definition", "No definition available.") # FIXME: dari PRD field ini tidak boleh kosong
         example_sentence = examples[0] if examples else sentence_example(syn)
 
         phonemes = phonemize(

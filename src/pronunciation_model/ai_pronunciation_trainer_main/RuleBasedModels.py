@@ -1,4 +1,4 @@
-import pronunciation_model.ai_pronunciation_trainer_main.ModelInterfaces as ModelInterfaces
+from . import ModelInterfaces
 import torch
 import numpy as np
 import epitran
