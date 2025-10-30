@@ -368,13 +368,25 @@ def evaluate_pronunciation(input_audio, reference_text):
     ground_truth_phonemes = [ipa for (ipa, _) in result['real_and_transcribed_words_ipa']]
 
     for i in range(len(real_words)):
+        highlight = highlights[i] if i < len(highlights) else None
+
+        # Count correct and total letters
+        if highlight:
+            correct_count = highlight.count('*') // 2  # each letter has 2 stars (*A*)
+            wrong_count = highlight.count('-') // 2  # each letter has 2 dashes (-A-)
+            total_letters = correct_count + wrong_count
+            pronunciation_score = (correct_count / total_letters * 100) if total_letters > 0 else 0
+        else:
+            pronunciation_score = None
+
         words.append({
             "Real words": real_words[i],
             "Transcribed words": transcribed_words[i],
-            "Highlights": highlights[i] if i < len(highlights) else None,
+            "Highlights": highlight,
             "Predicted phonemes": predicted_phonemes[i] if i < len(predicted_phonemes) else None,
             "Ground truth phonemes": ground_truth_phonemes[i] if i < len(ground_truth_phonemes) else None,
             "Pronunciation result": real_words[i] == transcribed_words[i],
+            "Pronunciation score": pronunciation_score
         })
 
     output = {
