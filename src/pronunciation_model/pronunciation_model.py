@@ -7,8 +7,8 @@ import random
 import jiwer
 import textdistance
 import torch
-from pronunciation_model.ai_pronunciation_trainer_main.pronunciationTrainer import getTrainer
-import pronunciation_model.ai_pronunciation_trainer_main.WordMatching as wm
+from .ai_pronunciation_trainer_main.pronunciationTrainer import getTrainer
+from .ai_pronunciation_trainer_main import WordMatching as wm
 import torchaudio
 import json
 
