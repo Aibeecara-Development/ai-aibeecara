@@ -247,6 +247,26 @@ async def evaluate_endpoint(input_data: TranscriptionResult):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+class EvaluatePronunciationInput(BaseModel):
+    audio_url: str
+    transcript: str
+
+@app.post("/evaluate/pronunciation/")
+async def evaluate_pronunciation_endpoint(input_data: EvaluatePronunciationInput):
+    resp = requests.get(input_data.audio_url, timeout=30)
+    resp.raise_for_status()
+    audio_data = io.BytesIO(resp.content)
+    waveform, sr = torchaudio.load(audio_data)
+
+    # Resample and mono
+    if sr != 16000:
+        waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
+    if waveform.shape[0] > 1:
+        waveform = waveform.mean(dim=0, keepdim=True)
+
+    pronunciation_score_dict = evaluate_pronunciation(waveform, input_data.transcript)
+    return {"pronunciation_score": pronunciation_score_dict}
+
 @app.post("/chat/tts/")
 async def chat_tts(input: TTSInput):
     try:

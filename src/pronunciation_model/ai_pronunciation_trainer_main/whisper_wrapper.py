@@ -1,6 +1,6 @@
 import torch 
 from transformers import pipeline
-from pronunciation_model.ai_pronunciation_trainer_main.ModelInterfaces import IASRModel
+from .ModelInterfaces import IASRModel
 from typing import Union
 import numpy as np 
 
