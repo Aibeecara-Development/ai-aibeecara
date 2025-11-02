@@ -14,6 +14,7 @@ from .ai_pronunciation_trainer_main.pronunciationTrainer import getTrainer
 from .ai_pronunciation_trainer_main import WordMatching as wm
 import torchaudio
 import json
+import numpy as np
 
 
 # Load the model
@@ -460,7 +461,7 @@ def evaluate_pronunciation(input_audio, reference_text):
         })
 
     output = {
-        "score": result['pronunciation_accuracy'],
+        "score": result['pronunciation_accuracy'].astype(float),
         "words": words
     }
     return output

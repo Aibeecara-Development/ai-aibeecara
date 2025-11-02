@@ -119,6 +119,29 @@ message EvaluateVocabularyResponse {
   repeated VocabularyToken tokens = 2;
 }
 
+// Pronunciation evaluation
+message EvaluatePronunciationRequest {
+  string audio_url = 1;
+  string transcript  = 2;
+  string tts_accent = 3;  // e.g., "american"
+  string tts_gender = 4;  // e.g., "feminine"
+}
+
+message PronunciationToken {
+  uint32 score = 1; // 0-100
+  string word  = 2;
+  // all fields below is available if score < 1.0
+  string wrong_transcript = 3;
+  string corrected_transcript = 4;
+  string corrected_ipa = 5;
+  bytes corrected_audio = 6;
+}
+
+message EvaluatePronunciationResponse {
+  uint32 overall_score = 1;
+  repeated PronunciationToken tokens = 2;
+}
+
 // Service
 service AiService {
   rpc ProcessSpeaking   (SpeakingRequest)         returns (stream SpeakingEvent);
@@ -127,4 +150,5 @@ service AiService {
   rpc GenerateHint      (HintRequest)             returns (HintResponse);
   rpc EvaluateGrammar   (EvaluateTranscriptRequest)  returns (EvaluateGrammarResponse);
   rpc EvaluateVocabulary (EvaluateTranscriptRequest) returns (EvaluateVocabularyResponse);
+  rpc EvaluatePronunciation (EvaluatePronunciationRequest) returns (EvaluatePronunciationResponse);
 }
