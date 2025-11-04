@@ -1,12 +1,16 @@
 import asyncio
+import io
 import os
 import threading
 import uuid
 from typing import AsyncGenerator, List
 
+import requests
+import torchaudio
 from dotenv import load_dotenv
 import grpc
 from google import genai
+from numba import typeof
 
 from src import ai_service_pb2 as pb
 from src import ai_service_pb2_grpc as pbg
@@ -22,6 +26,7 @@ from src.chat_model.text_to_speech import (
 )
 from src.chat_model.scoring.score_model import evaluate_transcription
 from src.chat_model.scoring.vocab import evaluate_cefr_stats
+from src.pronunciation_model.pronunciation_model import evaluate_pronunciation
 
 from deep_translator import GoogleTranslator
 
@@ -412,6 +417,120 @@ class AiServiceServicer(pbg.AiServiceServicer):
         except Exception as e:
             await context.abort(
                 grpc.StatusCode.INTERNAL, f"Evaluate vocabulary failed: {str(e)}"
+            )
+
+    async def EvaluatePronunciation(
+        self, request: pb.EvaluatePronunciationRequest, context: grpc.aio.ServicerContext
+    ) -> pb.EvaluatePronunciationResponse:
+        """
+        1) Download audio from URL and load as waveform
+        2) Resample and convert to mono if needed
+        3) Evaluate pronunciation using pronunciation model
+        4) Generate TTS for incorrect pronunciations (score < 1.0)
+        5) Return overall score and per-token analysis (excluding perfect scores)
+        """
+        audio_url = (request.audio_url or "").strip()
+        transcript = (request.transcript or "").strip()
+
+        if not audio_url:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "audio_url is required")
+        if not transcript:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "transcript is required")
+
+        accent = request.tts_accent or "american"
+        gender = request.tts_gender or "feminine"
+
+        try:
+            # Step 1: Download audio
+            def _download_audio():
+                resp = requests.get(audio_url, timeout=30)
+                resp.raise_for_status()
+                return io.BytesIO(resp.content)
+
+            audio_data = await self._to_thread(_download_audio)
+
+            # Step 2: Load and preprocess audio
+            def _process_audio():
+                waveform, sr = torchaudio.load(audio_data)
+                # Resample to 16kHz if needed
+                if sr != 16000:
+                    waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
+                # Convert to mono if needed
+                if waveform.shape[0] > 1:
+                    waveform = waveform.mean(dim=0, keepdim=True)
+                return waveform
+
+            waveform = await self._to_thread(_process_audio)
+
+            # Step 3: Evaluate pronunciation
+            def _evaluate_pronunciation():
+                return evaluate_pronunciation(waveform, transcript)
+
+            pronunciation_score_dict = await self._to_thread(_evaluate_pronunciation)
+
+            # Step 4: Filter words that need correction and prepare TTS tasks
+            overall_score = round(pronunciation_score_dict['score'])
+            words_data = pronunciation_score_dict['words']
+
+            # Filter out perfect scores and collect TTS tasks
+            imperfect_words = []
+            tts_tasks = []
+
+            for word_data in words_data:
+                # Get pronunciation score
+                score = round(word_data.get('Pronunciation score', 0)) if word_data.get('Pronunciation score') is not None else 0
+
+                # Only include tokens with score < 100
+                if score < 100:
+                    imperfect_words.append(word_data)
+
+                    # Add TTS task for corrected word
+                    corrected_word = word_data.get('Real words', '')
+                    if corrected_word:
+                        tts_tasks.append(
+                            self._rate_limited_tts(corrected_word, accent, gender)
+                        )
+                    else:
+                        tts_tasks.append(asyncio.sleep(0, result=b""))  # placeholder
+
+            # Step 5: Generate TTS for corrected pronunciations in parallel
+            if tts_tasks:
+                tts_results = await asyncio.gather(*tts_tasks)
+            else:
+                tts_results = []
+
+            # Step 6: Build response with TTS audio
+            tokens = []
+            for i, word_data in enumerate(imperfect_words):
+                # Get basic fields
+                score = round(word_data.get('Pronunciation score', 0)) if word_data.get('Pronunciation score') is not None else 0
+                word = word_data.get('Real words', '')
+                wrong_transcript = word_data.get('Transcribed words', '')
+                corrected_transcript = word_data.get('Real words', '')
+                corrected_ipa = word_data.get('Ground truth phonemes', '')
+                corrected_audio = tts_results[i] if i < len(tts_results) else b""
+
+                # Create token response
+                token = pb.PronunciationToken(
+                    score=score,
+                    word=word,
+                    wrong_transcript=wrong_transcript,
+                    corrected_transcript=corrected_transcript,
+                    corrected_ipa=corrected_ipa,
+                    corrected_audio=corrected_audio
+                )
+                tokens.append(token)
+
+            return pb.EvaluatePronunciationResponse(
+                overall_score=overall_score,
+                tokens=tokens
+            )
+
+        except grpc.RpcError:
+            raise
+        except Exception as e:
+            await context.abort(
+                grpc.StatusCode.INTERNAL, f"Evaluate pronunciation failed: {str(e)}"
             )
 
 async def serve(host: str = "[::]:50051") -> None:
