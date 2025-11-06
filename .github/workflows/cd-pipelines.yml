@@ -29,5 +29,5 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           script: |
             cd /aibeecara
-            docker login ghcr.io -u ${{ secrets.GH_USERNAME }} --password-stdin ${{ secrets.GH_TOKEN }}
+            docker login ghcr.io --username ${{ secrets.GH_USERNAME }} --password ${{ secrets.GH_TOKEN }}
             docker compose up -d --pull always
