@@ -3,18 +3,32 @@ from phonemizer import phonemize
 from nltk.tokenize import SyllableTokenizer
 from nltk.tokenize import word_tokenize
 from transformers import pipeline
+import nltk
 import random
 import jiwer
+import re
 import textdistance
+from nltk.corpus import cmudict
 import torch
-from pronunciation_model.ai_pronunciation_trainer_main.pronunciationTrainer import getTrainer
-import pronunciation_model.ai_pronunciation_trainer_main.WordMatching as wm
+from .ai_pronunciation_trainer_main.pronunciationTrainer import getTrainer
+from .ai_pronunciation_trainer_main import WordMatching as wm
 import torchaudio
 import json
+import numpy as np
 
 
 # Load the model
 # pipe = pipeline(model="vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
+
+def ensure_cmudict_downloaded():
+    try:
+        nltk.data.find("corpora/cmudict")
+        print("CMUdict already downloaded ✅")
+    except LookupError:
+        print("Downloading CMUdict resources...")
+        nltk.download("cmudict")
+
+ensure_cmudict_downloaded()
 
 PHONEME_MAP = {
     "a": ["a", "ɑ", "æ", "ʌ", "ɒ"],              # open mouth vowels
@@ -177,6 +191,59 @@ def tokenize_syllables(text, speed: float = 1.0):
         current_time += duration
 
     return result
+
+cmu_dict = cmudict.dict()
+
+# Helper: Convert CMU phonemes to readable text
+def cmu_to_pronunciation(cmu_entry):
+    """
+    Convert a CMU phoneme list into a readable English approximation with syllable breaks.
+    Example: ['K', 'AH1', 'M', 'F', 'ER0', 'T', 'AH0', 'B', 'AH0', 'L']
+             -> "Com-fort-a-bull"
+    """
+    phoneme_to_text = {
+        "AH": "uh", "AE": "a", "AA": "ah", "AO": "aw", "AW": "ow",
+        "AY": "eye", "B": "b", "CH": "ch", "D": "d", "DH": "th",
+        "EH": "e", "ER": "er", "EY": "ay", "F": "f", "G": "g",
+        "HH": "h", "IH": "i", "IY": "ee", "JH": "j", "K": "k",
+        "L": "l", "M": "m", "N": "n", "NG": "ng", "OW": "oh",
+        "OY": "oy", "P": "p", "R": "r", "S": "s", "SH": "sh",
+        "T": "t", "TH": "th", "UH": "oo", "UW": "oo", "V": "v",
+        "W": "w", "Y": "y", "Z": "z", "ZH": "zh"
+    }
+
+    result = []
+    for p in cmu_entry:
+        p = re.sub(r"\d", "", p)  # remove stress numbers (e.g., AH1 → AH)
+        result.append(phoneme_to_text.get(p, p.lower()))
+    # crude syllable separation: break after vowels
+    return "-".join(result)
+
+# Wrapper: main function to produce readable pronunciation
+def phoneme_to_syllabic_pronunciation(word, ipa_text=None):
+    """
+    Try to get a human-readable pronunciation with syllables.
+    If word not found in CMUdict, fallback to IPA-based mapping.
+    """
+    word_lower = word.lower()
+    if word_lower in cmu_dict:
+        # take first pronunciation variant
+        cmu_entry = cmu_dict[word_lower][0]
+        return cmu_to_pronunciation(cmu_entry)
+    elif ipa_text:
+        # fallback to basic IPA mapping (previous implementation)
+        mapping = {
+            "æ": "a", "ʌ": "uh", "ə": "uh", "ɜ": "er", "ɪ": "i", "iː": "ee",
+            "eɪ": "ay", "aɪ": "eye", "ɔɪ": "oy", "oʊ": "oh", "uː": "oo",
+            "ʊ": "oo", "θ": "th", "ð": "th", "ʃ": "sh", "ʒ": "zh", "ŋ": "ng",
+            "ʧ": "ch", "ʤ": "j", "ɹ": "r", "dʒ": "j", "ɡ": "g",
+        }
+        pronunciation = ipa_text
+        for ipa, eng in mapping.items():
+            pronunciation = pronunciation.replace(ipa, eng)
+        return "-".join(pronunciation)
+    else:
+        return None
 
 # def evaluate_pronunciation(input_audio, reference_text):
 #     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -368,17 +435,33 @@ def evaluate_pronunciation(input_audio, reference_text):
     ground_truth_phonemes = [ipa for (ipa, _) in result['real_and_transcribed_words_ipa']]
 
     for i in range(len(real_words)):
+        highlight = highlights[i] if i < len(highlights) else None
+
+        # Calculate pronunciation score
+        if highlight:
+            correct_count = highlight.count('*') // 2
+            wrong_count = highlight.count('-') // 2
+            total_letters = correct_count + wrong_count
+            pronunciation_score = (correct_count / total_letters * 100) if total_letters > 0 else 0
+        else:
+            pronunciation_score = None
+
+        # Convert phonemes to readable syllabic pronunciation
+        readable_pronunciation = phoneme_to_syllabic_pronunciation(real_words[i], predicted_phonemes[i])
+
         words.append({
             "Real words": real_words[i],
             "Transcribed words": transcribed_words[i],
-            "Highlights": highlights[i] if i < len(highlights) else None,
+            "Highlights": highlight,
             "Predicted phonemes": predicted_phonemes[i] if i < len(predicted_phonemes) else None,
             "Ground truth phonemes": ground_truth_phonemes[i] if i < len(ground_truth_phonemes) else None,
             "Pronunciation result": real_words[i] == transcribed_words[i],
+            "Pronunciation score": pronunciation_score,
+            "Pronunciation guide": readable_pronunciation
         })
 
     output = {
-        "score": result['pronunciation_accuracy'],
+        "score": result['pronunciation_accuracy'].astype(float),
         "words": words
     }
     return output

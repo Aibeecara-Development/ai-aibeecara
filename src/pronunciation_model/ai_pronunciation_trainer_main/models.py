@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
 import pickle
-from pronunciation_model.ai_pronunciation_trainer_main.ModelInterfaces import IASRModel
-from pronunciation_model.ai_pronunciation_trainer_main.AIModels import NeuralASR
+from .ModelInterfaces import IASRModel
+from .AIModels import NeuralASR
 
 def getASRModel(language: str,use_whisper:bool=True) -> IASRModel:
 
     if use_whisper:
-        from pronunciation_model.ai_pronunciation_trainer_main.whisper_wrapper import WhisperASRModel
+        from .whisper_wrapper import WhisperASRModel
         return WhisperASRModel()
     
     if language == 'de':

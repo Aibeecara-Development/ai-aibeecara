@@ -4,7 +4,10 @@ import os
 import json
 from spacy.util import is_package
 import nltk
+import requests
 from phonemizer import phonemize
+
+BASE_URL = "https://farrel-dr-aibeecara-models-2.hf.space"
 
 def ensure_wordnet_downloaded():
     try:
@@ -41,7 +44,7 @@ DATABASE_FILENAME = os.path.join(BASE_DIR, "..", "..", "data", "word_cefr_minifi
 # Normalize the path
 DATABASE_FILENAME = os.path.normpath(DATABASE_FILENAME)
 
-conn = sqlite3.connect(DATABASE_FILENAME)
+conn = sqlite3.connect(DATABASE_FILENAME, check_same_thread=False)
 cursor = conn.cursor()
 
 ABBREVIATION_MAPPING = {
@@ -67,6 +70,10 @@ DIFFICULTY_MAPPING_REVERSE = {
 def is_punctuation(word: str) -> bool:
     return not word and not any(char.isalpha() for char in word)
 
+def sentence_example(word: str):
+    data = {"text": word}
+    result = requests.post(f"{BASE_URL}/grammar-correct", json=data).json()['text']
+    return result
 
 def custom_tokenize_text(text: str) -> list[tuple[str, str, str]]:
     text = text.replace("’", "'")
@@ -259,8 +266,8 @@ def get_synonyms_with_levels(word: str, pos: str, get_levels_tokens_func) -> lis
     for syn, lemma, pos_tag, level in level_tokens:
         data = synonyms.get(syn, {})
         examples = data.get("examples", [])
-        definition = data.get("definition", "No definition available.")
-        example_sentence = examples[0] if examples else f"No example available for '{syn}'."
+        definition = data.get("definition", "No definition available.") # FIXME: dari PRD field ini tidak boleh kosong
+        example_sentence = examples[0] if examples else sentence_example(syn)
 
         phonemes = phonemize(
             syn,
@@ -298,11 +305,14 @@ def evaluate_cefr_stats(input_text: str) -> dict:
 
     # --- Token details ---
     synonym_counter = 0  # count how many words got synonyms
+    from nltk.corpus import wordnet as wn
+
     for token in level_tokens:
         word, lemma, pos, level = token
         cefr = DIFFICULTY_MAPPING_REVERSE.get(round(level))
 
         if pos != '_SP':
+            # 🔹 Base token info
             token_entry = {
                 "word": word,
                 "lemma": lemma,
@@ -311,8 +321,44 @@ def evaluate_cefr_stats(input_text: str) -> dict:
                 "cefr": cefr
             }
 
-            # only add synonyms if POS = JJ and limit to 5 words
-            if (pos == "VBG" or pos == "VBN" or pos == "NNS" or pos == "NN") and synonym_counter < 5:
+            # 🔹 Add pronunciation (phonemes)
+            try:
+                phonemes = phonemize(
+                    word,
+                    language='en-us',
+                    backend='espeak',
+                    strip=True,
+                    preserve_punctuation=True,
+                )
+            except Exception as e:
+                phonemes = "N/A"
+
+            token_entry["pronunciation"] = phonemes
+
+            # 🔹 Get WordNet definition & example sentence (if available)
+            pos_map = {
+                "NOUN": wn.NOUN,
+                "VERB": wn.VERB,
+                "ADJ": wn.ADJ,
+                "ADV": wn.ADV
+            }
+            wn_pos = pos_map.get(pos.upper(), wn.NOUN)
+
+            synsets = wn.synsets(word, pos=wn_pos)
+            if synsets:
+                best_synset = synsets[0]
+                definition = best_synset.definition()
+                examples = best_synset.examples()
+                example_sentence = examples[0] if examples else sentence_example(word)
+            else:
+                definition = None
+                example_sentence = sentence_example(word)
+
+            token_entry["definition"] = definition
+            token_entry["example_sentence"] = example_sentence
+
+            # 🔹 Only add synonyms if POS = JJ or NN/VBN/VBG and limit to 5
+            if (pos in ["VBG", "VBN", "NNS", "NN"]) and synonym_counter < 5:
                 token_entry["synonyms"] = get_synonyms_with_levels(word, pos, get_levels_tokens)
                 synonym_counter += 1
 

@@ -57,8 +57,18 @@ class AiServiceStub(object):
                 _registered_method=True)
         self.EvaluateGrammar = channel.unary_unary(
                 '/ai_service.AiService/EvaluateGrammar',
-                request_serializer=ai__service__pb2.EvaluateGrammarRequest.SerializeToString,
+                request_serializer=ai__service__pb2.EvaluateTranscriptRequest.SerializeToString,
                 response_deserializer=ai__service__pb2.EvaluateGrammarResponse.FromString,
+                _registered_method=True)
+        self.EvaluateVocabulary = channel.unary_unary(
+                '/ai_service.AiService/EvaluateVocabulary',
+                request_serializer=ai__service__pb2.EvaluateTranscriptRequest.SerializeToString,
+                response_deserializer=ai__service__pb2.EvaluateVocabularyResponse.FromString,
+                _registered_method=True)
+        self.EvaluatePronunciation = channel.unary_unary(
+                '/ai_service.AiService/EvaluatePronunciation',
+                request_serializer=ai__service__pb2.EvaluatePronunciationRequest.SerializeToString,
+                response_deserializer=ai__service__pb2.EvaluatePronunciationResponse.FromString,
                 _registered_method=True)
 
 
@@ -96,6 +106,18 @@ class AiServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def EvaluateVocabulary(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def EvaluatePronunciation(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AiServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -121,8 +143,18 @@ def add_AiServiceServicer_to_server(servicer, server):
             ),
             'EvaluateGrammar': grpc.unary_unary_rpc_method_handler(
                     servicer.EvaluateGrammar,
-                    request_deserializer=ai__service__pb2.EvaluateGrammarRequest.FromString,
+                    request_deserializer=ai__service__pb2.EvaluateTranscriptRequest.FromString,
                     response_serializer=ai__service__pb2.EvaluateGrammarResponse.SerializeToString,
+            ),
+            'EvaluateVocabulary': grpc.unary_unary_rpc_method_handler(
+                    servicer.EvaluateVocabulary,
+                    request_deserializer=ai__service__pb2.EvaluateTranscriptRequest.FromString,
+                    response_serializer=ai__service__pb2.EvaluateVocabularyResponse.SerializeToString,
+            ),
+            'EvaluatePronunciation': grpc.unary_unary_rpc_method_handler(
+                    servicer.EvaluatePronunciation,
+                    request_deserializer=ai__service__pb2.EvaluatePronunciationRequest.FromString,
+                    response_serializer=ai__service__pb2.EvaluatePronunciationResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -259,8 +291,62 @@ class AiService(object):
             request,
             target,
             '/ai_service.AiService/EvaluateGrammar',
-            ai__service__pb2.EvaluateGrammarRequest.SerializeToString,
+            ai__service__pb2.EvaluateTranscriptRequest.SerializeToString,
             ai__service__pb2.EvaluateGrammarResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def EvaluateVocabulary(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ai_service.AiService/EvaluateVocabulary',
+            ai__service__pb2.EvaluateTranscriptRequest.SerializeToString,
+            ai__service__pb2.EvaluateVocabularyResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def EvaluatePronunciation(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ai_service.AiService/EvaluatePronunciation',
+            ai__service__pb2.EvaluatePronunciationRequest.SerializeToString,
+            ai__service__pb2.EvaluatePronunciationResponse.FromString,
             options,
             channel_credentials,
             insecure,

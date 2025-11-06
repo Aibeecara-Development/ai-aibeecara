@@ -31,5 +31,3 @@ jobs:
             cd /aibeecara
             docker login ghcr.io -u ${{ secrets.GH_USERNAME }} --password-stdin ${{ secrets.GH_TOKEN }}
             docker compose up -d --pull always
-            
-          

@@ -139,6 +139,8 @@ Form file upload (multipart/form-data) with key: file.
              },
             "stutter_score": 0.88,
             "stuttered_phrases": ['uh', 'um', 'you know', 'like'],
+            "fluency_score": 0.88,
+            "fluency_speed": "Fluent",
             "speech_rate": {
                  "wpm": 67,
                  "spm": 76
@@ -178,7 +180,11 @@ Form file upload (multipart/form-data) with key: file.
                      "lemma": "in",
                      "pos": "IN",
                      "level_score": 1.0,
-                     "cefr": "A1"
+                     "cefr": "A1", 
+                      "pronunciation": "dəmeɪn",
+                      "definition": "people in general; especially a distinctive group of people with some shared interest",
+                      "example_sentence": "The forest was full of wildlife."
+
                    },
                    {
                      "word": "world",
@@ -186,6 +192,10 @@ Form file upload (multipart/form-data) with key: file.
                      "pos": "NN",
                      "level_score": 1.0,
                      "cefr": "A1",
+                      "pronunciation": "dəmeɪn",
+                      "definition": "people in general; especially a distinctive group of people with some shared interest",
+                      "example_sentence": "The forest was full of wildlife.",
+
                      "synonyms": [
                          {
                              "synonym": "domain",
@@ -389,7 +399,8 @@ Updating the score of a certain aspect (grammar, vocabulary, pronunciation, paus
 {
    "new_score": 0.8, 
    "new_aspect_mean": 0.79, 
-   "new_total_score": 0.89
+   "new_total_score": 0.89,
+   "new_speed": "Fluent"
 }
 ```
 
