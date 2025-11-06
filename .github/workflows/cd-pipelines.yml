@@ -1,4 +1,4 @@
-name: 'Sync to AWS CodeCommit'
+name: 'Deploy to Server'
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  sync:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,17 +16,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v5
+      - name: Publish Image
+        uses: matootie/github-docker@v3.1.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-3
+          accessToken: ${{ secrets.GH_TOKEN }}
 
-      - name: Sync up to CodeCommit
-        uses: hectorcoy/aws-codecommit-syncv2@1.0.19
+      - name: SSH to Server
+        uses: appleboy/ssh-action@v1.2.2
         with:
-          repository_name: aibeecara-ai
-          aws_region: ap-southeast-3
-          branch: ${{ github.ref_name }}
-          
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_KEY }}
+          script: |
+            cd /aibeecara
+            docker login ghcr.io -u ${{ secrets.GH_USERNAME }} --password-stdin ${{ secrets.GH_TOKEN }}
+            docker compose up -d --pull always
