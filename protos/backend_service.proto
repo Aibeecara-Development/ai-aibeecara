@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+message EvaluateGrammarResponse {
+  string session_id           = 1;
+  string message_id           = 2;
+  float  score                = 3;
+  string corrected_transcript = 4;
+  string explanation          = 5;
+  string tense_used           = 6;
+  bytes  corrected_audio      = 7;
+}
+
+// Per-token synonym entry
+message VocabularyEntry {
+  string word                         = 1;
+  string cefr                         = 2;  // e.g., "A1" | "B1" | "NA"
+  string pronunciation                = 3;
+  string definition                   = 4;
+  string example_sentence_transcript  = 5;
+  bytes  example_sentence_audio       = 6;
+}
+
+// Vocabulary token with optional synonyms
+message VocabularyToken {
+  VocabularyEntry original = 1;
+  repeated VocabularyEntry synonyms = 2; // optional; can be empty
+}
+
+// Aggregated vocabulary evaluation
+message EvaluateVocabularyResponse {
+  string session_id = 1;
+  string message_id = 2;
+  // CEFR counts, e.g., {"A1":3,"A2":0,"B1":0,"B2":0,"C1":0,"C2":0}
+  map<string, int32> statistics = 3;
+
+  // Detailed per-token analysis
+  repeated VocabularyToken tokens = 4;
+}
+
+message PronunciationToken {
+  uint32 score = 1; // 0-100
+  string word  = 2;
+  // all fields below is available if score < 1.0
+  string wrong_transcript = 3;
+  string corrected_transcript = 4;
+  string corrected_ipa = 5;
+  bytes corrected_audio = 6;
+}
+
+message EvaluatePronunciationResponse {
+  string session_id = 1;
+  string message_id = 2;
+  uint32 overall_score = 3;
+  repeated PronunciationToken tokens = 4;
+}
+
+service BackendService {
+  rpc NotifyGrammarEvaluation(EvaluateGrammarResponse) returns (google.protobuf.Empty);
+  rpc NotifyVocabularyEvaluation(EvaluateVocabularyResponse) returns (google.protobuf.Empty);
+  rpc NotifyPronunciationEvaluation(EvaluatePronunciationResponse) returns (google.protobuf.Empty);
+}

@@ -10,10 +10,11 @@ import torchaudio
 from dotenv import load_dotenv
 import grpc
 from google import genai
-from numba import typeof
 
-from src import ai_service_pb2 as pb
-from src import ai_service_pb2_grpc as pbg
+from protos import ai_service_pb2 as pb
+from protos import ai_service_pb2_grpc as pbg
+from protos import backend_service_pb2 as backend_pb
+from protos import backend_service_pb2_grpc as backend_pbg
 from src.chat_model.chatbot import (
     chat_api_sync,
     custom_topic_validation,
@@ -68,6 +69,12 @@ class AiServiceServicer(pbg.AiServiceServicer):
         if not gemini_key:
             raise RuntimeError("GEMINI_KEY missing in .env")
         self.genai_client = genai.Client(api_key=gemini_key)
+
+        # Backend service connection
+        backend_url = os.getenv("BACKEND_SERVICE_URL", "localhost:50052")
+        self.backend_channel = grpc.aio.insecure_channel(backend_url)
+        self.backend_stub = backend_pbg.BackendServiceStub(self.backend_channel)
+
         # Limit concurrent TTS requests to avoid rate limiting
         self.tts_semaphore = asyncio.Semaphore(2)  # Max concurrent TTS requests
 
@@ -103,6 +110,263 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 break
             yield item
 
+    async def _evaluate_and_notify_backend(
+        self,
+        session_id: str,
+        message_id: str,
+        audio_url: str,
+        transcript: str,
+        accent: str,
+        gender: str,
+    ) -> None:
+        """
+        Run all three evaluations (grammar, vocabulary, pronunciation) and notify backend.
+        This runs in the background and does not block the speaking stream.
+        """
+        try:
+            # Run all evaluations in parallel
+            grammar_task = self._evaluate_grammar(transcript, accent, gender)
+            vocab_task = self._evaluate_vocabulary(transcript, accent, gender)
+            pronunciation_task = self._evaluate_pronunciation(audio_url, transcript, accent, gender)
+
+            # Wait for all to complete
+            grammar_result, vocab_result, pronunciation_result = await asyncio.gather(
+                grammar_task, vocab_task, pronunciation_task, return_exceptions=True
+            )
+
+            # Notify backend for each successful evaluation
+            # Grammar
+            if isinstance(grammar_result, Exception):
+                print(f"Grammar evaluation failed: {grammar_result}")
+            else:
+                try:
+                    await self.backend_stub.NotifyGrammarEvaluation(
+                        backend_pb.EvaluateGrammarResponse(
+                            session_id=session_id,
+                            message_id=message_id,
+                            **grammar_result
+                        )
+                    )
+                    print(f"✓ Grammar evaluation sent to backend for session {session_id}")
+                except Exception as e:
+                    print(f"Failed to notify backend about grammar: {e}")
+
+            # Vocabulary
+            if isinstance(vocab_result, Exception):
+                print(f"Vocabulary evaluation failed: {vocab_result}")
+            else:
+                try:
+                    await self.backend_stub.NotifyVocabularyEvaluation(
+                        backend_pb.EvaluateVocabularyResponse(
+                            session_id=session_id,
+                            message_id=message_id,
+                            **vocab_result
+                        )
+                    )
+                    print(f"✓ Vocabulary evaluation sent to backend for session {session_id}")
+                except Exception as e:
+                    print(f"Failed to notify backend about vocabulary: {e}")
+
+            # Pronunciation
+            if isinstance(pronunciation_result, Exception):
+                print(f"Pronunciation evaluation failed: {pronunciation_result}")
+            else:
+                try:
+                    await self.backend_stub.NotifyPronunciationEvaluation(
+                        backend_pb.EvaluatePronunciationResponse(
+                            session_id=session_id,
+                            message_id=message_id,
+                            **pronunciation_result
+                        )
+                    )
+                    print(f"✓ Pronunciation evaluation sent to backend for session {session_id}")
+                except Exception as e:
+                    print(f"Failed to notify backend about pronunciation: {e}")
+
+        except Exception as e:
+            print(f"Background evaluation failed: {e}")
+            import traceback
+            traceback.print_exc()
+
+    async def _evaluate_grammar(self, transcript: str, accent: str, gender: str) -> dict:
+        """Evaluate grammar and return results as dict."""
+        def _run_eval():
+            return evaluate_transcription(transcript)
+
+        (
+            evaluate_transcription_score,
+            corrected_text,
+            grammar_explanation,
+            tense_used,
+        ) = await self._to_thread(_run_eval)
+
+        corrected_audio_bytes = await self._rate_limited_tts(corrected_text, accent, gender)
+
+        return {
+            "score": evaluate_transcription_score,
+            "corrected_transcript": corrected_text,
+            "explanation": grammar_explanation,
+            "tense_used": tense_used,
+            "corrected_audio": corrected_audio_bytes,
+        }
+
+    async def _evaluate_vocabulary(self, transcript: str, accent: str, gender: str) -> dict:
+        """Evaluate vocabulary and return results as dict."""
+        def _run_vocab_eval():
+            return evaluate_cefr_stats(transcript)
+
+        cefr_data = await self._to_thread(_run_vocab_eval)
+
+        statistics = cefr_data.get("statistics", {})
+        tokens_data = cefr_data.get("tokens", [])
+
+        # Collect all TTS tasks
+        tts_tasks = []
+        tts_metadata = []
+
+        for token_idx, token_data in enumerate(tokens_data):
+            example_sentence = token_data.get("example_sentence", "")
+            if example_sentence:
+                tts_tasks.append(self._rate_limited_tts(example_sentence, accent, gender))
+            else:
+                tts_tasks.append(asyncio.sleep(0, result=b""))
+            tts_metadata.append({"token_idx": token_idx, "is_synonym": False, "syn_idx": None})
+
+            synonyms_list = token_data.get("synonyms", [])
+            for syn_idx, syn_data in enumerate(synonyms_list):
+                syn_example = syn_data.get("example_sentence", "")
+                if syn_example:
+                    tts_tasks.append(self._rate_limited_tts(syn_example, accent, gender))
+                else:
+                    tts_tasks.append(asyncio.sleep(0, result=b""))
+                tts_metadata.append({"token_idx": token_idx, "is_synonym": True, "syn_idx": syn_idx})
+
+        tts_results = await asyncio.gather(*tts_tasks)
+
+        # Build result map
+        result_map = {}
+        for metadata, audio_bytes in zip(tts_metadata, tts_results):
+            token_idx = metadata["token_idx"]
+            if token_idx not in result_map:
+                result_map[token_idx] = {"original_audio": None, "synonym_audios": {}}
+
+            if metadata["is_synonym"]:
+                result_map[token_idx]["synonym_audios"][metadata["syn_idx"]] = audio_bytes
+            else:
+                result_map[token_idx]["original_audio"] = audio_bytes
+
+        # Convert to protobuf format
+        vocab_tokens = []
+        for token_idx, token_data in enumerate(tokens_data):
+            example_sentence = token_data.get("example_sentence", "")
+            example_audio = result_map[token_idx]["original_audio"]
+
+            original_entry = backend_pb.VocabularyEntry(
+                word=token_data.get("word", ""),
+                cefr=token_data.get("cefr", "NA"),
+                pronunciation=token_data.get("pronunciation", ""),
+                definition=token_data.get("definition", ""),
+                example_sentence_transcript=example_sentence,
+                example_sentence_audio=example_audio,
+            )
+
+            synonym_entries = []
+            synonyms_list = token_data.get("synonyms", [])
+            for syn_idx, syn_data in enumerate(synonyms_list):
+                syn_example = syn_data.get("example_sentence", "")
+                syn_audio = result_map[token_idx]["synonym_audios"].get(syn_idx, b"")
+
+                synonym_entry = backend_pb.VocabularyEntry(
+                    word=syn_data.get("synonym", ""),
+                    cefr=syn_data.get("cefr", "NA"),
+                    pronunciation=syn_data.get("pronunciation", ""),
+                    definition=syn_data.get("definition", ""),
+                    example_sentence_transcript=syn_example,
+                    example_sentence_audio=syn_audio,
+                )
+                synonym_entries.append(synonym_entry)
+
+            vocab_token = backend_pb.VocabularyToken(
+                original=original_entry,
+                synonyms=synonym_entries,
+            )
+            vocab_tokens.append(vocab_token)
+
+        return {"statistics": statistics, "tokens": vocab_tokens}
+
+    async def _evaluate_pronunciation(self, audio_url: str, transcript: str, accent: str, gender: str) -> dict:
+        """Evaluate pronunciation and return results as dict."""
+        # Download audio
+        def _download_audio():
+            resp = requests.get(audio_url, timeout=30)
+            resp.raise_for_status()
+            return io.BytesIO(resp.content)
+
+        audio_data = await self._to_thread(_download_audio)
+
+        # Process audio
+        def _process_audio():
+            waveform, sr = torchaudio.load(audio_data)
+            if sr != 16000:
+                waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
+            if waveform.shape[0] > 1:
+                waveform = waveform.mean(dim=0, keepdim=True)
+            return waveform
+
+        waveform = await self._to_thread(_process_audio)
+
+        # Evaluate pronunciation
+        def _evaluate_pronunciation():
+            return evaluate_pronunciation(waveform, transcript)
+
+        pronunciation_score_dict = await self._to_thread(_evaluate_pronunciation)
+
+        overall_score = round(pronunciation_score_dict['score'])
+        words_data = pronunciation_score_dict['words']
+
+        # Filter imperfect words and collect TTS tasks
+        imperfect_words = []
+        tts_tasks = []
+
+        for word_data in words_data:
+            score = round(word_data.get('Pronunciation score', 0)) if word_data.get('Pronunciation score') is not None else 0
+
+            if score < 100:
+                imperfect_words.append(word_data)
+
+                corrected_word = word_data.get('Real words', '')
+                if corrected_word:
+                    tts_tasks.append(self._rate_limited_tts(corrected_word, accent, gender))
+                else:
+                    tts_tasks.append(asyncio.sleep(0, result=b""))
+
+        if tts_tasks:
+            tts_results = await asyncio.gather(*tts_tasks)
+        else:
+            tts_results = []
+
+        # Build response
+        tokens = []
+        for i, word_data in enumerate(imperfect_words):
+            score = round(word_data.get('Pronunciation score', 0)) if word_data.get('Pronunciation score') is not None else 0
+            word = word_data.get('Real words', '')
+            wrong_transcript = word_data.get('Transcribed words', '')
+            corrected_transcript = word_data.get('Real words', '')
+            corrected_ipa = word_data.get('Ground truth phonemes', '')
+            corrected_audio = tts_results[i] if i < len(tts_results) else b""
+
+            token = backend_pb.PronunciationToken(
+                score=score,
+                word=word,
+                wrong_transcript=wrong_transcript,
+                corrected_transcript=corrected_transcript,
+                corrected_ipa=corrected_ipa,
+                corrected_audio=corrected_audio
+            )
+            tokens.append(token)
+
+        return {"overall_score": overall_score, "tokens": tokens}
+
     # Speaking (server-stream)
     async def ProcessSpeaking(
         self, request: pb.SpeakingRequest, context: grpc.aio.ServicerContext
@@ -118,6 +382,8 @@ class AiServiceServicer(pbg.AiServiceServicer):
         accent = request.accent or "american"
         gender = request.gender or "feminine"
         speed = request.speed if request.speed else 1.0
+        session_id = request.session_id or ""
+        message_id = request.message_id or ""
 
         try:
             # ---- FIRST TURN (no audio): get initial bot message then TTS ----
@@ -141,7 +407,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 yield pb.SpeakingEvent(done=pb.Done())
                 return
 
-            # ---- FOLLOW-UP TURN (has audio): transcribe -> bot -> TTS ----
+            # ---- FOLLOW-UP TURN (has audio): transcribe -> bot -> TTS -> evaluate ----
             dg_response, transcript = await self._to_thread(transcribe_audio_api, audio_url)
 
             # Return the user's transcript (new proto: UserText.text)
@@ -163,6 +429,15 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 yield pb.SpeakingEvent(bot_audio=pb.BotAudio(pcm16=pcm))
 
             yield pb.SpeakingEvent(done=pb.Done())
+
+            # ---- TRIGGER BACKGROUND EVALUATION ----
+            if session_id and message_id and transcript:
+                # Fire and forget - run evaluation in background
+                asyncio.create_task(
+                    self._evaluate_and_notify_backend(
+                        session_id, message_id, audio_url, transcript, accent, gender
+                    )
+                )
 
         except Exception as e:
             yield pb.SpeakingEvent(error=pb.Error(message=str(e)))
@@ -227,311 +502,6 @@ class AiServiceServicer(pbg.AiServiceServicer):
         except Exception as e:
             await context.abort(grpc.StatusCode.INTERNAL, f"Hint generation failed: {str(e)}")
 
-    async def EvaluateGrammar(
-        self, request: pb.EvaluateTranscriptRequest, context: grpc.aio.ServicerContext
-    ) -> pb.EvaluateGrammarResponse:
-        """
-        1) evaluate_transcription (score, corrected_text, explanation, tense)
-        2) generate_tts_wav(corrected_text or original)
-        If ANY step fails, abort the RPC (no partial success).
-        """
-        transcript = (request.transcript or "").strip()
-        if not transcript:
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "transcript is required")
-
-        # If proto later adds accent/gender, use them; otherwise default.
-        accent = request.tts_accent or "american"
-        gender = request.tts_gender or "feminine"
-
-        try:
-            # Step 1: Grammar evaluation
-            def _run_eval():
-                return evaluate_transcription(transcript)
-
-            (
-                evaluate_transcription_score,
-                corrected_text,
-                grammar_explanation,
-                tense_used,
-            ) = await self._to_thread(_run_eval)
-
-            # Step 2: TTS
-            corrected_audio_bytes = await self._to_thread(
-                generate_tts_wav, corrected_text, accent, gender
-            )
-
-            # Success only if both steps succeeded
-            return pb.EvaluateGrammarResponse(
-                score=evaluate_transcription_score,
-                corrected_transcript=corrected_text,
-                explanation=grammar_explanation,
-                tense_used=tense_used,
-                corrected_audio=corrected_audio_bytes,
-            )
-
-        except grpc.RpcError:
-            # Preserve any upstream gRPC status
-            raise
-        except Exception as e:
-            # ONE ERROR => ALL ERROR (abort the entire RPC)
-            await context.abort(
-                grpc.StatusCode.INTERNAL, f"Evaluate grammar failed: {str(e)}"
-            )
-
-    async def EvaluateVocabulary(
-        self, request: pb.EvaluateTranscriptRequest, context: grpc.aio.ServicerContext
-    ) -> pb.EvaluateVocabularyResponse:
-        """
-        1) evaluate_cefr_stats (statistics, tokens with synonyms)
-        2) generate_tts_wav for each example sentence (in parallel)
-        If ANY step fails, abort the RPC (no partial success).
-        """
-        transcript = (request.transcript or "").strip()
-        if not transcript:
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "transcript is required")
-
-        accent = request.tts_accent or "american"
-        gender = request.tts_gender or "feminine"
-
-        try:
-            # Step 1: Vocabulary evaluation
-            def _run_vocab_eval():
-                return evaluate_cefr_stats(transcript)
-
-            cefr_data = await self._to_thread(_run_vocab_eval)
-
-            # Step 2: Build response with TTS for example sentences (PARALLEL)
-            statistics = cefr_data.get("statistics", {})
-            tokens_data = cefr_data.get("tokens", [])
-
-            # Collect all TTS tasks to run in parallel
-            tts_tasks = []
-            tts_metadata = []  # Track which task belongs to which token/synonym
-
-            for token_idx, token_data in enumerate(tokens_data):
-                # Original word's example sentence
-                example_sentence = token_data.get("example_sentence", "")
-                if example_sentence:
-                    tts_tasks.append(
-                        self._rate_limited_tts(example_sentence, accent, gender)
-                    )
-                    tts_metadata.append({
-                        "token_idx": token_idx,
-                        "is_synonym": False,
-                        "syn_idx": None
-                    })
-                else:
-                    tts_tasks.append(asyncio.sleep(0, result=b""))  # placeholder
-                    tts_metadata.append({
-                        "token_idx": token_idx,
-                        "is_synonym": False,
-                        "syn_idx": None
-                    })
-
-                # Synonyms' example sentences
-                synonyms_list = token_data.get("synonyms", [])
-                for syn_idx, syn_data in enumerate(synonyms_list):
-                    syn_example = syn_data.get("example_sentence", "")
-                    if syn_example:
-                        tts_tasks.append(
-                            self._rate_limited_tts(syn_example, accent, gender)
-                        )
-                        tts_metadata.append({
-                            "token_idx": token_idx,
-                            "is_synonym": True,
-                            "syn_idx": syn_idx
-                        })
-                    else:
-                        tts_tasks.append(asyncio.sleep(0, result=b""))  # placeholder
-                        tts_metadata.append({
-                            "token_idx": token_idx,
-                            "is_synonym": True,
-                            "syn_idx": syn_idx
-                        })
-
-            # Run all TTS tasks in parallel (rate-limited by semaphore)
-            tts_results = await asyncio.gather(*tts_tasks)
-
-            # Build the response structure with the TTS results
-            # First, create a mapping of results back to tokens
-            result_map = {}
-            for metadata, audio_bytes in zip(tts_metadata, tts_results):
-                token_idx = metadata["token_idx"]
-                if token_idx not in result_map:
-                    result_map[token_idx] = {
-                        "original_audio": None,
-                        "synonym_audios": {}
-                    }
-
-                if metadata["is_synonym"]:
-                    result_map[token_idx]["synonym_audios"][metadata["syn_idx"]] = audio_bytes
-                else:
-                    result_map[token_idx]["original_audio"] = audio_bytes
-
-            # Convert tokens to protobuf format
-            vocab_tokens = []
-            for token_idx, token_data in enumerate(tokens_data):
-                example_sentence = token_data.get("example_sentence", "")
-                example_audio = result_map[token_idx]["original_audio"]
-
-                # Build original entry
-                original_entry = pb.VocabularyEntry(
-                    word=token_data.get("word", ""),
-                    cefr=token_data.get("cefr", "NA"),
-                    pronunciation=token_data.get("pronunciation", ""),
-                    definition=token_data.get("definition", ""),
-                    example_sentence_transcript=example_sentence,
-                    example_sentence_audio=example_audio,
-                )
-
-                # Process synonyms if they exist
-                synonym_entries = []
-                synonyms_list = token_data.get("synonyms", [])
-                for syn_idx, syn_data in enumerate(synonyms_list):
-                    syn_example = syn_data.get("example_sentence", "")
-                    syn_audio = result_map[token_idx]["synonym_audios"].get(syn_idx, b"")
-
-                    synonym_entry = pb.VocabularyEntry(
-                        word=syn_data.get("synonym", ""),
-                        cefr=syn_data.get("cefr", "NA"),
-                        pronunciation=syn_data.get("pronunciation", ""),
-                        definition=syn_data.get("definition", ""),
-                        example_sentence_transcript=syn_example,
-                        example_sentence_audio=syn_audio,
-                    )
-                    synonym_entries.append(synonym_entry)
-
-                vocab_token = pb.VocabularyToken(
-                    original=original_entry,
-                    synonyms=synonym_entries,
-                )
-                vocab_tokens.append(vocab_token)
-
-            return pb.EvaluateVocabularyResponse(
-                statistics=statistics,
-                tokens=vocab_tokens,
-            )
-
-        except grpc.RpcError:
-            raise
-        except Exception as e:
-            await context.abort(
-                grpc.StatusCode.INTERNAL, f"Evaluate vocabulary failed: {str(e)}"
-            )
-
-    async def EvaluatePronunciation(
-        self, request: pb.EvaluatePronunciationRequest, context: grpc.aio.ServicerContext
-    ) -> pb.EvaluatePronunciationResponse:
-        """
-        1) Download audio from URL and load as waveform
-        2) Resample and convert to mono if needed
-        3) Evaluate pronunciation using pronunciation model
-        4) Generate TTS for incorrect pronunciations (score < 1.0)
-        5) Return overall score and per-token analysis (excluding perfect scores)
-        """
-        audio_url = (request.audio_url or "").strip()
-        transcript = (request.transcript or "").strip()
-
-        if not audio_url:
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "audio_url is required")
-        if not transcript:
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "transcript is required")
-
-        accent = request.tts_accent or "american"
-        gender = request.tts_gender or "feminine"
-
-        try:
-            # Step 1: Download audio
-            def _download_audio():
-                resp = requests.get(audio_url, timeout=30)
-                resp.raise_for_status()
-                return io.BytesIO(resp.content)
-
-            audio_data = await self._to_thread(_download_audio)
-
-            # Step 2: Load and preprocess audio
-            def _process_audio():
-                waveform, sr = torchaudio.load(audio_data)
-                # Resample to 16kHz if needed
-                if sr != 16000:
-                    waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
-                # Convert to mono if needed
-                if waveform.shape[0] > 1:
-                    waveform = waveform.mean(dim=0, keepdim=True)
-                return waveform
-
-            waveform = await self._to_thread(_process_audio)
-
-            # Step 3: Evaluate pronunciation
-            def _evaluate_pronunciation():
-                return evaluate_pronunciation(waveform, transcript)
-
-            pronunciation_score_dict = await self._to_thread(_evaluate_pronunciation)
-
-            # Step 4: Filter words that need correction and prepare TTS tasks
-            overall_score = round(pronunciation_score_dict['score'])
-            words_data = pronunciation_score_dict['words']
-
-            # Filter out perfect scores and collect TTS tasks
-            imperfect_words = []
-            tts_tasks = []
-
-            for word_data in words_data:
-                # Get pronunciation score
-                score = round(word_data.get('Pronunciation score', 0)) if word_data.get('Pronunciation score') is not None else 0
-
-                # Only include tokens with score < 100
-                if score < 100:
-                    imperfect_words.append(word_data)
-
-                    # Add TTS task for corrected word
-                    corrected_word = word_data.get('Real words', '')
-                    if corrected_word:
-                        tts_tasks.append(
-                            self._rate_limited_tts(corrected_word, accent, gender)
-                        )
-                    else:
-                        tts_tasks.append(asyncio.sleep(0, result=b""))  # placeholder
-
-            # Step 5: Generate TTS for corrected pronunciations in parallel
-            if tts_tasks:
-                tts_results = await asyncio.gather(*tts_tasks)
-            else:
-                tts_results = []
-
-            # Step 6: Build response with TTS audio
-            tokens = []
-            for i, word_data in enumerate(imperfect_words):
-                # Get basic fields
-                score = round(word_data.get('Pronunciation score', 0)) if word_data.get('Pronunciation score') is not None else 0
-                word = word_data.get('Real words', '')
-                wrong_transcript = word_data.get('Transcribed words', '')
-                corrected_transcript = word_data.get('Real words', '')
-                corrected_ipa = word_data.get('Ground truth phonemes', '')
-                corrected_audio = tts_results[i] if i < len(tts_results) else b""
-
-                # Create token response
-                token = pb.PronunciationToken(
-                    score=score,
-                    word=word,
-                    wrong_transcript=wrong_transcript,
-                    corrected_transcript=corrected_transcript,
-                    corrected_ipa=corrected_ipa,
-                    corrected_audio=corrected_audio
-                )
-                tokens.append(token)
-
-            return pb.EvaluatePronunciationResponse(
-                overall_score=overall_score,
-                tokens=tokens
-            )
-
-        except grpc.RpcError:
-            raise
-        except Exception as e:
-            await context.abort(
-                grpc.StatusCode.INTERNAL, f"Evaluate pronunciation failed: {str(e)}"
-            )
 
 async def serve(host: str = "[::]:50051") -> None:
     server = grpc.aio.server(options=[
