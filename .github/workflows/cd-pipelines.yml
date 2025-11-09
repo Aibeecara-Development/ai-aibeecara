@@ -31,3 +31,4 @@ jobs:
             cd /aibeecara
             docker login ghcr.io --username ${{ secrets.GH_USERNAME }} --password ${{ secrets.GH_TOKEN }}
             docker compose up -d --pull always
+            docker system prune -af
