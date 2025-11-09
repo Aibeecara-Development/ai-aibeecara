@@ -130,7 +130,7 @@ def calculate_speech_rates(deepgram_response) -> dict:
     duration = deepgram_response["metadata"]["duration"]
 
     # Extract words
-    words = [w["word"] for w in words_data if w.get("word")]
+    words = [w.word for w in words_data if hasattr(w, "word")]
     total_words = len(words)
 
     # Count syllables
