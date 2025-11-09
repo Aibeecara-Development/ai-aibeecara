@@ -1,4 +1,4 @@
-import pronunciation_model.ai_pronunciation_trainer_main.ModelInterfaces as mi
+from . import ModelInterfaces as mi
 import torch
 import numpy as np
 

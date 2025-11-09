@@ -1,12 +1,12 @@
 
 import torch
 import numpy as np
-import pronunciation_model.ai_pronunciation_trainer_main.models as mo
-import pronunciation_model.ai_pronunciation_trainer_main.WordMetrics as WordMetrics
-import pronunciation_model.ai_pronunciation_trainer_main.WordMatching as wm
+from . import models as mo
+from . import WordMetrics
+from . import WordMatching as wm
 import epitran
-import pronunciation_model.ai_pronunciation_trainer_main.ModelInterfaces as mi
-import pronunciation_model.ai_pronunciation_trainer_main.RuleBasedModels as RuleBasedModels
+from . import ModelInterfaces as mi
+from . import RuleBasedModels
 from string import punctuation
 import time
 

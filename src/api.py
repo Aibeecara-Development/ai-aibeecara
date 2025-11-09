@@ -5,9 +5,9 @@ from .chat_model.chatbot import (chat_api_sync, chat_stream_websocket, summarize
                                 chat_task, hint_to_users)
 from .chat_model.emotion_detection import detect_emotion
 from .audio_processing.transcriber import transcribe_audio_api, transcription_task
-from .chat_model.text_to_speech import generate_tts_pcm_stream, tts_stream
+from .chat_model.text_to_speech import generate_tts_pcm_stream, tts_stream, generate_tts_wav
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse, Response
 from pydantic import BaseModel
 import time
 import requests
@@ -23,7 +23,7 @@ from deep_translator import GoogleTranslator
 from .pronunciation_model.pronunciation_model import evaluate_pronunciation
 from .chat_model.scoring.score_model import (evaluate_pause, evaluate_stutter, evaluate_transcription,
                                             evaluate_vocabulary_cefr, calculate_speech_rates)
-from .utils.utils import clean_text, serialize_waveform, deserialize_waveform
+from .utils.utils import serialize_waveform, deserialize_waveform
 from .chat_model.scoring.vocab import evaluate_cefr_stats
 
 load_dotenv()
@@ -45,6 +45,11 @@ class TTSInput(BaseModel):
     accent: str = "american"
     gender: str = "feminine"
     speed: float = 1.0
+
+class TTSWavInput(BaseModel):
+    text: str
+    accent: str = "american"   # e.g., american | british | australian
+    gender: str = "feminine"   # e.g., feminine | masculine
 
 class AudioURLInput(BaseModel):
     audio_url: str
@@ -225,6 +230,14 @@ async def evaluate_endpoint(input_data: TranscriptionResult):
         cefr_score_dict = evaluate_cefr_stats(transcript)
         print(f"evaluate_cefr_stats took {time.time() - start:.4f} seconds")
 
+        fluency_score = stutter_score + pause_score_dict['score'] / 2.0
+        if fluency_score <= 0.3:
+            speed = "Slow"
+        elif fluency_score <= 0.6:
+            speed = "Hesitant"
+        else:
+            speed = "Fluent"
+
         return {
             "transcript": transcript,
             "corrected_transcript": corrected_text,
@@ -234,6 +247,8 @@ async def evaluate_endpoint(input_data: TranscriptionResult):
             "pause_score": pause_score_dict,
             "stutter_score": stutter_score,
             "stuttered_phrases": stuttered_phrases,
+            "fluency_score": fluency_score,
+            "fluency_speed": speed,
             "speech_rate": speech_rate_dict,
             "pronunciation_score": pronunciation_score_dict,
             "vocabulary_score": cefr_score_dict
@@ -242,11 +257,30 @@ async def evaluate_endpoint(input_data: TranscriptionResult):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+# class EvaluatePronunciationInput(BaseModel):
+#     audio_url: str
+#     transcript: str
+#
+# @app.post("/evaluate/pronunciation/")
+# async def evaluate_pronunciation_endpoint(input_data: EvaluatePronunciationInput):
+#     resp = requests.get(input_data.audio_url, timeout=30)
+#     resp.raise_for_status()
+#     audio_data = io.BytesIO(resp.content)
+#     waveform, sr = torchaudio.load(audio_data)
+#
+#     # Resample and mono
+#     if sr != 16000:
+#         waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
+#     if waveform.shape[0] > 1:
+#         waveform = waveform.mean(dim=0, keepdim=True)
+#
+#     pronunciation_score_dict = evaluate_pronunciation(waveform, input_data.transcript)
+#     return {"pronunciation_score": pronunciation_score_dict}
+
 @app.post("/chat/tts/")
 async def chat_tts(input: TTSInput):
     try:
-        cleaned_text = clean_text(input.text)
-        gen = generate_tts_pcm_stream(cleaned_text, input.accent, input.gender, input.speed)
+        gen = generate_tts_pcm_stream(input.text, input.accent, input.gender, input.speed)
         # We return raw PCM; the frontend decodes/plays it via AudioWorklet.
         return StreamingResponse(gen, media_type="application/octet-stream")
     except Exception as e:
@@ -264,7 +298,7 @@ async def chat_topic(input: CustomTopicInput):
 @app.post("/chat/emotion/")
 async def chat_emotion(input: ChatInput):
     try:
-        sentence = [input.user_input]
+        sentence = input.user_input
         emotion = await asyncio.to_thread(detect_emotion(sentence))
         return {"emotion": emotion}
     except Exception as e:
@@ -340,6 +374,8 @@ async def try_by_yourself(input_data: CorrectionScore):
         # Transcribe
         response, transcript = transcribe_audio_api(audio_data)
 
+        speed = None
+
         if input_data.aspect == CorrectionAspect.pronunciation:
             pronunciation_result = evaluate_pronunciation(audio_data, transcript)
             pronunciation_score = pronunciation_result['score']
@@ -375,6 +411,12 @@ async def try_by_yourself(input_data: CorrectionScore):
             fluency_score = (pause_score + stutter_score) / 2.0
             new_score, new_aspect_mean = update_score(input_data, fluency_score)
             input_data.aspect_score.fluency_score = fluency_score
+            if fluency_score <= 0.3:
+                speed = "Slow"
+            elif fluency_score <= 0.6:
+                speed = "Hesitant"
+            else:
+                speed = "Fluent"
 
         # Always recalc total score with updated aspect values
         new_total_score = mean([
@@ -387,7 +429,8 @@ async def try_by_yourself(input_data: CorrectionScore):
         return {
             "new_score": new_score,
             "new_aspect_mean": new_aspect_mean,
-            "new_total_score": new_total_score
+            "new_total_score": new_total_score,
+            "new_speed": speed
         }
 
     except Exception as e:
@@ -409,6 +452,3 @@ async def conversation_stream(ws: WebSocket, input: ChatInput):
     )
 
     await chat_queue.put(None)
-
-
-

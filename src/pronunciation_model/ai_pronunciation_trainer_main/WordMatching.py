@@ -1,4 +1,4 @@
-import pronunciation_model.ai_pronunciation_trainer_main.WordMetrics as WordMetrics
+from . import WordMetrics
 import numpy as np
 from string import punctuation
 from dtwalign import dtw_from_distance_matrix

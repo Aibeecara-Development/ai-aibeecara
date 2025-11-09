@@ -63,7 +63,7 @@ message TopicValidationResponse {
 
 // Translation
 message TranslateRequest {
-  string text        = 1;  // source text
+  string text = 1;  // source text
 }
 
 message TranslateResponse {
@@ -79,10 +79,76 @@ message HintResponse {
   string hint = 1;
 }
 
+// Grammar & vocabulary evaluation
+message EvaluateTranscriptRequest {
+  string transcript = 1;
+  string tts_accent = 2;  // e.g., "american"
+  string tts_gender = 3;  // e.g., "feminine"
+}
+
+message EvaluateGrammarResponse {
+  float  score                = 1;
+  string corrected_transcript = 2;
+  string explanation          = 3;
+  string tense_used           = 4;
+  bytes  corrected_audio      = 5;
+}
+
+// Per-token synonym entry
+message VocabularyEntry {
+  string word                         = 1;
+  string cefr                         = 2;  // e.g., "A1" | "B1" | "NA"
+  string pronunciation                = 3;
+  string definition                   = 4;
+  string example_sentence_transcript  = 5;
+  bytes  example_sentence_audio       = 6;
+}
+
+// Vocabulary token with optional synonyms
+message VocabularyToken {
+  VocabularyEntry original = 1;
+  repeated VocabularyEntry synonyms = 2; // optional; can be empty
+}
+
+// Aggregated vocabulary evaluation
+message EvaluateVocabularyResponse {
+  // CEFR counts, e.g., {"A1":3,"A2":0,"B1":0,"B2":0,"C1":0,"C2":0}
+  map<string, int32> statistics = 1;
+
+  // Detailed per-token analysis
+  repeated VocabularyToken tokens = 2;
+}
+
+// Pronunciation evaluation
+message EvaluatePronunciationRequest {
+  string audio_url = 1;
+  string transcript  = 2;
+  string tts_accent = 3;  // e.g., "american"
+  string tts_gender = 4;  // e.g., "feminine"
+}
+
+message PronunciationToken {
+  uint32 score = 1; // 0-100
+  string word  = 2;
+  // all fields below is available if score < 1.0
+  string wrong_transcript = 3;
+  string corrected_transcript = 4;
+  string corrected_ipa = 5;
+  bytes corrected_audio = 6;
+}
+
+message EvaluatePronunciationResponse {
+  uint32 overall_score = 1;
+  repeated PronunciationToken tokens = 2;
+}
+
 // Service
 service AiService {
-  rpc ProcessSpeaking (SpeakingRequest) returns (stream SpeakingEvent);
-  rpc ValidateTopic   (TopicValidationRequest) returns (TopicValidationResponse);
-  rpc TranslateText (TranslateRequest) returns (TranslateResponse);
-  rpc GenerateHint  (HintRequest)      returns (HintResponse);
+  rpc ProcessSpeaking   (SpeakingRequest)         returns (stream SpeakingEvent);
+  rpc ValidateTopic     (TopicValidationRequest)  returns (TopicValidationResponse);
+  rpc TranslateText     (TranslateRequest)        returns (TranslateResponse);
+  rpc GenerateHint      (HintRequest)             returns (HintResponse);
+  rpc EvaluateGrammar   (EvaluateTranscriptRequest)  returns (EvaluateGrammarResponse);
+  rpc EvaluateVocabulary (EvaluateTranscriptRequest) returns (EvaluateVocabularyResponse);
+  rpc EvaluatePronunciation (EvaluatePronunciationRequest) returns (EvaluatePronunciationResponse);
 }
