@@ -56,8 +56,17 @@ message EvaluatePronunciationResponse {
   repeated PronunciationToken tokens = 4;
 }
 
+message EvaluateFluencyResponse {
+  string session_id = 1;
+  string message_id = 2;
+  uint32 score = 3;
+  uint32 words_per_minute = 4;
+  uint32 syllables_per_minute = 5;
+}
+
 service BackendService {
   rpc NotifyGrammarEvaluation(EvaluateGrammarResponse) returns (google.protobuf.Empty);
   rpc NotifyVocabularyEvaluation(EvaluateVocabularyResponse) returns (google.protobuf.Empty);
   rpc NotifyPronunciationEvaluation(EvaluatePronunciationResponse) returns (google.protobuf.Empty);
+  rpc NotifyFluencyEvaluation(EvaluateFluencyResponse) returns (google.protobuf.Empty);
 }

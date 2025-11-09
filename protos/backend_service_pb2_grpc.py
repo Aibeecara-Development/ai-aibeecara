@@ -50,6 +50,11 @@ class BackendServiceStub(object):
                 request_serializer=backend__service__pb2.EvaluatePronunciationResponse.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
+        self.NotifyFluencyEvaluation = channel.unary_unary(
+                '/BackendService/NotifyFluencyEvaluation',
+                request_serializer=backend__service__pb2.EvaluateFluencyResponse.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                _registered_method=True)
 
 
 class BackendServiceServicer(object):
@@ -73,6 +78,12 @@ class BackendServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def NotifyFluencyEvaluation(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_BackendServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -89,6 +100,11 @@ def add_BackendServiceServicer_to_server(servicer, server):
             'NotifyPronunciationEvaluation': grpc.unary_unary_rpc_method_handler(
                     servicer.NotifyPronunciationEvaluation,
                     request_deserializer=backend__service__pb2.EvaluatePronunciationResponse.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'NotifyFluencyEvaluation': grpc.unary_unary_rpc_method_handler(
+                    servicer.NotifyFluencyEvaluation,
+                    request_deserializer=backend__service__pb2.EvaluateFluencyResponse.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
     }
@@ -172,6 +188,33 @@ class BackendService(object):
             target,
             '/BackendService/NotifyPronunciationEvaluation',
             backend__service__pb2.EvaluatePronunciationResponse.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def NotifyFluencyEvaluation(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/BackendService/NotifyFluencyEvaluation',
+            backend__service__pb2.EvaluateFluencyResponse.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,

@@ -25,7 +25,12 @@ from src.chat_model.text_to_speech import (
     generate_tts_pcm_stream,
     generate_tts_wav,
 )
-from src.chat_model.scoring.score_model import evaluate_transcription
+from src.chat_model.scoring.score_model import (
+    evaluate_transcription,
+    evaluate_pause,
+    evaluate_stutter,
+    calculate_speech_rates,
+)
 from src.chat_model.scoring.vocab import evaluate_cefr_stats
 from src.pronunciation_model.pronunciation_model import evaluate_pronunciation
 
@@ -118,9 +123,10 @@ class AiServiceServicer(pbg.AiServiceServicer):
         transcript: str,
         accent: str,
         gender: str,
+        deepgram_response: dict = None,
     ) -> None:
         """
-        Run all three evaluations (grammar, vocabulary, pronunciation) and notify backend.
+        Run all four evaluations (grammar, vocabulary, pronunciation, fluency) and notify backend.
         This runs in the background and does not block the speaking stream.
         """
         try:
@@ -128,11 +134,21 @@ class AiServiceServicer(pbg.AiServiceServicer):
             grammar_task = self._evaluate_grammar(transcript, accent, gender)
             vocab_task = self._evaluate_vocabulary(transcript, accent, gender)
             pronunciation_task = self._evaluate_pronunciation(audio_url, transcript, accent, gender)
+            fluency_task = None
+            if deepgram_response:
+                fluency_task = self._evaluate_fluency(deepgram_response)
 
             # Wait for all to complete
-            grammar_result, vocab_result, pronunciation_result = await asyncio.gather(
-                grammar_task, vocab_task, pronunciation_task, return_exceptions=True
-            )
+            tasks = [grammar_task, vocab_task, pronunciation_task]
+            if fluency_task:
+                tasks.append(fluency_task)
+
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            grammar_result = results[0]
+            vocab_result = results[1]
+            pronunciation_result = results[2]
+            fluency_result = results[3] if len(results) > 3 else None
 
             # Notify backend for each successful evaluation
             # Grammar
@@ -182,6 +198,25 @@ class AiServiceServicer(pbg.AiServiceServicer):
                     print(f"✓ Pronunciation evaluation sent to backend for session {session_id}")
                 except Exception as e:
                     print(f"Failed to notify backend about pronunciation: {e}")
+
+            # Fluency
+            if fluency_result is not None:
+                if isinstance(fluency_result, Exception):
+                    print(f"Fluency evaluation failed: {fluency_result}")
+                else:
+                    try:
+                        await self.backend_stub.NotifyFluencyEvaluation(
+                            backend_pb.EvaluateFluencyResponse(
+                                session_id=session_id,
+                                message_id=message_id,
+                                score=int(fluency_result['fluency_score'] * 100),
+                                words_per_minute=fluency_result['words_per_minute'],
+                                syllables_per_minute=fluency_result['syllables_per_minute'],
+                            )
+                        )
+                        print(f"✓ Fluency evaluation sent to backend for session {session_id}")
+                    except Exception as e:
+                        print(f"Failed to notify backend about fluency: {e}")
 
         except Exception as e:
             print(f"Background evaluation failed: {e}")
@@ -367,6 +402,22 @@ class AiServiceServicer(pbg.AiServiceServicer):
 
         return {"overall_score": overall_score, "tokens": tokens}
 
+    async def _evaluate_fluency(self, deepgram_response: dict) -> dict:
+        """Evaluate fluency and return results as dict."""
+        def _run_fluency_eval():
+            pause_score_dict = evaluate_pause(deepgram_response)
+            stutter_score, stuttered_phrases = evaluate_stutter(deepgram_response)
+            speech_rate_dict = calculate_speech_rates(deepgram_response)
+            fluency_score = (stutter_score + pause_score_dict['score']) / 2.0
+
+            return {
+                "fluency_score": fluency_score,
+                "words_per_minute": speech_rate_dict['wpm'],
+                "syllables_per_minute": speech_rate_dict['spm'],
+            }
+
+        return await self._to_thread(_run_fluency_eval)
+
     # Speaking (server-stream)
     async def ProcessSpeaking(
         self, request: pb.SpeakingRequest, context: grpc.aio.ServicerContext
@@ -435,7 +486,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 # Fire and forget - run evaluation in background
                 asyncio.create_task(
                     self._evaluate_and_notify_backend(
-                        session_id, message_id, audio_url, transcript, accent, gender
+                        session_id, message_id, audio_url, transcript, accent, gender, dg_response
                     )
                 )
 
