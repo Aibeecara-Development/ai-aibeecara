@@ -12,6 +12,7 @@ from pydantic import BaseModel
 import time
 import requests
 import io
+import string
 from pydub import AudioSegment
 from deepgram import DeepgramClient
 import torchaudio
@@ -99,6 +100,7 @@ class CorrectionScore(BaseModel):
     aspect: CorrectionAspect
     audio_url: str
     chat_bubble_correction_id: int
+    correction_text: str
 
 
 def mock_stream_response(user_input):
@@ -257,26 +259,6 @@ async def evaluate_endpoint(input_data: TranscriptionResult):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# class EvaluatePronunciationInput(BaseModel):
-#     audio_url: str
-#     transcript: str
-#
-# @app.post("/evaluate/pronunciation/")
-# async def evaluate_pronunciation_endpoint(input_data: EvaluatePronunciationInput):
-#     resp = requests.get(input_data.audio_url, timeout=30)
-#     resp.raise_for_status()
-#     audio_data = io.BytesIO(resp.content)
-#     waveform, sr = torchaudio.load(audio_data)
-#
-#     # Resample and mono
-#     if sr != 16000:
-#         waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
-#     if waveform.shape[0] > 1:
-#         waveform = waveform.mean(dim=0, keepdim=True)
-#
-#     pronunciation_score_dict = evaluate_pronunciation(waveform, input_data.transcript)
-#     return {"pronunciation_score": pronunciation_score_dict}
-
 @app.post("/chat/tts/")
 async def chat_tts(input: TTSInput):
     try:
@@ -367,13 +349,30 @@ def update_score(input_data: CorrectionScore, new_score: float) -> tuple[float, 
 @app.post("/try_by_yourself/")
 async def try_by_yourself(input_data: CorrectionScore):
     try:
+        # 1️⃣ Download audio
         resp = requests.get(input_data.audio_url, timeout=30)
         resp.raise_for_status()
         audio_data = resp.content
 
-        # Transcribe
+        # 2️⃣ Transcribe
         response, transcript = transcribe_audio_api(audio_data)
 
+        # 3️⃣ Normalize transcript and correction_text (lowercase + remove punctuation)
+        def normalize_text(text: str) -> str:
+            return text.lower().translate(str.maketrans('', '', string.punctuation)).strip()
+
+        normalized_transcript = normalize_text(transcript)
+        normalized_correction = normalize_text(input_data.correction_text)
+
+        # 4️⃣ If not matching, return early with message
+        if normalized_transcript != normalized_correction:
+            return {
+                "message": "Transcript does not match the expected correction text.",
+                "transcript": transcript,
+                "expected": input_data.correction_text
+            }
+
+        # 5️⃣ Continue if matched
         speed = None
 
         if input_data.aspect == CorrectionAspect.pronunciation:
@@ -381,30 +380,24 @@ async def try_by_yourself(input_data: CorrectionScore):
             pronunciation_score = pronunciation_result['score']
             new_score, new_aspect_mean = update_score(input_data, pronunciation_score)
             input_data.aspect_score.pronunciation_score = pronunciation_score
+
         elif input_data.aspect == CorrectionAspect.grammar:
             grammar_score, corrected_text, grammar_explanation = evaluate_transcription(transcript)
             new_score, new_aspect_mean = update_score(input_data, grammar_score)
             input_data.aspect_score.grammar_score = grammar_score
+
         elif input_data.aspect == CorrectionAspect.vocabulary:
             updated_transcripts = []
             for item in input_data.corrections:
                 if item.chat_bubble_id == input_data.chat_bubble_correction_id:
-                    # replace with the newly transcribed text
                     item.transcript = transcript
-                # collect transcripts (fallback empty if not present yet)
                 updated_transcripts.append(getattr(item, "transcript", ""))
-
-            # Step 3: join all transcripts into one text
             combined_transcript = " ".join(t for t in updated_transcripts if t.strip())
-
-            # Step 4: evaluate vocabulary level on the whole joined transcript
-            vocabulary_score = evaluate_vocabulary_cefr(combined_transcript)  # str: "A1"..."C2"
-
-            # Step 5: update aspect_score
+            vocabulary_score = evaluate_vocabulary_cefr(combined_transcript)
             input_data.aspect_score.vocabulary_score = vocabulary_score
-
             new_score = vocabulary_score
             new_aspect_mean = vocabulary_score
+
         else:  # fluency
             pause_score, pause_details = evaluate_pause(response)
             stutter_score, stuttered_phrases = evaluate_stutter(response)
@@ -418,7 +411,7 @@ async def try_by_yourself(input_data: CorrectionScore):
             else:
                 speed = "Fluent"
 
-        # Always recalc total score with updated aspect values
+        # 6️⃣ Recalculate total score
         new_total_score = mean([
             input_data.aspect_score.grammar_score,
             input_data.aspect_score.vocabulary_score,
