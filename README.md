@@ -389,7 +389,8 @@ Updating the score of a certain aspect (grammar, vocabulary, pronunciation, paus
   },
   "aspect": "pronunciation",
   "audio_url": "https://example.com/audio/sample.wav",
-  "chat_bubble_correction_id": 2
+  "chat_bubble_correction_id": 2,
+   "correction_text": "corrected text"
 }
 ```
 
