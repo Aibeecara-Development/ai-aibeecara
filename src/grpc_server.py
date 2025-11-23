@@ -15,6 +15,7 @@ from protos import ai_service_pb2 as pb
 from protos import ai_service_pb2_grpc as pbg
 from protos import backend_service_pb2 as backend_pb
 from protos import backend_service_pb2_grpc as backend_pbg
+from protos.ai_service_pb2 import TopicValidationResponse, TranslateResponse, HintResponse, TryByYourselfResponse
 from src.chat_model.chatbot import (
     chat_api_sync,
     custom_topic_validation,
@@ -498,7 +499,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
     # Topic validation
     async def ValidateTopic(
         self, request: pb.TopicValidationRequest, context: grpc.aio.ServicerContext
-    ) -> pb.TopicValidationResponse:
+    ) -> TopicValidationResponse | None:
         """
         Validates whether a topic is BROAD or NARROW.
         """
@@ -518,7 +519,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
     # Translation
     async def TranslateText(
         self, request: pb.TranslateRequest, context: grpc.aio.ServicerContext
-    ) -> pb.TranslateResponse:
+    ) -> TranslateResponse | None:
         text = (request.text or "").strip()
         if not text:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "text is required")
@@ -539,7 +540,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
     # Hint
     async def GenerateHint(
         self, request: pb.HintRequest, context: grpc.aio.ServicerContext
-    ) -> pb.HintResponse:
+    ) -> HintResponse | None:
         response_text = (request.response_text or "").strip()
         if not response_text:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "response_text is required")
@@ -552,6 +553,86 @@ class AiServiceServicer(pbg.AiServiceServicer):
             raise
         except Exception as e:
             await context.abort(grpc.StatusCode.INTERNAL, f"Hint generation failed: {str(e)}")
+
+    # TryByYourself
+    async def TryByYourself(
+        self, request: pb.TryByYourselfRequest, context: grpc.aio.ServicerContext
+    ) -> TryByYourselfResponse | None:
+        aspect = (request.aspect or "").strip().lower()
+        audio_url = (request.user_audio_url or "").strip()
+
+        if not aspect:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "aspect is required")
+        if not audio_url:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "user_audio_url is required")
+
+        try:
+            # Transcribe audio
+            dg_response, transcript = await self._to_thread(transcribe_audio_api, audio_url)
+
+            if aspect == "grammar":
+                # Evaluate grammar
+                def _run_grammar_eval():
+                    return evaluate_transcription(transcript)
+
+                (
+                    grammar_score,
+                    corrected_text,
+                    grammar_explanation,
+                    tense_used,
+                ) = await self._to_thread(_run_grammar_eval)
+
+                score = int(grammar_score * 100)
+                return pb.TryByYourselfResponse(score=score)
+
+            elif aspect == "pronunciation":
+                # Download audio and evaluate pronunciation
+                def _download_and_eval():
+                    resp = requests.get(audio_url, timeout=30)
+                    resp.raise_for_status()
+                    waveform, sr = torchaudio.load(io.BytesIO(resp.content))
+                    if sr != 16000:
+                        waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
+                    if waveform.shape[0] > 1:
+                        waveform = waveform.mean(dim=0, keepdim=True)
+                    pronunciation_result = evaluate_pronunciation(waveform, transcript)
+                    return pronunciation_result['score']
+
+                pronunciation_score = await self._to_thread(_download_and_eval)
+                score = int(pronunciation_score)
+                return pb.TryByYourselfResponse(score=score)
+
+            elif aspect == "vocabulary":
+                # TODO: implement vocabulary evaluation later
+                await context.abort(
+                    grpc.StatusCode.UNIMPLEMENTED,
+                    "Vocabulary evaluation for TryByYourself is not yet implemented."
+                )
+
+            elif aspect == "fluency":
+                # Evaluate fluency based on pause and stutter
+                def _run_fluency_eval():
+                    pause_score_dict = evaluate_pause(dg_response)
+                    stutter_score, stuttered_phrases = evaluate_stutter(dg_response)
+                    fluency_score = (pause_score_dict['score'] + stutter_score) / 2.0
+                    return fluency_score
+
+                fluency_score = await self._to_thread(_run_fluency_eval)
+                score = int(fluency_score * 100)
+                return pb.TryByYourselfResponse(score=score)
+
+            else:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    f"Invalid aspect: {aspect}. Must be one of: grammar, pronunciation, vocabulary, fluency"
+                )
+
+        except grpc.RpcError:
+            raise
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            await context.abort(grpc.StatusCode.INTERNAL, f"TryByYourself evaluation failed: {str(e)}")
 
 
 async def serve(host: str = "[::]:50051") -> None:

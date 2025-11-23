@@ -81,10 +81,20 @@ message HintResponse {
   string hint = 1;
 }
 
+message TryByYourselfRequest {
+  string aspect = 1;         // e.g., "grammar", "vocabulary", "pronunciation", "fluency"
+  string user_audio_url = 2;
+}
+
+message TryByYourselfResponse {
+  uint32 score = 1;
+}
+
 // Service
 service AiService {
   rpc ProcessSpeaking   (SpeakingRequest)         returns (stream SpeakingEvent);
   rpc ValidateTopic     (TopicValidationRequest)  returns (TopicValidationResponse);
   rpc TranslateText     (TranslateRequest)        returns (TranslateResponse);
   rpc GenerateHint      (HintRequest)             returns (HintResponse);
+  rpc TryByYourself     (TryByYourselfRequest)    returns (TryByYourselfResponse);
 }

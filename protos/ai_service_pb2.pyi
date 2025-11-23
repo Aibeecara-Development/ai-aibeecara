@@ -309,3 +309,37 @@ class HintResponse(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["hint", b"hint"]) -> None: ...
 
 global___HintResponse = HintResponse
+
+@typing.final
+class TryByYourselfRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    ASPECT_FIELD_NUMBER: builtins.int
+    USER_AUDIO_URL_FIELD_NUMBER: builtins.int
+    aspect: builtins.str
+    """e.g., "grammar", "vocabulary", "pronunciation", "fluency" """
+    user_audio_url: builtins.str
+    def __init__(
+        self,
+        *,
+        aspect: builtins.str = ...,
+        user_audio_url: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing.Literal["aspect", b"aspect", "user_audio_url", b"user_audio_url"]) -> None: ...
+
+global___TryByYourselfRequest = TryByYourselfRequest
+
+@typing.final
+class TryByYourselfResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SCORE_FIELD_NUMBER: builtins.int
+    score: builtins.int
+    def __init__(
+        self,
+        *,
+        score: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing.Literal["score", b"score"]) -> None: ...
+
+global___TryByYourselfResponse = TryByYourselfResponse
