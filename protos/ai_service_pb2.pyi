@@ -316,16 +316,19 @@ class TryByYourselfRequest(google.protobuf.message.Message):
 
     ASPECT_FIELD_NUMBER: builtins.int
     USER_AUDIO_URL_FIELD_NUMBER: builtins.int
+    TARGET_TEXT_FIELD_NUMBER: builtins.int
     aspect: builtins.str
-    """e.g., "grammar", "vocabulary", "pronunciation", "fluency" """
+    """"grammar", "pronunciation", "fluency" """
     user_audio_url: builtins.str
+    target_text: builtins.str
     def __init__(
         self,
         *,
         aspect: builtins.str = ...,
         user_audio_url: builtins.str = ...,
+        target_text: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["aspect", b"aspect", "user_audio_url", b"user_audio_url"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["aspect", b"aspect", "target_text", b"target_text", "user_audio_url", b"user_audio_url"]) -> None: ...
 
 global___TryByYourselfRequest = TryByYourselfRequest
 

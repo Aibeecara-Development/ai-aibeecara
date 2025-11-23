@@ -560,6 +560,10 @@ class AiServiceServicer(pbg.AiServiceServicer):
     ) -> TryByYourselfResponse | None:
         aspect = (request.aspect or "").strip().lower()
         audio_url = (request.user_audio_url or "").strip()
+        # Dear future developers, backend already gives "target_text" field in the request to validate if the user spoke the right content.
+        # The AI functions here does not support that yet.
+        # Good luck on implementing that!
+        # - I Putu Natha Kusuma, the backend developer.
 
         if not aspect:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "aspect is required")
