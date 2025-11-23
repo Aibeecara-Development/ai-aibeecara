@@ -602,13 +602,6 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 score = int(pronunciation_score)
                 return pb.TryByYourselfResponse(score=score)
 
-            elif aspect == "vocabulary":
-                # TODO: implement vocabulary evaluation later
-                await context.abort(
-                    grpc.StatusCode.UNIMPLEMENTED,
-                    "Vocabulary evaluation for TryByYourself is not yet implemented."
-                )
-
             elif aspect == "fluency":
                 # Evaluate fluency based on pause and stutter
                 def _run_fluency_eval():
@@ -624,7 +617,7 @@ class AiServiceServicer(pbg.AiServiceServicer):
             else:
                 await context.abort(
                     grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid aspect: {aspect}. Must be one of: grammar, pronunciation, vocabulary, fluency"
+                    f"Invalid aspect: {aspect}. Must be one of: grammar, pronunciation, fluency"
                 )
 
         except grpc.RpcError:

@@ -82,7 +82,7 @@ message HintResponse {
 }
 
 message TryByYourselfRequest {
-  string aspect = 1;         // e.g., "grammar", "vocabulary", "pronunciation", "fluency"
+  string aspect = 1;         // "grammar", "pronunciation", "fluency"
   string user_audio_url = 2;
 }
 
