@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\nai_service\")\n\x0bHistoryItem\x12\x0c\n\x04role\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\"\x1b\n\x05Start\x12\x12\n\nrequest_id\x18\x01 \x01(\t\"\x18\n\x08UserText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x17\n\x07\x42otText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x19\n\x08\x42otAudio\x12\r\n\x05pcm16\x18\x01 \x01(\x0c\"\x06\n\x04\x44one\"\x18\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\"\xbd\x01\n\x0fSpeakingRequest\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x16\n\x0euser_audio_url\x18\x02 \x01(\t\x12,\n\x0bhistory_log\x18\x03 \x03(\x0b\x32\x17.ai_service.HistoryItem\x12\x0e\n\x06\x61\x63\x63\x65nt\x18\x04 \x01(\t\x12\x0e\n\x06gender\x18\x05 \x01(\t\x12\r\n\x05speed\x18\x06 \x01(\x02\x12\x12\n\nsession_id\x18\x07 \x01(\t\x12\x12\n\nmessage_id\x18\x08 \x01(\t\"\x81\x02\n\rSpeakingEvent\x12\"\n\x05start\x18\x01 \x01(\x0b\x32\x11.ai_service.StartH\x00\x12)\n\tuser_text\x18\x02 \x01(\x0b\x32\x14.ai_service.UserTextH\x00\x12\'\n\x08\x62ot_text\x18\x03 \x01(\x0b\x32\x13.ai_service.BotTextH\x00\x12)\n\tbot_audio\x18\x04 \x01(\x0b\x32\x14.ai_service.BotAudioH\x00\x12 \n\x04\x64one\x18\x05 \x01(\x0b\x32\x10.ai_service.DoneH\x00\x12\"\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x11.ai_service.ErrorH\x00\x42\x07\n\x05\x65vent\",\n\x16TopicValidationRequest\x12\x12\n\ntopic_name\x18\x01 \x01(\t\"-\n\x17TopicValidationResponse\x12\x12\n\nvalidation\x18\x01 \x01(\t\" \n\x10TranslateRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\",\n\x11TranslateResponse\x12\x17\n\x0ftranslated_text\x18\x01 \x01(\t\"$\n\x0bHintRequest\x12\x15\n\rresponse_text\x18\x01 \x01(\t\"\x1c\n\x0cHintResponse\x12\x0c\n\x04hint\x18\x01 \x01(\t\"S\n\x14TryByYourselfRequest\x12\x0e\n\x06\x61spect\x18\x01 \x01(\t\x12\x16\n\x0euser_audio_url\x18\x02 \x01(\t\x12\x13\n\x0btarget_text\x18\x03 \x01(\t\"&\n\x15TryByYourselfResponse\x12\r\n\x05score\x18\x01 \x01(\r2\x99\x03\n\tAiService\x12K\n\x0fProcessSpeaking\x12\x1b.ai_service.SpeakingRequest\x1a\x19.ai_service.SpeakingEvent0\x01\x12X\n\rValidateTopic\x12\".ai_service.TopicValidationRequest\x1a#.ai_service.TopicValidationResponse\x12L\n\rTranslateText\x12\x1c.ai_service.TranslateRequest\x1a\x1d.ai_service.TranslateResponse\x12\x41\n\x0cGenerateHint\x12\x17.ai_service.HintRequest\x1a\x18.ai_service.HintResponse\x12T\n\rTryByYourself\x12 .ai_service.TryByYourselfRequest\x1a!.ai_service.TryByYourselfResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\nai_service\")\n\x0bHistoryItem\x12\x0c\n\x04role\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\"\x1b\n\x05Start\x12\x12\n\nrequest_id\x18\x01 \x01(\t\"\x18\n\x08UserText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x17\n\x07\x42otText\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x1d\n\nBotEmotion\x12\x0f\n\x07\x65motion\x18\x01 \x01(\t\"\x19\n\x08\x42otAudio\x12\r\n\x05pcm16\x18\x01 \x01(\x0c\"\x06\n\x04\x44one\"\x18\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\"\xbd\x01\n\x0fSpeakingRequest\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x16\n\x0euser_audio_url\x18\x02 \x01(\t\x12,\n\x0bhistory_log\x18\x03 \x03(\x0b\x32\x17.ai_service.HistoryItem\x12\x0e\n\x06\x61\x63\x63\x65nt\x18\x04 \x01(\t\x12\x0e\n\x06gender\x18\x05 \x01(\t\x12\r\n\x05speed\x18\x06 \x01(\x02\x12\x12\n\nsession_id\x18\x07 \x01(\t\x12\x12\n\nmessage_id\x18\x08 \x01(\t\"\xb0\x02\n\rSpeakingEvent\x12\"\n\x05start\x18\x01 \x01(\x0b\x32\x11.ai_service.StartH\x00\x12)\n\tuser_text\x18\x02 \x01(\x0b\x32\x14.ai_service.UserTextH\x00\x12\'\n\x08\x62ot_text\x18\x03 \x01(\x0b\x32\x13.ai_service.BotTextH\x00\x12-\n\x0b\x62ot_emotion\x18\x04 \x01(\x0b\x32\x16.ai_service.BotEmotionH\x00\x12)\n\tbot_audio\x18\x05 \x01(\x0b\x32\x14.ai_service.BotAudioH\x00\x12 \n\x04\x64one\x18\x06 \x01(\x0b\x32\x10.ai_service.DoneH\x00\x12\"\n\x05\x65rror\x18\x07 \x01(\x0b\x32\x11.ai_service.ErrorH\x00\x42\x07\n\x05\x65vent\",\n\x16TopicValidationRequest\x12\x12\n\ntopic_name\x18\x01 \x01(\t\"-\n\x17TopicValidationResponse\x12\x12\n\nvalidation\x18\x01 \x01(\t\" \n\x10TranslateRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\",\n\x11TranslateResponse\x12\x17\n\x0ftranslated_text\x18\x01 \x01(\t\"$\n\x0bHintRequest\x12\x15\n\rresponse_text\x18\x01 \x01(\t\"\x1c\n\x0cHintResponse\x12\x0c\n\x04hint\x18\x01 \x01(\t\"S\n\x14TryByYourselfRequest\x12\x0e\n\x06\x61spect\x18\x01 \x01(\t\x12\x16\n\x0euser_audio_url\x18\x02 \x01(\t\x12\x13\n\x0btarget_text\x18\x03 \x01(\t\"&\n\x15TryByYourselfResponse\x12\r\n\x05score\x18\x01 \x01(\r2\x99\x03\n\tAiService\x12K\n\x0fProcessSpeaking\x12\x1b.ai_service.SpeakingRequest\x1a\x19.ai_service.SpeakingEvent0\x01\x12X\n\rValidateTopic\x12\".ai_service.TopicValidationRequest\x1a#.ai_service.TopicValidationResponse\x12L\n\rTranslateText\x12\x1c.ai_service.TranslateRequest\x1a\x1d.ai_service.TranslateResponse\x12\x41\n\x0cGenerateHint\x12\x17.ai_service.HintRequest\x1a\x18.ai_service.HintResponse\x12T\n\rTryByYourself\x12 .ai_service.TryByYourselfRequest\x1a!.ai_service.TryByYourselfResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -39,32 +39,34 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_USERTEXT']._serialized_end=128
   _globals['_BOTTEXT']._serialized_start=130
   _globals['_BOTTEXT']._serialized_end=153
-  _globals['_BOTAUDIO']._serialized_start=155
-  _globals['_BOTAUDIO']._serialized_end=180
-  _globals['_DONE']._serialized_start=182
-  _globals['_DONE']._serialized_end=188
-  _globals['_ERROR']._serialized_start=190
-  _globals['_ERROR']._serialized_end=214
-  _globals['_SPEAKINGREQUEST']._serialized_start=217
-  _globals['_SPEAKINGREQUEST']._serialized_end=406
-  _globals['_SPEAKINGEVENT']._serialized_start=409
-  _globals['_SPEAKINGEVENT']._serialized_end=666
-  _globals['_TOPICVALIDATIONREQUEST']._serialized_start=668
-  _globals['_TOPICVALIDATIONREQUEST']._serialized_end=712
-  _globals['_TOPICVALIDATIONRESPONSE']._serialized_start=714
-  _globals['_TOPICVALIDATIONRESPONSE']._serialized_end=759
-  _globals['_TRANSLATEREQUEST']._serialized_start=761
-  _globals['_TRANSLATEREQUEST']._serialized_end=793
-  _globals['_TRANSLATERESPONSE']._serialized_start=795
-  _globals['_TRANSLATERESPONSE']._serialized_end=839
-  _globals['_HINTREQUEST']._serialized_start=841
-  _globals['_HINTREQUEST']._serialized_end=877
-  _globals['_HINTRESPONSE']._serialized_start=879
-  _globals['_HINTRESPONSE']._serialized_end=907
-  _globals['_TRYBYYOURSELFREQUEST']._serialized_start=909
-  _globals['_TRYBYYOURSELFREQUEST']._serialized_end=992
-  _globals['_TRYBYYOURSELFRESPONSE']._serialized_start=994
-  _globals['_TRYBYYOURSELFRESPONSE']._serialized_end=1032
-  _globals['_AISERVICE']._serialized_start=1035
-  _globals['_AISERVICE']._serialized_end=1444
+  _globals['_BOTEMOTION']._serialized_start=155
+  _globals['_BOTEMOTION']._serialized_end=184
+  _globals['_BOTAUDIO']._serialized_start=186
+  _globals['_BOTAUDIO']._serialized_end=211
+  _globals['_DONE']._serialized_start=213
+  _globals['_DONE']._serialized_end=219
+  _globals['_ERROR']._serialized_start=221
+  _globals['_ERROR']._serialized_end=245
+  _globals['_SPEAKINGREQUEST']._serialized_start=248
+  _globals['_SPEAKINGREQUEST']._serialized_end=437
+  _globals['_SPEAKINGEVENT']._serialized_start=440
+  _globals['_SPEAKINGEVENT']._serialized_end=744
+  _globals['_TOPICVALIDATIONREQUEST']._serialized_start=746
+  _globals['_TOPICVALIDATIONREQUEST']._serialized_end=790
+  _globals['_TOPICVALIDATIONRESPONSE']._serialized_start=792
+  _globals['_TOPICVALIDATIONRESPONSE']._serialized_end=837
+  _globals['_TRANSLATEREQUEST']._serialized_start=839
+  _globals['_TRANSLATEREQUEST']._serialized_end=871
+  _globals['_TRANSLATERESPONSE']._serialized_start=873
+  _globals['_TRANSLATERESPONSE']._serialized_end=917
+  _globals['_HINTREQUEST']._serialized_start=919
+  _globals['_HINTREQUEST']._serialized_end=955
+  _globals['_HINTRESPONSE']._serialized_start=957
+  _globals['_HINTRESPONSE']._serialized_end=985
+  _globals['_TRYBYYOURSELFREQUEST']._serialized_start=987
+  _globals['_TRYBYYOURSELFREQUEST']._serialized_end=1070
+  _globals['_TRYBYYOURSELFRESPONSE']._serialized_start=1072
+  _globals['_TRYBYYOURSELFRESPONSE']._serialized_end=1110
+  _globals['_AISERVICE']._serialized_start=1113
+  _globals['_AISERVICE']._serialized_end=1522
 # @@protoc_insertion_point(module_scope)

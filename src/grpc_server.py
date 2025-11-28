@@ -16,6 +16,7 @@ from protos import ai_service_pb2_grpc as pbg
 from protos import backend_service_pb2 as backend_pb
 from protos import backend_service_pb2_grpc as backend_pbg
 from protos.ai_service_pb2 import TopicValidationResponse, TranslateResponse, HintResponse, TryByYourselfResponse
+from src.chat_model import detect_emotion
 from src.chat_model.chatbot import (
     chat_api_sync,
     custom_topic_validation,
@@ -450,11 +451,22 @@ class AiServiceServicer(pbg.AiServiceServicer):
                 }
                 bot_text = await chat_api_sync(self.genai_client, payload)
 
-                # Bot response (new proto: BotText.text)
+                # Bot response
                 yield pb.SpeakingEvent(bot_text=pb.BotText(text=bot_text))
+
+                # Start emotion detection in background (non-blocking)
+                emotion_task = asyncio.create_task(self._to_thread(detect_emotion, bot_text))
 
                 async for pcm in self._async_tts_chunks(bot_text, accent, gender, speed):
                     yield pb.SpeakingEvent(bot_audio=pb.BotAudio(pcm16=pcm))
+
+                # Wait for emotion if not done yet and yield it
+                try:
+                    emotion = await emotion_task
+                    print(f"Detected emotion: {emotion}")
+                    yield pb.SpeakingEvent(bot_emotion=pb.BotEmotion(emotion=emotion))
+                except Exception as e:
+                    print(f"Emotion detection failed: {e}")
 
                 yield pb.SpeakingEvent(done=pb.Done())
                 return
@@ -477,8 +489,18 @@ class AiServiceServicer(pbg.AiServiceServicer):
             # Bot response
             yield pb.SpeakingEvent(bot_text=pb.BotText(text=bot_text))
 
+            # Start emotion detection in background (non-blocking)
+            emotion_task = asyncio.create_task(self._to_thread(detect_emotion, bot_text))
+
             async for pcm in self._async_tts_chunks(bot_text, accent, gender, speed):
                 yield pb.SpeakingEvent(bot_audio=pb.BotAudio(pcm16=pcm))
+
+            # Wait for emotion if not done yet and yield it
+            try:
+                emotion = await emotion_task
+                yield pb.SpeakingEvent(bot_emotion=pb.BotEmotion(emotion=emotion))
+            except Exception as e:
+                print(f"Emotion detection failed: {e}")
 
             yield pb.SpeakingEvent(done=pb.Done())
 

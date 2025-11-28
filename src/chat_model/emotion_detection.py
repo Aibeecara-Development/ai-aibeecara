@@ -1,8 +1,7 @@
-from transformers import pipeline
-import json
+import os
 import requests
 
-BASE_URL = "https://farrel-dr-aibeecara-models-2.hf.space"
+BASE_URL = os.getenv("EVALUATION_BASE_URL")
 
 # emotion_classifier = pipeline(
 #     task="text-classification",

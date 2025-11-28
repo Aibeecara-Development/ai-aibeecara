@@ -79,6 +79,22 @@ class BotText(google.protobuf.message.Message):
 global___BotText = BotText
 
 @typing.final
+class BotEmotion(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    EMOTION_FIELD_NUMBER: builtins.int
+    emotion: builtins.str
+    """"confusion", "happy", "calm", "sad", "" """
+    def __init__(
+        self,
+        *,
+        emotion: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing.Literal["emotion", b"emotion"]) -> None: ...
+
+global___BotEmotion = BotEmotion
+
+@typing.final
 class BotAudio(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -174,6 +190,7 @@ class SpeakingEvent(google.protobuf.message.Message):
     START_FIELD_NUMBER: builtins.int
     USER_TEXT_FIELD_NUMBER: builtins.int
     BOT_TEXT_FIELD_NUMBER: builtins.int
+    BOT_EMOTION_FIELD_NUMBER: builtins.int
     BOT_AUDIO_FIELD_NUMBER: builtins.int
     DONE_FIELD_NUMBER: builtins.int
     ERROR_FIELD_NUMBER: builtins.int
@@ -186,6 +203,10 @@ class SpeakingEvent(google.protobuf.message.Message):
     @property
     def bot_text(self) -> global___BotText:
         """model reply text"""
+
+    @property
+    def bot_emotion(self) -> global___BotEmotion:
+        """emotion label"""
 
     @property
     def bot_audio(self) -> global___BotAudio:
@@ -201,13 +222,14 @@ class SpeakingEvent(google.protobuf.message.Message):
         start: global___Start | None = ...,
         user_text: global___UserText | None = ...,
         bot_text: global___BotText | None = ...,
+        bot_emotion: global___BotEmotion | None = ...,
         bot_audio: global___BotAudio | None = ...,
         done: global___Done | None = ...,
         error: global___Error | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["bot_audio", b"bot_audio", "bot_text", b"bot_text", "done", b"done", "error", b"error", "event", b"event", "start", b"start", "user_text", b"user_text"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["bot_audio", b"bot_audio", "bot_text", b"bot_text", "done", b"done", "error", b"error", "event", b"event", "start", b"start", "user_text", b"user_text"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["event", b"event"]) -> typing.Literal["start", "user_text", "bot_text", "bot_audio", "done", "error"] | None: ...
+    def HasField(self, field_name: typing.Literal["bot_audio", b"bot_audio", "bot_emotion", b"bot_emotion", "bot_text", b"bot_text", "done", b"done", "error", b"error", "event", b"event", "start", b"start", "user_text", b"user_text"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["bot_audio", b"bot_audio", "bot_emotion", b"bot_emotion", "bot_text", b"bot_text", "done", b"done", "error", b"error", "event", b"event", "start", b"start", "user_text", b"user_text"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["event", b"event"]) -> typing.Literal["start", "user_text", "bot_text", "bot_emotion", "bot_audio", "done", "error"] | None: ...
 
 global___SpeakingEvent = SpeakingEvent
 
