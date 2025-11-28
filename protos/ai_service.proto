@@ -20,6 +20,10 @@ message BotText {
   string text = 1;
 }
 
+message BotEmotion {
+  string emotion = 1;  // "confusion", "happy", "calm", "sad", ""
+}
+
 message BotAudio {
   // 16 kHz, 16-bit PCM mono frames
   bytes pcm16 = 1;
@@ -45,12 +49,13 @@ message SpeakingRequest {
 
 message SpeakingEvent {
   oneof event {
-    Start    start     = 1;
-    UserText user_text = 2;  // transcript back to client
-    BotText  bot_text  = 3;  // model reply text
-    BotAudio bot_audio = 4;  // PCM16 chunks
-    Done     done      = 5;
-    Error    error     = 6;
+    Start    start         = 1;
+    UserText user_text     = 2;  // transcript back to client
+    BotText  bot_text      = 3;  // model reply text
+    BotEmotion bot_emotion = 4;  // emotion label
+    BotAudio bot_audio     = 5;  // PCM16 chunks
+    Done     done          = 6;
+    Error    error         = 7;
   }
 }
 
